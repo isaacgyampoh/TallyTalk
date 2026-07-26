@@ -13,7 +13,7 @@ const SETTINGS: { group: string; items: string[] }[] = [
 ]
 
 export function ProfileScreen() {
-  const { mode, session, signOut } = useAuth()
+  const { session, signOut } = useAuth()
   const phone = session?.user?.phone ? `+${session.user.phone}` : SAMPLE_PROFILE.phone
   const name = (session?.user?.user_metadata?.display_name as string) || SAMPLE_PROFILE.name
 
@@ -28,7 +28,7 @@ export function ProfileScreen() {
             <p className="truncate font-display text-[20px] font-bold">{name}</p>
             <p className="nums text-[14px] text-ink-soft">{phone}</p>
             <span className="mt-1 inline-block rounded-full bg-wash px-2 py-0.5 text-[11px] font-semibold text-ink-faint">
-              {mode === 'live' ? 'Connected to Supabase' : 'Preview · sample data'}
+              {session ? 'Connected to Supabase' : 'Preview · sample data'}
             </span>
           </div>
         </div>

@@ -95,16 +95,16 @@ export function AuthFlow() {
                 </button>
               </div>
 
-              {mode === 'preview' && (
-                <div className="mt-8 rounded-card border border-line bg-wash p-4">
-                  <p className="text-[13px] leading-snug text-ink-soft">
-                    Backend isn't connected yet. You can still explore the app with sample data.
-                  </p>
-                  <button className="btn-ghost mt-3 w-full" onClick={enterPreview}>
-                    Explore with sample data
-                  </button>
-                </div>
-              )}
+              <div className="mt-8 rounded-card border border-line bg-wash p-4">
+                <p className="text-[13px] leading-snug text-ink-soft">
+                  {mode === 'preview'
+                    ? "Backend isn't connected yet. You can still explore the app with sample data."
+                    : 'Just want to look around? Explore the app with sample data.'}
+                </p>
+                <button className="btn-ghost mt-3 w-full" onClick={enterPreview}>
+                  Explore with sample data
+                </button>
+              </div>
             </div>
           ) : (
             <div className="animate-rise-in">

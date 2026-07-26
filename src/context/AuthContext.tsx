@@ -41,16 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setReady(true)
       return
     }
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setReady(true)
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch(() => {
+        /* transient failure — fall through to the sign-in screen rather than hang */
+      })
+      .finally(() => setReady(true))
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => sub.subscription.unsubscribe()
   }, [])
 
   const value = useMemo<AuthState>(() => {
-    const signedIn = mode === 'live' ? Boolean(session) : previewSignedIn
+    const signedIn = Boolean(session) || previewSignedIn
 
     return {
       mode,

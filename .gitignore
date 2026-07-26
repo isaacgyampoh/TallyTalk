@@ -35,3 +35,6 @@ supabase/.temp
 
 # typescript incremental build info
 *.tsbuildinfo
+
+# committed production values (anon key is public-safe; security is RLS)
+!.env.production
