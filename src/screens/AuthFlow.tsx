@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { APP_NAME, COUNTRIES } from '@/lib/config'
 import { WandIcon, BackIcon, PhoneIcon } from '@/components/icons'
@@ -7,6 +8,7 @@ type Step = 'phone' | 'code'
 
 export function AuthFlow() {
   const { mode, sendCode, verifyCode, enterPreview } = useAuth()
+  const nav = useNavigate()
   const [step, setStep] = useState<Step>('phone')
   const [country, setCountry] = useState(COUNTRIES[0])
   const [local, setLocal] = useState('')
@@ -48,6 +50,12 @@ export function AuthFlow() {
         <div className="flex flex-1 flex-col justify-center">
           {step === 'phone' ? (
             <div className="animate-rise-in">
+              <button
+                className="press mb-6 inline-flex items-center gap-1 text-[14px] font-semibold text-ink-soft"
+                onClick={() => nav('/')}
+              >
+                <BackIcon width={18} height={18} /> Back
+              </button>
               <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-violet text-white shadow-float">
                 <WandIcon width={28} height={28} />
               </div>

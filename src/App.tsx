@@ -1,11 +1,14 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { Shell } from '@/components/Shell'
+import { Landing } from '@/screens/Landing'
 import { AuthFlow } from '@/screens/AuthFlow'
 import { ContactsScreen } from '@/screens/ContactsScreen'
 import { ContactSpaceScreen } from '@/screens/ContactSpaceScreen'
 import { PersonalScreen } from '@/screens/PersonalScreen'
+import { ChecklistDetailScreen } from '@/screens/ChecklistDetailScreen'
 import { GroupsScreen } from '@/screens/GroupsScreen'
+import { GroupDetailScreen } from '@/screens/GroupDetailScreen'
 import { ProfileScreen } from '@/screens/ProfileScreen'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon } from '@/components/icons'
@@ -26,12 +29,22 @@ function Splash() {
 function Gate() {
   const { ready, signedIn } = useAuth()
   if (!ready) return <Splash />
-  if (!signedIn) return <AuthFlow />
+
+  if (!signedIn) {
+    return (
+      <Routes>
+        <Route path="/signin" element={<AuthFlow />} />
+        <Route path="*" element={<Landing />} />
+      </Routes>
+    )
+  }
 
   return (
     <Routes>
-      {/* The contact task space is full-screen (no bottom nav), like a chat thread. */}
+      {/* Full-screen detail views (no bottom nav), like a chat thread. */}
       <Route path="/contacts/:id" element={<ContactSpaceScreen />} />
+      <Route path="/personal/:key" element={<ChecklistDetailScreen />} />
+      <Route path="/groups/:id" element={<GroupDetailScreen />} />
 
       <Route
         path="/*"
@@ -42,7 +55,6 @@ function Gate() {
               <Route path="/personal" element={<PersonalScreen />} />
               <Route path="/groups" element={<GroupsScreen />} />
               <Route path="/profile" element={<ProfileScreen />} />
-              {/* Default landing screen — Contacts per the spec's recommendation. */}
               <Route path="*" element={<Navigate to="/contacts" replace />} />
             </Routes>
           </Shell>

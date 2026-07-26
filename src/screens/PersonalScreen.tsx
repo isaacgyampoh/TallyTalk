@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/Shell'
 import { PlusIcon } from '@/components/icons'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
@@ -16,6 +17,7 @@ const listColor = (i: number) =>
   ['#6600FF', '#0E7C86', '#B4530A', '#8A3BFF', '#2B7A3B', '#B02A6F'][i % 6]
 
 export function PersonalScreen() {
+  const nav = useNavigate()
   return (
     <div className="relative flex h-full flex-col">
       <ScreenHeader title="Personal" />
@@ -28,7 +30,7 @@ export function PersonalScreen() {
           const counts = sampleCounts[list.key] ?? { open: 0, done: 0 }
           return (
             <li key={list.key}>
-              <button className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash">
+              <button onClick={() => nav(`/personal/${list.key}`)} className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash">
                 <span
                   className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white"
                   style={{ background: listColor(i) }}
