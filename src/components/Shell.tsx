@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { ContactsIcon, PersonalIcon, GroupsIcon, ProfileIcon } from './icons'
+import { InstallBanner } from './InstallBanner'
 
 const TABS = [
   { to: '/contacts', label: 'Contacts', Icon: ContactsIcon },
@@ -12,6 +13,7 @@ const TABS = [
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="app-frame">
+      <InstallBanner />
       <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
 
       <nav

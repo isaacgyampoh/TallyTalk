@@ -83,3 +83,57 @@ export const WandIcon = (p: P) => (
     <path d="M19.5 14.5l.4 1 1 .4-1 .4-.4 1-.4-1-1-.4 1-.4.4-1z" />
   </svg>
 )
+
+export const PaperclipIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M20 11.5l-7.6 7.6a4.5 4.5 0 0 1-6.4-6.4l7.9-7.9a3 3 0 0 1 4.3 4.3l-7.9 7.9a1.5 1.5 0 0 1-2.1-2.1l7-7" />
+  </svg>
+)
+
+export const MicIcon = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5 11a7 7 0 0 0 14 0" />
+    <path d="M12 18v3" />
+  </svg>
+)
+
+export const ImageIcon = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4" width="18" height="16" rx="2.5" />
+    <circle cx="8.5" cy="9.5" r="1.6" />
+    <path d="M4 17l4.5-4.5a2 2 0 0 1 2.8 0L20 21" />
+  </svg>
+)
+
+export const DocIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z" />
+    <path d="M14 3v5h5M9 13h6M9 17h4" />
+  </svg>
+)
+
+export const PlayIcon = (p: P) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M8 5.5v13l11-6.5-11-6.5z" />
+  </svg>
+)
+
+export const PauseIcon = (p: P) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <rect x="6.5" y="5" width="4" height="14" rx="1" />
+    <rect x="13.5" y="5" width="4" height="14" rx="1" />
+  </svg>
+)
+
+export const StopIcon = (p: P) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <rect x="6" y="6" width="12" height="12" rx="2.5" />
+  </svg>
+)
+
+export const CloseIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+)
