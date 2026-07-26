@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: theme('colors.paper');
+    color: theme('colors.ink.DEFAULT');
+    font-family: theme('fontFamily.sans');
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  /* Tabular figures for the owe-ledger counts. */
+  .nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: theme('colors.violet.tint');
+    color: theme('colors.violet.ink');
+  }
+
+  :focus-visible {
+    outline: 2px solid theme('colors.violet.DEFAULT');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* The app renders inside a phone-width column, centered on larger screens. */
+  .app-frame {
+    @apply mx-auto flex h-full w-full max-w-[460px] flex-col bg-paper;
+  }
+
+  .press {
+    @apply transition active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply press inline-flex h-12 items-center justify-center gap-2 rounded-full bg-violet px-6 text-[15px] font-semibold text-white shadow-float disabled:opacity-40 disabled:shadow-none;
+  }
+
+  .btn-ghost {
+    @apply press inline-flex h-12 items-center justify-center gap-2 rounded-full border border-line px-6 text-[15px] font-semibold text-ink;
+  }
+
+  .field {
+    @apply h-12 w-full rounded-2xl border border-line bg-wash px-4 text-[16px] text-ink placeholder:text-ink-faint focus:border-violet focus:bg-paper;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint;
+  }
+}
