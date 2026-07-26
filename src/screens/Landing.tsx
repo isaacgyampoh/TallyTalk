@@ -28,7 +28,7 @@ export function Landing() {
 
   function tryDemo() {
     enterPreview()
-    nav('/contacts')
+    nav('/today')
   }
   function onInstall() {
     if (canInstall) promptInstall()

@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Avatar } from '@/components/Avatar'
 import { VoiceNote } from '@/components/VoiceNote'
+import { TaskDetail, type DetailTask } from '@/components/TaskDetail'
+import { useToast } from '@/components/Toast'
+import { buzz } from '@/lib/haptics'
 import {
   BackIcon, CheckIcon, PlusIcon, WandIcon, MicIcon, PaperclipIcon,
   ImageIcon, DocIcon, StopIcon, CloseIcon,
 } from '@/components/icons'
-import { TASK_TITLE_MAX } from '@/lib/config'
+import { TASK_TITLE_MAX, type Priority } from '@/lib/config'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
 
 type Item =
@@ -36,8 +39,35 @@ export function ContactSpaceScreen() {
   const [sheet, setSheet] = useState(false)
   const [recording, setRecording] = useState(false)
   const [elapsed, setElapsed] = useState(0)
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null)
+  const [pokedId, setPokedId] = useState<string | null>(null)
   const recRef = useRef<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const toast = useToast()
+
+  const openTask = items.find((it) => it.kind === 'task' && it.id === openTaskId) as
+    | (Item & { kind: 'task' })
+    | undefined
+
+  function updateTask(id: string, patch: Partial<SampleTask>) {
+    setItems((prev) => prev.map((it) => (it.kind === 'task' && it.id === id ? { ...it, ...patch } : it)))
+  }
+  function removeItem(id: string) {
+    setItems((prev) => prev.filter((it) => it.id !== id))
+  }
+
+  function poke(id: string) {
+    // Lift the task to the top and sparkle it — the wand in action.
+    setItems((prev) => {
+      const hit = prev.find((it) => it.id === id)
+      if (!hit) return prev
+      return [hit, ...prev.filter((it) => it.id !== id)]
+    })
+    setPokedId(id)
+    buzz([10, 40, 10])
+    toast(`You poked ${firstName}`, 'poke')
+    window.setTimeout(() => setPokedId((p) => (p === id ? null : p)), 1200)
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -55,6 +85,7 @@ export function ContactSpaceScreen() {
   }
 
   function toggleComplete(id: string) {
+    buzz(15)
     setItems((prev) =>
       prev.map((it) =>
         it.kind === 'task' && it.id === id
@@ -106,7 +137,15 @@ export function ContactSpaceScreen() {
 
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
         {items.map((it) => (
-          <Bubble key={it.id} item={it} peer={firstName} onToggle={() => it.kind === 'task' && toggleComplete(it.id)} />
+          <Bubble
+            key={it.id}
+            item={it}
+            peer={firstName}
+            poked={pokedId === it.id}
+            onToggle={() => it.kind === 'task' && toggleComplete(it.id)}
+            onOpen={() => it.kind === 'task' && setOpenTaskId(it.id)}
+            onPoke={() => poke(it.id)}
+          />
         ))}
         {items.length === 0 && (
           <div className="px-6 py-16 text-center">
@@ -175,11 +214,41 @@ export function ContactSpaceScreen() {
           </div>
         )}
       </div>
+
+      {openTask && (
+        <TaskDetail
+          task={openTask as DetailTask}
+          peer={firstName}
+          onClose={() => setOpenTaskId(null)}
+          onAccept={() => { updateTask(openTask.id, { status: 'active' }); buzz(15); toast('Task accepted', 'success'); setOpenTaskId(null) }}
+          onDecline={() => { removeItem(openTask.id); setOpenTaskId(null) }}
+          onComplete={() => { updateTask(openTask.id, { status: 'completed' }); buzz(15); toast('Marked done', 'success'); setOpenTaskId(null) }}
+          onReopen={() => { updateTask(openTask.id, { status: 'active' }); setOpenTaskId(null) }}
+          onCancel={() => { removeItem(openTask.id); setOpenTaskId(null) }}
+          onPoke={() => { poke(openTask.id); setOpenTaskId(null) }}
+          onSetPriority={(p: Priority) => updateTask(openTask.id, { priority: p })}
+          onSetExpected={(e: string) => updateTask(openTask.id, { expected: e })}
+        />
+      )}
     </div>
   )
 }
 
-function Bubble({ item, peer, onToggle }: { item: Item; peer: string; onToggle: () => void }) {
+function Bubble({
+  item,
+  peer,
+  poked,
+  onToggle,
+  onOpen,
+  onPoke,
+}: {
+  item: Item
+  peer: string
+  poked: boolean
+  onToggle: () => void
+  onOpen: () => void
+  onPoke: () => void
+}) {
   const mine = item.mine
   const wrap = `flex ${mine ? 'justify-start' : 'justify-end'} animate-rise-in`
   const shell = `max-w-[82%] rounded-bubble shadow-card ${mine ? 'bg-violet-tint' : 'border border-line bg-paper'}`
@@ -226,10 +295,18 @@ function Bubble({ item, peer, onToggle }: { item: Item; peer: string; onToggle: 
   const pending = item.status === 'pending_acceptance'
   return (
     <div className={wrap}>
-      <div className={`${shell} px-3.5 py-3`}>
+      <div
+        onClick={onOpen}
+        className={`${shell} relative cursor-pointer px-3.5 py-3 transition ${poked ? 'animate-poke ring-2 ring-violet-glow' : ''}`}
+      >
+        {poked && (
+          <span className="pointer-events-none absolute -right-1 -top-2 animate-wand text-violet-glow">
+            <WandIcon width={20} height={20} />
+          </span>
+        )}
         <div className="flex items-start gap-2.5">
           <button
-            onClick={onToggle}
+            onClick={(e) => { e.stopPropagation(); onToggle() }}
             className={`press mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${done ? 'border-done bg-done text-white' : 'border-ink-faint text-transparent'}`}
             aria-label={done ? 'Mark active' : 'Mark complete'}
           >
@@ -244,7 +321,10 @@ function Bubble({ item, peer, onToggle }: { item: Item; peer: string; onToggle: 
               <Chip tone="muted">{item.expected}</Chip>
               {item.overdue && <Chip tone="overdue">Overdue</Chip>}
               {mine && !done && (
-                <button className="press ml-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-violet">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPoke() }}
+                  className="press ml-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-violet"
+                >
                   <WandIcon width={13} height={13} /> Poke
                 </button>
               )}

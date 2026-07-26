@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
-import { ContactsIcon, PersonalIcon, GroupsIcon, ProfileIcon } from './icons'
 import { InstallBanner } from './InstallBanner'
+import { TodayIcon, ContactsIcon, PersonalIcon, GroupsIcon, ProfileIcon } from './icons'
 
 const TABS = [
+  { to: '/today', label: 'Today', Icon: TodayIcon },
   { to: '/contacts', label: 'Contacts', Icon: ContactsIcon },
   { to: '/personal', label: 'Personal', Icon: PersonalIcon },
   { to: '/groups', label: 'Groups', Icon: GroupsIcon },

@@ -13,6 +13,14 @@ const base = (p: P) => ({
   ...p,
 })
 
+export const TodayIcon = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3.5" y="5" width="17" height="15" rx="3" />
+    <path d="M3.5 9.5h17M8 3v3.2M16 3v3.2" />
+    <path d="M8.5 14.5l2 2 3.5-4" />
+  </svg>
+)
+
 export const ContactsIcon = (p: P) => (
   <svg {...base(p)}>
     <path d="M4 20a6 6 0 0 1 12 0" />

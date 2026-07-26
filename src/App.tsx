@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { ToastProvider } from '@/components/Toast'
 import { Shell } from '@/components/Shell'
 import { Landing } from '@/screens/Landing'
 import { AuthFlow } from '@/screens/AuthFlow'
@@ -10,6 +11,7 @@ import { ChecklistDetailScreen } from '@/screens/ChecklistDetailScreen'
 import { GroupsScreen } from '@/screens/GroupsScreen'
 import { GroupDetailScreen } from '@/screens/GroupDetailScreen'
 import { ProfileScreen } from '@/screens/ProfileScreen'
+import { TodayScreen } from '@/screens/TodayScreen'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon } from '@/components/icons'
 
@@ -51,11 +53,12 @@ function Gate() {
         element={
           <Shell>
             <Routes>
+              <Route path="/today" element={<TodayScreen />} />
               <Route path="/contacts" element={<ContactsScreen />} />
               <Route path="/personal" element={<PersonalScreen />} />
               <Route path="/groups" element={<GroupsScreen />} />
               <Route path="/profile" element={<ProfileScreen />} />
-              <Route path="*" element={<Navigate to="/contacts" replace />} />
+              <Route path="*" element={<Navigate to="/today" replace />} />
             </Routes>
           </Shell>
         }
@@ -68,7 +71,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Gate />
+        <ToastProvider>
+          <Gate />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   )
