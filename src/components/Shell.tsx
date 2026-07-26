@@ -29,7 +29,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 to={to}
                 className={({ isActive }) =>
                   `flex flex-col items-center gap-1 py-2.5 text-[10.5px] font-semibold tracking-wide transition ${
-                    isActive ? 'text-violet' : 'text-ink-faint'
+                    isActive ? 'text-violet-ink' : 'text-ink-faint'
                   }`
                 }
               >

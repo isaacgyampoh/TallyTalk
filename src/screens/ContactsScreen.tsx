@@ -78,7 +78,7 @@ export function ContactsScreen() {
             key={f}
             onClick={() => setFilter(f)}
             className={`press whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition ${
-              filter === f ? 'bg-ink text-white' : 'bg-wash text-ink-soft'
+              filter === f ? 'bg-carbon text-white' : 'bg-wash text-ink-soft'
             }`}
           >
             {f}
@@ -142,7 +142,7 @@ function OweLedger({ contact }: { contact: SampleContact }) {
   return (
     <span className="nums shrink-0 text-[12.5px] font-semibold">
       {contact.forThem > 0 && (
-        <span className="text-violet">{contact.forThem} for them</span>
+        <span className="text-violet-ink">{contact.forThem} for them</span>
       )}
       {contact.forThem > 0 && contact.forYou > 0 && <span className="text-ink-faint"> · </span>}
       {contact.forYou > 0 && <span className="text-ink-soft">{contact.forYou} for you</span>}

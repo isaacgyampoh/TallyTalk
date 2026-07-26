@@ -6,7 +6,29 @@
   :root {
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* Light theme (RGB channels for Tailwind's <alpha-value> support) */
+    --c-paper: 255 255 255;
+    --c-ink: 17 17 20;
+    --c-ink-soft: 75 75 85;
+    --c-ink-faint: 138 138 150;
+    --c-line: 236 236 241;
+    --c-wash: 246 245 250;
+    --c-violet-ink: 71 0 179;
+    --c-violet-tint: 241 234 255;
     color-scheme: light;
+  }
+
+  .dark {
+    --c-paper: 20 20 26;
+    --c-ink: 240 240 246;
+    --c-ink-soft: 172 172 184;
+    --c-ink-faint: 124 124 138;
+    --c-line: 42 42 52;
+    --c-wash: 32 32 40;
+    --c-violet-ink: 201 180 255;
+    --c-violet-tint: 48 30 78;
+    color-scheme: dark;
   }
 
   html,
@@ -17,8 +39,8 @@
 
   body {
     margin: 0;
-    background: theme('colors.paper');
-    color: theme('colors.ink.DEFAULT');
+    background: rgb(var(--c-paper));
+    color: rgb(var(--c-ink));
     font-family: theme('fontFamily.sans');
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -31,12 +53,12 @@
   }
 
   ::selection {
-    background: theme('colors.violet.tint');
-    color: theme('colors.violet.ink');
+    background: rgb(var(--c-violet-tint));
+    color: rgb(var(--c-violet-ink));
   }
 
   :focus-visible {
-    outline: 2px solid theme('colors.violet.DEFAULT');
+    outline: 2px solid #6600FF;
     outline-offset: 2px;
     border-radius: 4px;
   }

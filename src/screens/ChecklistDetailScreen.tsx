@@ -83,7 +83,7 @@ export function ChecklistDetailScreen() {
               {item.title}
             </span>
             {behavior === 'call' && item.phone && !item.done && (
-              <a href={`tel:${item.phone}`} className="press grid h-9 w-9 place-items-center rounded-full bg-violet-tint text-violet" aria-label={`Call ${item.title}`}>
+              <a href={`tel:${item.phone}`} className="press grid h-9 w-9 place-items-center rounded-full bg-violet-tint text-violet-ink" aria-label={`Call ${item.title}`}>
                 <PhoneIcon width={17} height={17} />
               </a>
             )}

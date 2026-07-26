@@ -57,7 +57,7 @@ export function InstallHelp({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-4 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" onClick={onClose}>
       <div className="w-full max-w-sm rounded-card bg-paper p-6 shadow-card animate-rise-in" onClick={(e) => e.stopPropagation()}>
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-violet text-white shadow-float">
           <WandIcon width={24} height={24} />

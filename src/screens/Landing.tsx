@@ -73,7 +73,7 @@ export function Landing() {
               Stop chasing.
               <br />
               Start{' '}
-              <span className="relative inline-block text-violet">
+              <span className="relative inline-block text-violet-ink">
                 tallying.
                 <svg className="absolute -bottom-1.5 left-0 w-full" height="12" viewBox="0 0 200 12" fill="none" preserveAspectRatio="none">
                   <path d="M2 8C40 3 120 2 198 6" stroke="#6600FF" strokeWidth="4" strokeLinecap="round" opacity="0.4" />
@@ -126,7 +126,7 @@ export function Landing() {
               <p className="nums font-display text-[34px] font-extrabold leading-none">23</p>
               <p className="mt-1.5 text-[13px] font-semibold text-white/80">they owe you</p>
             </div>
-            <div className="flex-[8] bg-ink px-5 py-6 text-white">
+            <div className="flex-[8] bg-carbon px-5 py-6 text-white">
               <p className="nums font-display text-[34px] font-extrabold leading-none">8</p>
               <p className="mt-1.5 text-[13px] font-semibold text-white/70">you owe them</p>
             </div>
@@ -158,7 +158,7 @@ export function Landing() {
 
         {/* closing */}
         <section className="py-12">
-          <div className="overflow-hidden rounded-[26px] bg-ink px-7 py-10 text-paper sm:px-12">
+          <div className="overflow-hidden rounded-[26px] bg-carbon px-7 py-10 text-white sm:px-12">
             <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="font-display text-[26px] font-bold tracking-tight">See it for yourself</h3>
@@ -186,7 +186,7 @@ export function Landing() {
 function Trust({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <CheckIcon width={15} height={15} className="text-violet" />
+      <CheckIcon width={15} height={15} className="text-violet-ink" />
       {children}
     </span>
   )
@@ -195,7 +195,7 @@ function Trust({ children }: { children: React.ReactNode }) {
 function Feature({ Icon, title, children }: { Icon: (p: React.SVGProps<SVGSVGElement>) => JSX.Element; title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-card border border-line bg-paper p-5 transition hover:-translate-y-0.5 hover:shadow-card">
-      <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-tint text-violet">
+      <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-tint text-violet-ink">
         <Icon width={22} height={22} />
       </span>
       <h3 className="mt-4 font-display text-[17px] font-bold">{title}</h3>
@@ -224,7 +224,7 @@ function PhonePreview() {
         </div>
         <div className="flex gap-1.5 px-5 pb-2.5">
           {['All', 'Unread', 'Work'].map((c, k) => (
-            <span key={c} className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${k === 0 ? 'bg-ink text-white' : 'bg-wash text-ink-soft'}`}>{c}</span>
+            <span key={c} className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${k === 0 ? 'bg-carbon text-white' : 'bg-wash text-ink-soft'}`}>{c}</span>
           ))}
         </div>
         <div className="px-2 pb-3">
@@ -235,7 +235,7 @@ function PhonePreview() {
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="truncate text-[13px] font-semibold text-ink">{r.name}</span>
                   <span className="nums shrink-0 text-[10.5px] font-semibold">
-                    {r.them > 0 && <span className="text-violet">{r.them} for them</span>}
+                    {r.them > 0 && <span className="text-violet-ink">{r.them} for them</span>}
                     {r.them > 0 && r.you > 0 && <span className="text-ink-faint"> · </span>}
                     {r.you > 0 && <span className="text-ink-soft">{r.you} for you</span>}
                   </span>

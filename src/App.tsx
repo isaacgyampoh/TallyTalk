@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
 import { Shell } from '@/components/Shell'
 import { Landing } from '@/screens/Landing'
@@ -18,7 +19,7 @@ import { WandIcon } from '@/components/icons'
 function Splash() {
   return (
     <div className="app-frame items-center justify-center">
-      <div className="flex flex-col items-center gap-3 text-violet">
+      <div className="flex flex-col items-center gap-3 text-violet-ink">
         <span className="grid h-14 w-14 place-items-center rounded-2xl bg-violet text-white animate-wand">
           <WandIcon width={28} height={28} />
         </span>
@@ -69,12 +70,14 @@ function Gate() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <Gate />
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <Gate />
+          </ToastProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }

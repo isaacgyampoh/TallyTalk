@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="animate-rise-in flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-[13.5px] font-semibold text-paper shadow-card"
+            className="animate-rise-in flex items-center gap-2 rounded-full bg-carbon px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-card"
           >
             <span className={t.kind === 'poke' ? 'text-violet-glow' : 'text-done'}>
               {t.kind === 'poke' ? <WandIcon width={16} height={16} /> : <CheckIcon width={16} height={16} />}

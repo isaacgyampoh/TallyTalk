@@ -50,7 +50,7 @@ export function TodayScreen() {
             <p className="nums font-display text-[28px] font-extrabold leading-none">{totalThem}</p>
             <p className="mt-1 text-[12px] font-semibold text-white/80">owed to you</p>
           </div>
-          <div className="flex-1 bg-ink px-4 py-4 text-white" style={{ flexGrow: Math.max(1, totalYou) }}>
+          <div className="flex-1 bg-carbon px-4 py-4 text-white" style={{ flexGrow: Math.max(1, totalYou) }}>
             <p className="nums font-display text-[28px] font-extrabold leading-none">{totalYou}</p>
             <p className="mt-1 text-[12px] font-semibold text-white/70">you owe</p>
           </div>

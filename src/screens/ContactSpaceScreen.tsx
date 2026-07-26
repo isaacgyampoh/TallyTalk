@@ -131,7 +131,7 @@ export function ContactSpaceScreen() {
       </header>
 
       <div className="flex items-center justify-between px-5 py-2 text-[11px] font-semibold uppercase tracking-wide">
-        <span className="text-violet">{firstName} owes me</span>
+        <span className="text-violet-ink">{firstName} owes me</span>
         <span className="text-ink-faint">I owe {firstName}</span>
       </div>
 
@@ -204,11 +204,11 @@ export function ContactSpaceScreen() {
         {sheet && !recording && (
           <div className="mt-2 flex gap-2">
             <button onClick={addImage} className="press flex flex-1 items-center gap-2 rounded-2xl border border-line bg-paper px-4 py-3 text-[14px] font-semibold">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet"><ImageIcon width={18} height={18} /></span>
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet-ink"><ImageIcon width={18} height={18} /></span>
               Photo
             </button>
             <button onClick={addFile} className="press flex flex-1 items-center gap-2 rounded-2xl border border-line bg-paper px-4 py-3 text-[14px] font-semibold">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet"><DocIcon width={18} height={18} /></span>
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet-ink"><DocIcon width={18} height={18} /></span>
               Document
             </button>
           </div>
@@ -267,7 +267,7 @@ function Bubble({
     return (
       <div className={wrap}>
         <div className={`${shell} overflow-hidden p-1.5`}>
-          <div className="grid h-40 w-56 place-items-center rounded-[14px] bg-gradient-to-br from-violet/20 to-violet/5 text-violet">
+          <div className="grid h-40 w-56 place-items-center rounded-[14px] bg-gradient-to-br from-violet/20 to-violet/5 text-violet-ink">
             <ImageIcon width={34} height={34} />
           </div>
           <p className="px-2 py-1.5 text-[12.5px] text-ink-soft">{item.caption}</p>
@@ -323,7 +323,7 @@ function Bubble({
               {mine && !done && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onPoke() }}
-                  className="press ml-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-violet"
+                  className="press ml-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-ink"
                 >
                   <WandIcon width={13} height={13} /> Poke
                 </button>
@@ -338,8 +338,8 @@ function Bubble({
 
 function Chip({ children, tone = 'muted' }: { children: React.ReactNode; tone?: 'muted' | 'urgent' | 'high' | 'overdue' }) {
   const map = {
-    muted: 'bg-white/70 text-ink-soft',
-    urgent: 'bg-urgent/12 text-urgent',
+    muted: 'bg-ink/5 text-ink-soft',
+    urgent: 'bg-urgent/20 text-urgent',
     high: 'bg-violet/10 text-violet-ink',
     overdue: 'bg-overdue/12 text-overdue',
   }

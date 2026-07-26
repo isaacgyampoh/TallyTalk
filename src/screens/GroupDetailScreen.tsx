@@ -59,7 +59,7 @@ export function GroupDetailScreen() {
             key={t}
             onClick={() => setTab(t)}
             className={`press rounded-full px-3.5 py-1.5 text-[13px] font-semibold capitalize transition ${
-              tab === t ? 'bg-ink text-white' : 'bg-wash text-ink-soft'
+              tab === t ? 'bg-carbon text-white' : 'bg-wash text-ink-soft'
             }`}
           >
             {t}

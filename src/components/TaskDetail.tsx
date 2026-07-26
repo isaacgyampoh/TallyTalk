@@ -36,7 +36,7 @@ export function TaskDetail({
   const done = task.status === 'completed'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div
         className="animate-rise-in w-full max-w-[460px] rounded-t-[24px] bg-paper p-5 shadow-card sm:rounded-[24px]"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 16px)' }}
@@ -69,7 +69,7 @@ export function TaskDetail({
               key={p.value}
               onClick={() => onSetPriority(p.value)}
               className={`press rounded-full px-3 py-1.5 text-[12.5px] font-semibold ${
-                task.priority === p.value ? 'bg-ink text-white' : 'bg-wash text-ink-soft'
+                task.priority === p.value ? 'bg-carbon text-white' : 'bg-wash text-ink-soft'
               }`}
             >
               {p.label}
@@ -85,7 +85,7 @@ export function TaskDetail({
               key={e.value}
               onClick={() => onSetExpected(e.label)}
               className={`press rounded-full px-3 py-1.5 text-[12.5px] font-semibold ${
-                task.expected === e.label ? 'bg-ink text-white' : 'bg-wash text-ink-soft'
+                task.expected === e.label ? 'bg-carbon text-white' : 'bg-wash text-ink-soft'
               }`}
             >
               {e.label}

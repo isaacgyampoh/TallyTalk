@@ -1,25 +1,27 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Brief: predominantly black-on-white with a #6600FF accent.
-        paper: '#FFFFFF',
+        // Themeable neutrals (flip in dark mode via CSS vars in index.css).
+        paper: 'rgb(var(--c-paper) / <alpha-value>)',
         ink: {
-          DEFAULT: '#111114', // primary text
-          soft: '#4B4B55', // secondary text
-          faint: '#8A8A96', // tertiary / meta
+          DEFAULT: 'rgb(var(--c-ink) / <alpha-value>)',
+          soft: 'rgb(var(--c-ink-soft) / <alpha-value>)',
+          faint: 'rgb(var(--c-ink-faint) / <alpha-value>)',
         },
-        line: '#ECECF1', // hairline dividers / borders
-        wash: '#F6F5FA', // subtle surface fill
+        line: 'rgb(var(--c-line) / <alpha-value>)',
+        wash: 'rgb(var(--c-wash) / <alpha-value>)',
+        // Fixed strong-contrast surface (never flips) — chips, bands, toasts.
+        carbon: '#111114',
         violet: {
-          DEFAULT: '#6600FF', // the accent — actions, "owed to me", the wand
-          ink: '#4700B3', // pressed / text-on-tint
-          tint: '#F1EAFF', // soft violet surface
-          glow: '#8A3BFF', // wand glitter highlight
+          DEFAULT: '#6600FF',
+          ink: 'rgb(var(--c-violet-ink) / <alpha-value>)',
+          tint: 'rgb(var(--c-violet-tint) / <alpha-value>)',
+          glow: '#8A3BFF',
         },
-        // accountability semantics
         overdue: '#E5484D',
         urgent: '#F76808',
         done: '#30A46C',
