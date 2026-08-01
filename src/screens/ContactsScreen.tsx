@@ -87,8 +87,8 @@ export function ContactsScreen() {
       </div>
 
       <ul className="flex-1 overflow-y-auto px-2 pb-24">
-        {rows.map((c) => (
-          <li key={c.id}>
+        {rows.map((c, i) => (
+          <li key={c.id} className="animate-rise-in" style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}>
             <button
               onClick={() => nav(`/contacts/${c.id}`)}
               className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash"

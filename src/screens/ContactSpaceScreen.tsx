@@ -11,6 +11,7 @@ import {
 } from '@/components/icons'
 import { TASK_TITLE_MAX, type Priority } from '@/lib/config'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
+import { getDemoTasks } from '@/lib/demoStore'
 
 type Item =
   | ({ kind: 'task' } & SampleTask & { mine: boolean })
@@ -28,6 +29,7 @@ export function ContactSpaceScreen() {
     ...contact.tasks
       .filter((t) => t.status !== 'completed')
       .map((t) => ({ kind: 'task' as const, ...t, mine: t.direction === 'they_owe_me' })),
+    ...getDemoTasks(contact.id).map((t) => ({ kind: 'task' as const, ...t, mine: t.direction === 'they_owe_me' })),
   ]
   if (contact.id === 'ben') {
     seed.splice(1, 0, { kind: 'voice', id: 'v-seed', mine: false, duration: 8 })

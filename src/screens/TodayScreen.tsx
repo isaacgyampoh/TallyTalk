@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
+import { SmartAdd } from '@/components/SmartAdd'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
 
 interface Row extends SampleTask {
@@ -43,6 +44,10 @@ export function TodayScreen() {
       <ScreenHeader title="Today" />
       <div className="flex-1 overflow-y-auto px-5 pb-24">
         <p className="-mt-1 mb-4 text-[13.5px] text-ink-faint">{today}</p>
+
+        <div className="mb-5">
+          <SmartAdd />
+        </div>
 
         {/* running tally */}
         <div className="flex overflow-hidden rounded-[18px] border border-line">
@@ -90,11 +95,12 @@ function Section({
         <p className="rounded-2xl bg-wash px-4 py-3 text-[13.5px] text-ink-faint">{empty}</p>
       ) : (
         <div className="space-y-1">
-          {rows.map((r) => (
+          {rows.map((r, i) => (
             <button
               key={r.id}
               onClick={() => nav(`/contacts/${r.contactId}`)}
-              className="press flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left hover:bg-wash"
+              className="press animate-rise-in flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left hover:bg-wash"
+              style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}
             >
               <Avatar initials={r.initials} color={r.color} size={38} />
               <div className="min-w-0 flex-1">

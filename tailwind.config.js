@@ -47,6 +47,15 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'page-in': {
+          '0%': { opacity: '0', transform: 'translateY(10px) scale(0.995)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        'pop-in': {
+          '0%': { opacity: '0', transform: 'scale(0.9)' },
+          '60%': { transform: 'scale(1.03)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
         'poke-lift': {
           '0%': { transform: 'translateY(0)', background: '#FFFFFF' },
           '30%': { transform: 'translateY(-4px)', background: '#F1EAFF' },
@@ -56,6 +65,8 @@ export default {
       animation: {
         wand: 'wand-glitter 1.4s ease-in-out infinite',
         'rise-in': 'rise-in 0.28s ease-out both',
+        'page-in': 'page-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'pop-in': 'pop-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both',
         poke: 'poke-lift 0.9s ease-out',
       },
     },
