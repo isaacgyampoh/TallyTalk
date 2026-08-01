@@ -75,9 +75,50 @@
 }
 
 @layer components {
-  /* The app renders inside a phone-width column, centered on larger screens. */
+  /* The routed app fills its container (the device on desktop, the screen on mobile). */
   .app-frame {
-    @apply mx-auto flex h-full w-full max-w-[460px] flex-col bg-paper;
+    @apply flex h-full w-full flex-col bg-paper;
+  }
+
+  /* Backdrop behind the app on tablet/desktop; full-bleed on phones. */
+  .app-viewport {
+    height: 100%;
+    width: 100%;
+  }
+
+  .app-device {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: rgb(var(--c-paper));
+  }
+
+  @media (min-width: 768px) {
+    .app-viewport {
+      display: grid;
+      place-items: center;
+      min-height: 100dvh;
+      padding: 28px;
+      background:
+        radial-gradient(70% 55% at 50% -8%, rgb(var(--c-violet-tint) / 0.9), transparent 60%),
+        rgb(var(--c-wash));
+    }
+
+    .app-device {
+      position: relative;
+      /* transform makes this the containing block, keeping fixed overlays
+         (modals, toasts) inside the phone frame instead of the whole window. */
+      transform: translateZ(0);
+      width: 424px;
+      height: min(92vh, 900px);
+      border-radius: 42px;
+      overflow: hidden;
+      border: 10px solid #0c0c10;
+      box-shadow:
+        0 50px 90px -34px rgba(102, 0, 255, 0.5),
+        0 12px 30px -12px rgba(0, 0, 0, 0.35);
+    }
   }
 
   .press {

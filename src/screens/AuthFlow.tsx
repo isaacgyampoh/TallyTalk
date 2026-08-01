@@ -51,12 +51,12 @@ export function AuthFlow() {
           {step === 'phone' ? (
             <div className="animate-rise-in">
               <button
-                className="press mb-6 inline-flex items-center gap-1 text-[14px] font-semibold text-ink-soft"
+                className="press mb-10 flex w-fit items-center gap-1 text-[14px] font-semibold text-ink-soft"
                 onClick={() => nav('/')}
               >
                 <BackIcon width={18} height={18} /> Back
               </button>
-              <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-violet text-white shadow-float">
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet text-white shadow-float">
                 <WandIcon width={28} height={28} />
               </div>
               <h1 className="font-display text-[40px] font-bold leading-[1.02] tracking-tight">

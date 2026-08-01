@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
+import { AppViewport } from '@/components/AppViewport'
 import { Shell } from '@/components/Shell'
 import { Landing } from '@/screens/Landing'
 import { AuthFlow } from '@/screens/AuthFlow'
@@ -31,40 +32,42 @@ function Splash() {
 
 function Gate() {
   const { ready, signedIn } = useAuth()
-  if (!ready) return <Splash />
+  if (!ready) return <AppViewport><Splash /></AppViewport>
 
   if (!signedIn) {
     return (
       <Routes>
-        <Route path="/signin" element={<AuthFlow />} />
+        <Route path="/signin" element={<AppViewport><AuthFlow /></AppViewport>} />
         <Route path="*" element={<Landing />} />
       </Routes>
     )
   }
 
   return (
-    <Routes>
-      {/* Full-screen detail views (no bottom nav), like a chat thread. */}
-      <Route path="/contacts/:id" element={<ContactSpaceScreen />} />
-      <Route path="/personal/:key" element={<ChecklistDetailScreen />} />
-      <Route path="/groups/:id" element={<GroupDetailScreen />} />
+    <AppViewport>
+      <Routes>
+        {/* Full-screen detail views (no bottom nav), like a chat thread. */}
+        <Route path="/contacts/:id" element={<ContactSpaceScreen />} />
+        <Route path="/personal/:key" element={<ChecklistDetailScreen />} />
+        <Route path="/groups/:id" element={<GroupDetailScreen />} />
 
-      <Route
-        path="/*"
-        element={
-          <Shell>
-            <Routes>
-              <Route path="/today" element={<TodayScreen />} />
-              <Route path="/contacts" element={<ContactsScreen />} />
-              <Route path="/personal" element={<PersonalScreen />} />
-              <Route path="/groups" element={<GroupsScreen />} />
-              <Route path="/profile" element={<ProfileScreen />} />
-              <Route path="*" element={<Navigate to="/today" replace />} />
-            </Routes>
-          </Shell>
-        }
-      />
-    </Routes>
+        <Route
+          path="/*"
+          element={
+            <Shell>
+              <Routes>
+                <Route path="/today" element={<TodayScreen />} />
+                <Route path="/contacts" element={<ContactsScreen />} />
+                <Route path="/personal" element={<PersonalScreen />} />
+                <Route path="/groups" element={<GroupsScreen />} />
+                <Route path="/profile" element={<ProfileScreen />} />
+                <Route path="*" element={<Navigate to="/today" replace />} />
+              </Routes>
+            </Shell>
+          }
+        />
+      </Routes>
+    </AppViewport>
   )
 }
 
