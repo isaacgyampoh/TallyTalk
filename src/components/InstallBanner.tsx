@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
+import { isNative } from '@/lib/platform'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon } from './icons'
 
@@ -11,7 +12,7 @@ export function InstallBanner() {
   )
   const [showHelp, setShowHelp] = useState(false)
 
-  if (installed || dismissed) return null
+  if (isNative || installed || dismissed) return null
 
   function dismiss() {
     sessionStorage.setItem('tt.bannerDismissed', '1')

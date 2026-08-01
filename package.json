@@ -8,9 +8,24 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "sync": "npm run build && npx cap sync",
+    "android": "npm run build && npx cap sync android && npx cap open android",
+    "ios": "npm run build && npx cap sync ios && npx cap open ios",
+    "assets": "npx @capacitor/assets generate --iconBackgroundColor #6600FF --iconBackgroundColorDark #6600FF --splashBackgroundColor #ffffff --splashBackgroundColorDark #14141a"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@fontsource-variable/bricolage-grotesque": "^5.1.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.1.0",
     "@supabase/supabase-js": "^2.45.4",
@@ -19,6 +34,8 @@
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@types/node": "^22.7.4",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
@@ -26,7 +43,6 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.5.4",
-    "@types/node": "^22.7.4",
     "vite": "^5.4.8",
     "vite-plugin-pwa": "^0.20.5"
   }

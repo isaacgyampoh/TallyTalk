@@ -95,7 +95,7 @@
   }
 
   @media (min-width: 768px) {
-    .app-viewport {
+    html:not(.native) .app-viewport {
       display: grid;
       place-items: center;
       min-height: 100dvh;
@@ -105,7 +105,7 @@
         rgb(var(--c-wash));
     }
 
-    .app-device {
+    html:not(.native) .app-device {
       position: relative;
       /* transform makes this the containing block, keeping fixed overlays
          (modals, toasts) inside the phone frame instead of the whole window. */

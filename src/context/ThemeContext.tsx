@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { initNative, syncStatusBar } from '@/lib/platform'
 
 export type ThemePref = 'system' | 'light' | 'dark'
 
@@ -38,7 +39,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     apply(resolved)
+    syncStatusBar(resolved)
   }, [resolved])
+
+  useEffect(() => {
+    initNative(resolved)
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const setTheme = (t: ThemePref) => {
     localStorage.setItem(KEY, t)

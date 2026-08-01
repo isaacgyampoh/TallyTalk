@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
+import { isNative } from '@/lib/platform'
 import { APP_NAME } from '@/lib/config'
 import { InstallHelp } from '@/components/InstallBanner'
 import { WandIcon, ContactsIcon, PersonalIcon, GroupsIcon, CheckIcon } from '@/components/icons'
@@ -14,17 +15,18 @@ export function Landing() {
   const { enterPreview } = useAuth()
   const { canInstall, promptInstall, installed, isIOS } = useInstallPrompt()
   const [showInstall, setShowInstall] = useState(false)
+  const hideInstall = installed || isNative
 
   // Nudge install on first arrival (once per session), as requested.
   useEffect(() => {
-    if (installed) return
+    if (hideInstall) return
     if (sessionStorage.getItem('tt.installNudge')) return
     const t = setTimeout(() => {
       sessionStorage.setItem('tt.installNudge', '1')
       setShowInstall(true)
     }, 1400)
     return () => clearTimeout(t)
-  }, [installed])
+  }, [hideInstall])
 
   function tryDemo() {
     enterPreview()
@@ -47,7 +49,7 @@ export function Landing() {
             <span className="font-display text-[19px] font-bold tracking-tight">{APP_NAME}</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {!installed && (
+            {!hideInstall && (
               <button onClick={onInstall} className="press rounded-full bg-violet-tint px-4 py-2 text-[13.5px] font-semibold text-violet-ink">
                 Install app
               </button>
@@ -89,7 +91,7 @@ export function Landing() {
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <button onClick={tryDemo} className="btn-primary px-7 text-[15.5px]">Open the demo</button>
-              {!installed && <button onClick={onInstall} className="btn-ghost px-6">Install app</button>}
+              {!hideInstall && <button onClick={onInstall} className="btn-ghost px-6">Install app</button>}
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-medium text-ink-faint">
