@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { BackIcon, CheckIcon, PhoneIcon, PlusIcon } from '@/components/icons'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
 import { SAMPLE_CHECKLIST_ITEMS, type ChecklistItem } from '@/lib/sampleData'
+import { getCustomList } from '@/lib/demoStore'
 
 const listColor = (key: string) => {
   const i = PREDEFINED_CHECKLISTS.findIndex((l) => l.key === key)
@@ -13,7 +14,8 @@ export function ChecklistDetailScreen() {
   const nav = useNavigate()
   const { key = '' } = useParams()
   const meta = PREDEFINED_CHECKLISTS.find((l) => l.key === key)
-  const title = meta?.title ?? 'Checklist'
+  const custom = meta ? undefined : getCustomList(key)
+  const title = meta?.title ?? custom?.title ?? 'Checklist'
   const behavior = meta?.behavior ?? 'normal'
   const color = listColor(key)
 

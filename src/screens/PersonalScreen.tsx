@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/Shell'
+import { NameSheet } from '@/components/NameSheet'
 import { PlusIcon } from '@/components/icons'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
+import { addCustomList, getCustomLists } from '@/lib/demoStore'
 
-// Sample counts so the concept reads on first run.
 const sampleCounts: Record<string, { open: number; done: number }> = {
   daily: { open: 3, done: 5 },
   call: { open: 2, done: 0 },
@@ -18,6 +20,9 @@ const listColor = (i: number) =>
 
 export function PersonalScreen() {
   const nav = useNavigate()
+  const [creating, setCreating] = useState(false)
+  const customLists = getCustomLists()
+
   return (
     <div className="relative flex h-full flex-col">
       <ScreenHeader title="Personal" />
@@ -26,15 +31,29 @@ export function PersonalScreen() {
       </p>
 
       <ul className="flex-1 overflow-y-auto px-3 pb-24">
+        {customLists.map((list, i) => (
+          <li key={list.id}>
+            <button onClick={() => nav(`/personal/${list.id}`)} className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white" style={{ background: listColor(i) }}>
+                {list.title[0]?.toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-ink">{list.title}</span>
+                  <Meta>custom</Meta>
+                </div>
+                <p className="nums mt-0.5 text-[13px] text-ink-faint">nothing pending</p>
+              </div>
+            </button>
+          </li>
+        ))}
+
         {PREDEFINED_CHECKLISTS.map((list, i) => {
           const counts = sampleCounts[list.key] ?? { open: 0, done: 0 }
           return (
             <li key={list.key}>
               <button onClick={() => nav(`/personal/${list.key}`)} className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash">
-                <span
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white"
-                  style={{ background: listColor(i) }}
-                >
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white" style={{ background: listColor(i) }}>
                   {list.title[0]}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -61,11 +80,26 @@ export function PersonalScreen() {
       </ul>
 
       <button
+        onClick={() => setCreating(true)}
         className="press absolute bottom-5 right-5 inline-flex h-12 items-center gap-1.5 rounded-full bg-violet px-5 text-[14px] font-semibold text-white shadow-float"
         aria-label="Add a custom list"
       >
         <PlusIcon width={20} height={20} /> Custom list
       </button>
+
+      {creating && (
+        <NameSheet
+          title="New checklist"
+          placeholder="e.g. Weekend chores"
+          cta="Create list"
+          onClose={() => setCreating(false)}
+          onCreate={(name) => {
+            const id = addCustomList(name)
+            setCreating(false)
+            nav(`/personal/${id}`)
+          }}
+        />
+      )}
     </div>
   )
 }

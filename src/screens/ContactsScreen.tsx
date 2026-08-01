@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
-import { SearchIcon, PlusIcon } from '@/components/icons'
+import { SearchIcon, PlusIcon, CloseIcon } from '@/components/icons'
 import { SAMPLE_CONTACTS, type SampleContact } from '@/lib/sampleData'
 
 const FILTERS = ['All', 'Unread', 'Work', 'Favorites', 'Urgent', 'Overdue', 'Newest'] as const
@@ -41,6 +41,7 @@ export function ContactsScreen() {
   const [filter, setFilter] = useState<Filter>('All')
   const [q, setQ] = useState('')
   const [showSearch, setShowSearch] = useState(false)
+  const [picking, setPicking] = useState(false)
 
   const rows = useMemo(() => applyFilter(SAMPLE_CONTACTS, filter, q), [filter, q])
 
@@ -129,10 +130,40 @@ export function ContactsScreen() {
       <button
         className="press absolute bottom-5 right-5 grid h-14 w-14 place-items-center rounded-full bg-violet text-white shadow-float"
         aria-label="New request"
-        onClick={() => nav('/contacts/ben')}
+        onClick={() => setPicking(true)}
       >
         <PlusIcon width={26} height={26} />
       </button>
+
+      {picking && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={() => setPicking(false)}>
+          <div
+            className="animate-rise-in w-full max-w-[460px] rounded-t-[24px] bg-paper p-5 shadow-card sm:rounded-[24px]"
+            style={{ paddingBottom: 'calc(var(--safe-bottom) + 16px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-[19px] font-bold">New request</h2>
+              <button onClick={() => setPicking(false)} className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint" aria-label="Close">
+                <CloseIcon width={18} height={18} />
+              </button>
+            </div>
+            <p className="mb-3 text-[13.5px] text-ink-soft">Who do you want to send a task to?</p>
+            <div className="max-h-[46vh] overflow-y-auto">
+              {SAMPLE_CONTACTS.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => nav(`/contacts/${c.id}`)}
+                  className="press flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left hover:bg-wash"
+                >
+                  <Avatar initials={c.initials} color={c.color} size={40} />
+                  <span className="font-semibold text-ink">{c.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

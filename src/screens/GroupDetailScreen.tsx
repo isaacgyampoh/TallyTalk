@@ -3,11 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Avatar } from '@/components/Avatar'
 import { BackIcon, CheckIcon, PlusIcon } from '@/components/icons'
 import { SAMPLE_GROUPS, type GroupTask } from '@/lib/sampleData'
+import { getCustomGroup } from '@/lib/demoStore'
 
 export function GroupDetailScreen() {
   const nav = useNavigate()
   const { id } = useParams()
-  const group = SAMPLE_GROUPS.find((g) => g.id === id) ?? SAMPLE_GROUPS[0]
+  const group = SAMPLE_GROUPS.find((g) => g.id === id) ?? getCustomGroup(id ?? '') ?? SAMPLE_GROUPS[0]
 
   const [tab, setTab] = useState<'tasks' | 'members'>('tasks')
   const [tasks, setTasks] = useState<GroupTask[]>(group.tasks)
