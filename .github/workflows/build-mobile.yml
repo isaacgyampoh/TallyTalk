@@ -28,16 +28,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web + sync to Android
-        run: |
-          npm run build
-          npx cap sync android
+      - name: Build web
+        run: npm run build
+
+      - name: Copy web assets to Android
+        run: npx cap copy android
 
       - name: Build debug APK
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -60,10 +61,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web + sync to iOS
+      - name: Build web
+        run: npm run build
+
+      - name: Copy web assets to iOS
+        run: npx cap copy ios
+
+      - name: Install CocoaPods
         run: |
-          npm run build
-          npx cap sync ios
+          cd ios/App
+          pod install
 
       - name: Compile (unsigned)
         run: |
