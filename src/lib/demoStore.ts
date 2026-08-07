@@ -40,7 +40,9 @@ export function addCustomGroup(name: string): SampleGroup {
     done: 0,
     color: '#6600FF',
     description: 'Your new group — add members and shared tasks.',
-    memberList: [{ id: 'you', name: 'You', initials: 'IS', color: '#6600FF', role: 'administrator' }],
+    memberList: [
+      { id: 'you', name: 'You', initials: 'IS', color: '#6600FF', role: 'administrator' },
+    ],
     tasks: [],
   }
   customGroups.unshift(g)

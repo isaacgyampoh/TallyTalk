@@ -6,8 +6,16 @@ import { TaskDetail, type DetailTask } from '@/components/TaskDetail'
 import { useToast } from '@/components/Toast'
 import { buzz } from '@/lib/haptics'
 import {
-  BackIcon, CheckIcon, PlusIcon, WandIcon, MicIcon, PaperclipIcon,
-  ImageIcon, DocIcon, StopIcon, CloseIcon,
+  BackIcon,
+  CheckIcon,
+  PlusIcon,
+  WandIcon,
+  MicIcon,
+  PaperclipIcon,
+  ImageIcon,
+  DocIcon,
+  StopIcon,
+  CloseIcon,
 } from '@/components/icons'
 import { TASK_TITLE_MAX, type Priority } from '@/lib/config'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
@@ -29,11 +37,21 @@ export function ContactSpaceScreen() {
     ...contact.tasks
       .filter((t) => t.status !== 'completed')
       .map((t) => ({ kind: 'task' as const, ...t, mine: t.direction === 'they_owe_me' })),
-    ...getDemoTasks(contact.id).map((t) => ({ kind: 'task' as const, ...t, mine: t.direction === 'they_owe_me' })),
+    ...getDemoTasks(contact.id).map((t) => ({
+      kind: 'task' as const,
+      ...t,
+      mine: t.direction === 'they_owe_me',
+    })),
   ]
   if (contact.id === 'ben') {
     seed.splice(1, 0, { kind: 'voice', id: 'v-seed', mine: false, duration: 8 })
-    seed.splice(3, 0, { kind: 'file', id: 'f-seed', mine: true, name: 'Ecobank-agreement.pdf', size: '240 KB' })
+    seed.splice(3, 0, {
+      kind: 'file',
+      id: 'f-seed',
+      mine: true,
+      name: 'Ecobank-agreement.pdf',
+      size: '240 KB',
+    })
   }
 
   const [items, setItems] = useState<Item[]>(seed)
@@ -48,11 +66,12 @@ export function ContactSpaceScreen() {
   const toast = useToast()
 
   const openTask = items.find((it) => it.kind === 'task' && it.id === openTaskId) as
-    | (Item & { kind: 'task' })
-    | undefined
+    (Item & { kind: 'task' }) | undefined
 
   function updateTask(id: string, patch: Partial<SampleTask>) {
-    setItems((prev) => prev.map((it) => (it.kind === 'task' && it.id === id ? { ...it, ...patch } : it)))
+    setItems((prev) =>
+      prev.map((it) => (it.kind === 'task' && it.id === id ? { ...it, ...patch } : it)),
+    )
   }
   function removeItem(id: string) {
     setItems((prev) => prev.filter((it) => it.id !== id))
@@ -82,7 +101,16 @@ export function ContactSpaceScreen() {
   function sendTask() {
     const title = draft.trim()
     if (!title) return
-    push({ kind: 'task', id: `t-${Date.now()}`, title, direction: 'they_owe_me', status: 'pending_acceptance', priority: 'normal', expected: 'This Week', mine: true })
+    push({
+      kind: 'task',
+      id: `t-${Date.now()}`,
+      title,
+      direction: 'they_owe_me',
+      status: 'pending_acceptance',
+      priority: 'normal',
+      expected: 'This Week',
+      mine: true,
+    })
     setDraft('')
   }
 
@@ -102,7 +130,13 @@ export function ContactSpaceScreen() {
     setSheet(false)
   }
   function addFile() {
-    push({ kind: 'file', id: `file-${Date.now()}`, mine: true, name: 'Document.pdf', size: '180 KB' })
+    push({
+      kind: 'file',
+      id: `file-${Date.now()}`,
+      mine: true,
+      name: 'Document.pdf',
+      size: '180 KB',
+    })
     setSheet(false)
   }
 
@@ -121,14 +155,25 @@ export function ContactSpaceScreen() {
 
   return (
     <div className="app-frame">
-      <header className="flex items-center gap-3 border-b border-line px-4 pb-3" style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}>
-        <button className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft" onClick={() => nav(-1)} aria-label="Back">
+      <header
+        className="flex items-center gap-3 border-b border-line px-4 pb-3"
+        style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}
+      >
+        <button
+          className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
+          onClick={() => nav(-1)}
+          aria-label="Back"
+        >
           <BackIcon />
         </button>
         <Avatar initials={contact.initials} color={contact.color} size={38} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-[17px] font-bold leading-tight">{contact.name}</p>
-          <p className="nums text-[12.5px] text-ink-faint">{contact.forThem} for {firstName} · {contact.forYou} for you</p>
+          <p className="truncate font-display text-[17px] font-bold leading-tight">
+            {contact.name}
+          </p>
+          <p className="nums text-[12.5px] text-ink-faint">
+            {contact.forThem} for {firstName} · {contact.forYou} for you
+          </p>
         </div>
       </header>
 
@@ -158,23 +203,38 @@ export function ContactSpaceScreen() {
       </div>
 
       {/* composer */}
-      <div className="border-t border-line px-3 pt-2" style={{ paddingBottom: 'calc(var(--safe-bottom) + 10px)' }}>
+      <div
+        className="border-t border-line px-3 pt-2"
+        style={{ paddingBottom: 'calc(var(--safe-bottom) + 10px)' }}
+      >
         {recording ? (
           <div className="flex items-center gap-3 rounded-bubble bg-overdue/10 px-4 py-3">
             <span className="h-3 w-3 animate-pulse rounded-full bg-overdue" />
             <span className="nums flex-1 text-[14px] font-semibold text-overdue">
               Recording… 0:{String(elapsed).padStart(2, '0')}
             </span>
-            <button onClick={() => stopRec(false)} className="press grid h-9 w-9 place-items-center rounded-full bg-wash text-ink-soft" aria-label="Cancel">
+            <button
+              onClick={() => stopRec(false)}
+              className="press grid h-9 w-9 place-items-center rounded-full bg-wash text-ink-soft"
+              aria-label="Cancel"
+            >
               <CloseIcon width={18} height={18} />
             </button>
-            <button onClick={() => stopRec(true)} className="press grid h-10 w-10 place-items-center rounded-full bg-violet text-white shadow-float" aria-label="Send voice note">
+            <button
+              onClick={() => stopRec(true)}
+              className="press grid h-10 w-10 place-items-center rounded-full bg-violet text-white shadow-float"
+              aria-label="Send voice note"
+            >
               <StopIcon width={18} height={18} />
             </button>
           </div>
         ) : (
           <div className="flex items-end gap-2">
-            <button onClick={() => setSheet((s) => !s)} className="press mb-0.5 grid h-11 w-10 shrink-0 place-items-center rounded-full text-ink-soft" aria-label="Attach">
+            <button
+              onClick={() => setSheet((s) => !s)}
+              className="press mb-0.5 grid h-11 w-10 shrink-0 place-items-center rounded-full text-ink-soft"
+              aria-label="Attach"
+            >
               <PaperclipIcon width={22} height={22} />
             </button>
             <div className="flex-1 rounded-bubble border border-line bg-wash px-3 py-2 focus-within:border-violet focus-within:bg-paper">
@@ -187,16 +247,28 @@ export function ContactSpaceScreen() {
                 aria-label="New task request"
               />
               <div className="mt-0.5 flex items-center justify-between">
-                <span className="text-[11px] text-ink-faint">Task · attach a file · or hold to talk</span>
-                <span className="nums text-[11px] text-ink-faint">{draft.length}/{TASK_TITLE_MAX}</span>
+                <span className="text-[11px] text-ink-faint">
+                  Task · attach a file · or hold to talk
+                </span>
+                <span className="nums text-[11px] text-ink-faint">
+                  {draft.length}/{TASK_TITLE_MAX}
+                </span>
               </div>
             </div>
             {draft.trim() ? (
-              <button onClick={sendTask} className="press grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet text-white shadow-float" aria-label="Send request">
+              <button
+                onClick={sendTask}
+                className="press grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet text-white shadow-float"
+                aria-label="Send request"
+              >
                 <PlusIcon width={22} height={22} />
               </button>
             ) : (
-              <button onClick={startRec} className="press grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet text-white shadow-float" aria-label="Record voice note">
+              <button
+                onClick={startRec}
+                className="press grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet text-white shadow-float"
+                aria-label="Record voice note"
+              >
                 <MicIcon width={21} height={21} />
               </button>
             )}
@@ -205,12 +277,22 @@ export function ContactSpaceScreen() {
 
         {sheet && !recording && (
           <div className="mt-2 flex gap-2">
-            <button onClick={addImage} className="press flex flex-1 items-center gap-2 rounded-2xl border border-line bg-paper px-4 py-3 text-[14px] font-semibold">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet-ink"><ImageIcon width={18} height={18} /></span>
+            <button
+              onClick={addImage}
+              className="press flex flex-1 items-center gap-2 rounded-2xl border border-line bg-paper px-4 py-3 text-[14px] font-semibold"
+            >
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet-ink">
+                <ImageIcon width={18} height={18} />
+              </span>
               Photo
             </button>
-            <button onClick={addFile} className="press flex flex-1 items-center gap-2 rounded-2xl border border-line bg-paper px-4 py-3 text-[14px] font-semibold">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet-ink"><DocIcon width={18} height={18} /></span>
+            <button
+              onClick={addFile}
+              className="press flex flex-1 items-center gap-2 rounded-2xl border border-line bg-paper px-4 py-3 text-[14px] font-semibold"
+            >
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet-ink">
+                <DocIcon width={18} height={18} />
+              </span>
               Document
             </button>
           </div>
@@ -222,12 +304,34 @@ export function ContactSpaceScreen() {
           task={openTask as DetailTask}
           peer={firstName}
           onClose={() => setOpenTaskId(null)}
-          onAccept={() => { updateTask(openTask.id, { status: 'active' }); buzz(15); toast('Task accepted', 'success'); setOpenTaskId(null) }}
-          onDecline={() => { removeItem(openTask.id); setOpenTaskId(null) }}
-          onComplete={() => { updateTask(openTask.id, { status: 'completed' }); buzz(15); toast('Marked done', 'success'); setOpenTaskId(null) }}
-          onReopen={() => { updateTask(openTask.id, { status: 'active' }); setOpenTaskId(null) }}
-          onCancel={() => { removeItem(openTask.id); setOpenTaskId(null) }}
-          onPoke={() => { poke(openTask.id); setOpenTaskId(null) }}
+          onAccept={() => {
+            updateTask(openTask.id, { status: 'active' })
+            buzz(15)
+            toast('Task accepted', 'success')
+            setOpenTaskId(null)
+          }}
+          onDecline={() => {
+            removeItem(openTask.id)
+            setOpenTaskId(null)
+          }}
+          onComplete={() => {
+            updateTask(openTask.id, { status: 'completed' })
+            buzz(15)
+            toast('Marked done', 'success')
+            setOpenTaskId(null)
+          }}
+          onReopen={() => {
+            updateTask(openTask.id, { status: 'active' })
+            setOpenTaskId(null)
+          }}
+          onCancel={() => {
+            removeItem(openTask.id)
+            setOpenTaskId(null)
+          }}
+          onPoke={() => {
+            poke(openTask.id)
+            setOpenTaskId(null)
+          }}
           onSetPriority={(p: Priority) => updateTask(openTask.id, { priority: p })}
           onSetExpected={(e: string) => updateTask(openTask.id, { expected: e })}
         />
@@ -258,7 +362,9 @@ function Bubble({
   if (item.kind === 'voice') {
     return (
       <div className={wrap}>
-        <div className={`${mine ? 'bg-violet' : 'border border-line bg-paper'} max-w-[82%] rounded-bubble px-3.5 py-3 shadow-card`}>
+        <div
+          className={`${mine ? 'bg-violet' : 'border border-line bg-paper'} max-w-[82%] rounded-bubble px-3.5 py-3 shadow-card`}
+        >
           <VoiceNote duration={item.duration} mine={mine} />
         </div>
       </div>
@@ -282,7 +388,9 @@ function Bubble({
     return (
       <div className={wrap}>
         <div className={`${shell} flex items-center gap-3 px-3 py-3`}>
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet text-white"><DocIcon width={20} height={20} /></span>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet text-white">
+            <DocIcon width={20} height={20} />
+          </span>
           <div className="min-w-0">
             <p className="truncate text-[14px] font-semibold text-ink">{item.name}</p>
             <p className="nums text-[12px] text-ink-faint">{item.size} · PDF</p>
@@ -308,14 +416,21 @@ function Bubble({
         )}
         <div className="flex items-start gap-2.5">
           <button
-            onClick={(e) => { e.stopPropagation(); onToggle() }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
             className={`press mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${done ? 'border-done bg-done text-white' : 'border-ink-faint text-transparent'}`}
             aria-label={done ? 'Mark active' : 'Mark complete'}
           >
             <CheckIcon width={14} height={14} />
           </button>
           <div className="min-w-0">
-            <p className={`text-[15px] leading-snug ${done ? 'text-ink-faint line-through' : 'text-ink'}`}>{item.title}</p>
+            <p
+              className={`text-[15px] leading-snug ${done ? 'text-ink-faint line-through' : 'text-ink'}`}
+            >
+              {item.title}
+            </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               {pending && <Chip>Pending {mine ? peer : 'your'} acceptance</Chip>}
               {item.priority === 'urgent' && <Chip tone="urgent">Urgent</Chip>}
@@ -324,7 +439,10 @@ function Bubble({
               {item.overdue && <Chip tone="overdue">Overdue</Chip>}
               {mine && !done && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onPoke() }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onPoke()
+                  }}
                   className="press ml-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-ink"
                 >
                   <WandIcon width={13} height={13} /> Poke
@@ -338,12 +456,22 @@ function Bubble({
   )
 }
 
-function Chip({ children, tone = 'muted' }: { children: React.ReactNode; tone?: 'muted' | 'urgent' | 'high' | 'overdue' }) {
+function Chip({
+  children,
+  tone = 'muted',
+}: {
+  children: React.ReactNode
+  tone?: 'muted' | 'urgent' | 'high' | 'overdue'
+}) {
   const map = {
     muted: 'bg-ink/5 text-ink-soft',
     urgent: 'bg-urgent/20 text-urgent',
     high: 'bg-violet/10 text-violet-ink',
     overdue: 'bg-overdue/12 text-overdue',
   }
-  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${map[tone]}`}>{children}</span>
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${map[tone]}`}>
+      {children}
+    </span>
+  )
 }

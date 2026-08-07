@@ -45,7 +45,10 @@ export function AuthFlow() {
 
   return (
     <div className="app-frame">
-      <div className="flex flex-1 flex-col px-6" style={{ paddingTop: 'calc(var(--safe-top) + 20px)' }}>
+      <div
+        className="flex flex-1 flex-col px-6"
+        style={{ paddingTop: 'calc(var(--safe-top) + 20px)' }}
+      >
         {/* Brand hero — the wand is the one bold thing here. */}
         <div className="flex flex-1 flex-col justify-center">
           {step === 'phone' ? (

@@ -16,7 +16,10 @@ export function NameSheet({
 }) {
   const [name, setName] = useState('')
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+      onClick={onClose}
+    >
       <div
         className="animate-rise-in w-full max-w-[460px] rounded-t-[24px] bg-paper p-5 shadow-card sm:rounded-[24px]"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 16px)' }}
@@ -24,7 +27,11 @@ export function NameSheet({
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-[19px] font-bold">{title}</h2>
-          <button onClick={onClose} className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint" aria-label="Close">
+          <button
+            onClick={onClose}
+            className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint"
+            aria-label="Close"
+          >
             <CloseIcon width={18} height={18} />
           </button>
         </div>

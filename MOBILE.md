@@ -10,7 +10,28 @@ notifications).
   Xcode / Android Studio projects)
 - Config: `capacitor.config.ts`
 
-## The core workflow
+## Get the Android app WITHOUT a laptop (cloud build)
+
+You don't need Android Studio or a powerful machine. A GitHub Action builds the
+APK in the cloud for you:
+
+1. Open the repo on GitHub → **Actions** tab → **Build mobile apps** →
+   **Run workflow** (it also runs automatically on every push to `main`).
+2. Wait for the **Android APK** job to finish (a few minutes).
+3. Open the finished run → scroll to **Artifacts** → download
+   **`tallytalk-android-debug`** (a zip containing `app-debug.apk`).
+4. Transfer the APK to your Android phone and open it. Allow "install from
+   unknown sources" if prompted. Done — the app is on your phone.
+
+This is a **debug** build (auto-signed, for testing/sharing). For the Play Store
+you'll later produce a signed release bundle (below).
+
+The workflow also runs an **iOS compile check** on a Mac runner to confirm the iOS
+app builds — but a *runnable* iOS app needs Apple signing (see iOS below), which
+requires your Apple Developer account. For iOS without a Mac, use a Capacitor
+cloud-build service (Ionic Appflow or Codemagic) connected to this repo.
+
+## The core workflow (if you do have the tools)
 
 Whenever you change the web app, rebuild and copy it into the native shells:
 

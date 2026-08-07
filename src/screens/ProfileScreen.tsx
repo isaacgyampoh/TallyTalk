@@ -6,7 +6,15 @@ import { SAMPLE_PROFILE } from '@/lib/sampleData'
 
 const SETTINGS: { group: string; items: string[] }[] = [
   { group: 'Account', items: ['Display name', 'Profile photo', 'Phone number', 'Active devices'] },
-  { group: 'Privacy', items: ['Who can send task requests', 'Who can add me to groups', 'Blocked contacts', 'Archived contacts'] },
+  {
+    group: 'Privacy',
+    items: [
+      'Who can send task requests',
+      'Who can add me to groups',
+      'Blocked contacts',
+      'Archived contacts',
+    ],
+  },
   { group: 'Security', items: ['Two-step verification', 'Active sessions'] },
   { group: 'Data & account', items: ['Export my data', 'Delete account'] },
   { group: 'Help & legal', items: ['Help & support', 'Terms of service', 'Privacy policy'] },
@@ -67,7 +75,9 @@ export function ProfileScreen() {
           <ul className="overflow-hidden rounded-card border border-line">
             {['Default landing screen', 'Notification preferences'].map((item, i) => (
               <li key={item}>
-                <button className={`press flex w-full items-center justify-between px-4 py-3 text-left text-[15px] text-ink hover:bg-wash ${i > 0 ? 'border-t border-line' : ''}`}>
+                <button
+                  className={`press flex w-full items-center justify-between px-4 py-3 text-left text-[15px] text-ink hover:bg-wash ${i > 0 ? 'border-t border-line' : ''}`}
+                >
                   {item}
                   <span className="text-ink-faint">›</span>
                 </button>

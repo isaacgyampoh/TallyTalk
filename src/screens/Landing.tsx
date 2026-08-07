@@ -7,8 +7,7 @@ import { APP_NAME } from '@/lib/config'
 import { InstallHelp } from '@/components/InstallBanner'
 import { WandIcon, ContactsIcon, PersonalIcon, GroupsIcon, CheckIcon } from '@/components/icons'
 
-const DOT_GRID =
-  'radial-gradient(rgba(255,255,255,0.16) 1px, transparent 1.4px)'
+const DOT_GRID = 'radial-gradient(rgba(255,255,255,0.16) 1px, transparent 1.4px)'
 
 export function Landing() {
   const nav = useNavigate()
@@ -41,7 +40,10 @@ export function Landing() {
     <div className="min-h-full overflow-y-auto bg-paper">
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
         {/* nav */}
-        <nav className="flex items-center justify-between py-5" style={{ paddingTop: 'calc(var(--safe-top) + 18px)' }}>
+        <nav
+          className="flex items-center justify-between py-5"
+          style={{ paddingTop: 'calc(var(--safe-top) + 18px)' }}
+        >
           <div className="flex items-center gap-2.5">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet text-white shadow-float">
               <WandIcon width={20} height={20} />
@@ -50,11 +52,17 @@ export function Landing() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             {!hideInstall && (
-              <button onClick={onInstall} className="press rounded-full bg-violet-tint px-4 py-2 text-[13.5px] font-semibold text-violet-ink">
+              <button
+                onClick={onInstall}
+                className="press rounded-full bg-violet-tint px-4 py-2 text-[13.5px] font-semibold text-violet-ink"
+              >
                 Install app
               </button>
             )}
-            <button onClick={() => nav('/signin')} className="press rounded-full px-3 py-2 text-[13.5px] font-semibold text-ink-soft">
+            <button
+              onClick={() => nav('/signin')}
+              className="press rounded-full px-3 py-2 text-[13.5px] font-semibold text-ink-soft"
+            >
               Sign in
             </button>
           </div>
@@ -77,21 +85,39 @@ export function Landing() {
               Start{' '}
               <span className="relative inline-block text-violet-ink">
                 tallying.
-                <svg className="absolute -bottom-1.5 left-0 w-full" height="12" viewBox="0 0 200 12" fill="none" preserveAspectRatio="none">
-                  <path d="M2 8C40 3 120 2 198 6" stroke="#6600FF" strokeWidth="4" strokeLinecap="round" opacity="0.4" />
+                <svg
+                  className="absolute -bottom-1.5 left-0 w-full"
+                  height="12"
+                  viewBox="0 0 200 12"
+                  fill="none"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M2 8C40 3 120 2 198 6"
+                    stroke="#6600FF"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    opacity="0.4"
+                  />
                 </svg>
               </span>
             </h1>
 
             <p className="mt-6 max-w-md text-[17px] leading-relaxed text-ink-soft">
-              {APP_NAME} turns messages into <span className="font-semibold text-ink">tasks</span>. Every
-              contact becomes a two-sided tally — what they owe you, what you owe them — so nothing
-              quietly slips.
+              {APP_NAME} turns messages into <span className="font-semibold text-ink">tasks</span>.
+              Every contact becomes a two-sided tally — what they owe you, what you owe them — so
+              nothing quietly slips.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <button onClick={tryDemo} className="btn-primary px-7 text-[15.5px]">Open the demo</button>
-              {!hideInstall && <button onClick={onInstall} className="btn-ghost px-6">Install app</button>}
+              <button onClick={tryDemo} className="btn-primary px-7 text-[15.5px]">
+                Open the demo
+              </button>
+              {!hideInstall && (
+                <button onClick={onInstall} className="btn-ghost px-6">
+                  Install app
+                </button>
+              )}
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-medium text-ink-faint">
@@ -111,7 +137,9 @@ export function Landing() {
                 <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-white/90">
                   <WandIcon width={16} height={16} /> Poke to nudge
                 </span>
-                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-white">Live demo</span>
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-white">
+                  Live demo
+                </span>
               </div>
               <div className="flex justify-center">
                 <PhonePreview />
@@ -140,8 +168,12 @@ export function Landing() {
 
         {/* features */}
         <section className="pb-4">
-          <h2 className="font-display text-[26px] font-bold tracking-tight">Built around who owes what</h2>
-          <p className="mt-1.5 max-w-xl text-[15px] text-ink-soft">Familiar like a chat app — organised like a ledger.</p>
+          <h2 className="font-display text-[26px] font-bold tracking-tight">
+            Built around who owes what
+          </h2>
+          <p className="mt-1.5 max-w-xl text-[15px] text-ink-soft">
+            Familiar like a chat app — organised like a ledger.
+          </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Feature Icon={ContactsIcon} title="The owe-ledger">
               “3 for them · 2 for you” on every contact. Overdue and urgent rise to the top.
@@ -153,7 +185,8 @@ export function Landing() {
               Shared to-dos your whole team works from, with roles and assignments.
             </Feature>
             <Feature Icon={WandIcon} title="Poke, don’t nag">
-              A gentle wand lifts your task to the top of someone’s screen. Files and voice notes too.
+              A gentle wand lifts your task to the top of someone’s screen. Files and voice notes
+              too.
             </Feature>
           </div>
         </section>
@@ -163,13 +196,18 @@ export function Landing() {
           <div className="overflow-hidden rounded-[26px] bg-carbon px-7 py-10 text-white sm:px-12">
             <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="font-display text-[26px] font-bold tracking-tight">See it for yourself</h3>
+                <h3 className="font-display text-[26px] font-bold tracking-tight">
+                  See it for yourself
+                </h3>
                 <p className="mt-2 max-w-md text-[15px] text-white/70">
-                  Loaded with real-feeling sample data. Open a contact, a checklist, a group — send a
-                  file or a voice note. Nothing to sign up for.
+                  Loaded with real-feeling sample data. Open a contact, a checklist, a group — send
+                  a file or a voice note. Nothing to sign up for.
                 </p>
               </div>
-              <button onClick={tryDemo} className="press shrink-0 rounded-full bg-violet px-7 py-3.5 text-[15px] font-semibold text-white shadow-float">
+              <button
+                onClick={tryDemo}
+                className="press shrink-0 rounded-full bg-violet px-7 py-3.5 text-[15px] font-semibold text-white shadow-float"
+              >
                 Open the demo
               </button>
             </div>
@@ -180,7 +218,14 @@ export function Landing() {
         </section>
       </div>
 
-      {showInstall && <InstallHelp isIOS={isIOS} canInstall={canInstall} onInstall={promptInstall} onClose={() => setShowInstall(false)} />}
+      {showInstall && (
+        <InstallHelp
+          isIOS={isIOS}
+          canInstall={canInstall}
+          onInstall={promptInstall}
+          onClose={() => setShowInstall(false)}
+        />
+      )}
     </div>
   )
 }
@@ -194,7 +239,15 @@ function Trust({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Feature({ Icon, title, children }: { Icon: (p: React.SVGProps<SVGSVGElement>) => JSX.Element; title: string; children: React.ReactNode }) {
+function Feature({
+  Icon,
+  title,
+  children,
+}: {
+  Icon: (p: React.SVGProps<SVGSVGElement>) => JSX.Element
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <div className="rounded-card border border-line bg-paper p-5 transition hover:-translate-y-0.5 hover:shadow-card">
       <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-tint text-violet-ink">
@@ -208,10 +261,42 @@ function Feature({ Icon, title, children }: { Icon: (p: React.SVGProps<SVGSVGEle
 
 function PhonePreview() {
   const rows = [
-    { i: 'BO', c: '#6600FF', name: 'Ben Owusu', sub: 'Send me the Ecobank document', them: 3, you: 2, tag: '1 overdue', tone: 'overdue' as const },
-    { i: 'AS', c: '#0E7C86', name: 'Ama Serwaa', sub: 'Drop the keys with caretaker', them: 2, you: 0 },
-    { i: 'KM', c: '#B4530A', name: 'Kwame Mensah', sub: 'Finish the Q3 slide deck', them: 0, you: 2, tag: '1 urgent', tone: 'urgent' as const },
-    { i: 'EB', c: '#8A3BFF', name: 'Efua Boateng', sub: 'Return the borrowed charger', them: 1, you: 1 },
+    {
+      i: 'BO',
+      c: '#6600FF',
+      name: 'Ben Owusu',
+      sub: 'Send me the Ecobank document',
+      them: 3,
+      you: 2,
+      tag: '1 overdue',
+      tone: 'overdue' as const,
+    },
+    {
+      i: 'AS',
+      c: '#0E7C86',
+      name: 'Ama Serwaa',
+      sub: 'Drop the keys with caretaker',
+      them: 2,
+      you: 0,
+    },
+    {
+      i: 'KM',
+      c: '#B4530A',
+      name: 'Kwame Mensah',
+      sub: 'Finish the Q3 slide deck',
+      them: 0,
+      you: 2,
+      tag: '1 urgent',
+      tone: 'urgent' as const,
+    },
+    {
+      i: 'EB',
+      c: '#8A3BFF',
+      name: 'Efua Boateng',
+      sub: 'Return the borrowed charger',
+      them: 1,
+      you: 1,
+    },
   ]
   return (
     <div className="relative w-[280px] translate-y-2 rounded-t-[2.2rem] border-[9px] border-b-0 border-ink bg-paper shadow-[0_20px_40px_-16px_rgba(0,0,0,0.35)]">
@@ -222,17 +307,29 @@ function PhonePreview() {
         </div>
         <div className="flex items-center justify-between px-5 pb-3">
           <span className="font-display text-[21px] font-bold tracking-tight">Contacts</span>
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-wash text-ink-soft">⌕</span>
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-wash text-ink-soft">
+            ⌕
+          </span>
         </div>
         <div className="flex gap-1.5 px-5 pb-2.5">
           {['All', 'Unread', 'Work'].map((c, k) => (
-            <span key={c} className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${k === 0 ? 'bg-carbon text-white' : 'bg-wash text-ink-soft'}`}>{c}</span>
+            <span
+              key={c}
+              className={`rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${k === 0 ? 'bg-carbon text-white' : 'bg-wash text-ink-soft'}`}
+            >
+              {c}
+            </span>
           ))}
         </div>
         <div className="px-2 pb-3">
           {rows.map((r) => (
             <div key={r.i} className="flex items-center gap-2.5 rounded-2xl px-3 py-2">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[12px] font-semibold text-white" style={{ background: r.c }}>{r.i}</span>
+              <span
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[12px] font-semibold text-white"
+                style={{ background: r.c }}
+              >
+                {r.i}
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="truncate text-[13px] font-semibold text-ink">{r.name}</span>
@@ -244,7 +341,11 @@ function PhonePreview() {
                 </div>
                 <p className="truncate text-[11px] text-ink-faint">{r.sub}</p>
                 {r.tag && (
-                  <span className={`mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold ${r.tone === 'overdue' ? 'bg-overdue/10 text-overdue' : 'bg-urgent/10 text-urgent'}`}>{r.tag}</span>
+                  <span
+                    className={`mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold ${r.tone === 'overdue' ? 'bg-overdue/10 text-overdue' : 'bg-urgent/10 text-urgent'}`}
+                  >
+                    {r.tag}
+                  </span>
                 )}
               </div>
             </div>

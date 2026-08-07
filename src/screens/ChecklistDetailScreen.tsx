@@ -50,10 +50,17 @@ export function ChecklistDetailScreen() {
         className="flex items-center gap-3 border-b border-line px-4 pb-3"
         style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}
       >
-        <button className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft" onClick={() => nav(-1)} aria-label="Back">
+        <button
+          className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
+          onClick={() => nav(-1)}
+          aria-label="Back"
+        >
           <BackIcon />
         </button>
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white" style={{ background: color }}>
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white"
+          style={{ background: color }}
+        >
           {title[0]}
         </span>
         <div className="min-w-0 flex-1">
@@ -63,7 +70,10 @@ export function ChecklistDetailScreen() {
           </p>
         </div>
         {(behavior === 'manual_reset' || behavior === 'daily_reset') && done > 0 && (
-          <button onClick={resetAll} className="press rounded-full bg-wash px-3 py-1.5 text-[12.5px] font-semibold text-ink-soft">
+          <button
+            onClick={resetAll}
+            className="press rounded-full bg-wash px-3 py-1.5 text-[12.5px] font-semibold text-ink-soft"
+          >
             Reset
           </button>
         )}
@@ -81,11 +91,17 @@ export function ChecklistDetailScreen() {
             >
               <CheckIcon width={15} height={15} />
             </button>
-            <span className={`flex-1 text-[15px] ${item.done ? 'text-ink-faint line-through' : 'text-ink'}`}>
+            <span
+              className={`flex-1 text-[15px] ${item.done ? 'text-ink-faint line-through' : 'text-ink'}`}
+            >
               {item.title}
             </span>
             {behavior === 'call' && item.phone && !item.done && (
-              <a href={`tel:${item.phone}`} className="press grid h-9 w-9 place-items-center rounded-full bg-violet-tint text-violet-ink" aria-label={`Call ${item.title}`}>
+              <a
+                href={`tel:${item.phone}`}
+                className="press grid h-9 w-9 place-items-center rounded-full bg-violet-tint text-violet-ink"
+                aria-label={`Call ${item.title}`}
+              >
                 <PhoneIcon width={17} height={17} />
               </a>
             )}
@@ -100,7 +116,10 @@ export function ChecklistDetailScreen() {
         )}
       </div>
 
-      <div className="border-t border-line px-3 pt-2" style={{ paddingBottom: 'calc(var(--safe-bottom) + 10px)' }}>
+      <div
+        className="border-t border-line px-3 pt-2"
+        style={{ paddingBottom: 'calc(var(--safe-bottom) + 10px)' }}
+      >
         <div className="flex items-center gap-2">
           <input
             value={draft}

@@ -20,7 +20,10 @@ export function GroupsScreen() {
       <ul className="flex-1 overflow-y-auto px-3 pb-24">
         {groups.map((g) => (
           <li key={g.id}>
-            <button onClick={() => nav(`/groups/${g.id}`)} className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash">
+            <button
+              onClick={() => nav(`/groups/${g.id}`)}
+              className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash"
+            >
               <Avatar initials={g.name.slice(0, 2)} color={g.color} />
               <div className="min-w-0 flex-1">
                 <span className="block truncate font-semibold text-ink">{g.name}</span>

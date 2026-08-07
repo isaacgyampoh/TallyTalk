@@ -33,8 +33,14 @@ export function PersonalScreen() {
       <ul className="flex-1 overflow-y-auto px-3 pb-24">
         {customLists.map((list, i) => (
           <li key={list.id}>
-            <button onClick={() => nav(`/personal/${list.id}`)} className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white" style={{ background: listColor(i) }}>
+            <button
+              onClick={() => nav(`/personal/${list.id}`)}
+              className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash"
+            >
+              <span
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white"
+                style={{ background: listColor(i) }}
+              >
                 {list.title[0]?.toUpperCase()}
               </span>
               <div className="min-w-0 flex-1">
@@ -52,8 +58,14 @@ export function PersonalScreen() {
           const counts = sampleCounts[list.key] ?? { open: 0, done: 0 }
           return (
             <li key={list.key}>
-              <button onClick={() => nav(`/personal/${list.key}`)} className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white" style={{ background: listColor(i) }}>
+              <button
+                onClick={() => nav(`/personal/${list.key}`)}
+                className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash"
+              >
+                <span
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white"
+                  style={{ background: listColor(i) }}
+                >
                   {list.title[0]}
                 </span>
                 <div className="min-w-0 flex-1">

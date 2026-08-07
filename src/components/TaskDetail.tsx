@@ -36,19 +36,32 @@ export function TaskDetail({
   const done = task.status === 'completed'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+      onClick={onClose}
+    >
       <div
         className="animate-rise-in w-full max-w-[460px] rounded-t-[24px] bg-paper p-5 shadow-card sm:rounded-[24px]"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 16px)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-            done ? 'bg-done/12 text-done' : pending ? 'bg-wash text-ink-soft' : 'bg-violet-tint text-violet-ink'
-          }`}>
+          <span
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              done
+                ? 'bg-done/12 text-done'
+                : pending
+                  ? 'bg-wash text-ink-soft'
+                  : 'bg-violet-tint text-violet-ink'
+            }`}
+          >
             {done ? 'Completed' : pending ? 'Pending acceptance' : 'Active'}
           </span>
-          <button onClick={onClose} className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint" aria-label="Close">
+          <button
+            onClick={onClose}
+            className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint"
+            aria-label="Close"
+          >
             <CloseIcon width={18} height={18} />
           </button>
         </div>
@@ -58,7 +71,9 @@ export function TaskDetail({
           {task.mine ? `You asked ${peer}` : `${peer} asked you`}
         </p>
         {task.note && (
-          <p className="mt-3 rounded-2xl bg-wash px-3.5 py-3 text-[14px] text-ink-soft">{task.note}</p>
+          <p className="mt-3 rounded-2xl bg-wash px-3.5 py-3 text-[14px] text-ink-soft">
+            {task.note}
+          </p>
         )}
 
         {/* editable priority */}
@@ -97,23 +112,41 @@ export function TaskDetail({
         <div className="mt-6 flex gap-2">
           {pending && !task.mine && (
             <>
-              <button onClick={onAccept} className="btn-primary flex-1">Accept</button>
-              <button onClick={onDecline} className="btn-ghost flex-1">Decline</button>
+              <button onClick={onAccept} className="btn-primary flex-1">
+                Accept
+              </button>
+              <button onClick={onDecline} className="btn-ghost flex-1">
+                Decline
+              </button>
             </>
           )}
           {pending && task.mine && (
             <>
-              <button onClick={onPoke} className="btn-primary flex-1 gap-2"><WandIcon width={18} height={18} /> Poke {peer}</button>
-              <button onClick={onCancel} className="btn-ghost flex-1">Cancel</button>
+              <button onClick={onPoke} className="btn-primary flex-1 gap-2">
+                <WandIcon width={18} height={18} /> Poke {peer}
+              </button>
+              <button onClick={onCancel} className="btn-ghost flex-1">
+                Cancel
+              </button>
             </>
           )}
           {active && (
             <>
-              <button onClick={onComplete} className="btn-primary flex-1 gap-2"><CheckIcon width={18} height={18} /> Mark done</button>
-              {task.mine && <button onClick={onPoke} className="btn-ghost flex-1 gap-2"><WandIcon width={18} height={18} /> Poke</button>}
+              <button onClick={onComplete} className="btn-primary flex-1 gap-2">
+                <CheckIcon width={18} height={18} /> Mark done
+              </button>
+              {task.mine && (
+                <button onClick={onPoke} className="btn-ghost flex-1 gap-2">
+                  <WandIcon width={18} height={18} /> Poke
+                </button>
+              )}
             </>
           )}
-          {done && <button onClick={onReopen} className="btn-ghost w-full">Reopen task</button>}
+          {done && (
+            <button onClick={onReopen} className="btn-ghost w-full">
+              Reopen task
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -50,7 +50,9 @@ export function VoiceNote({ duration, mine }: { duration: number; mine: boolean 
           />
         ))}
       </div>
-      <span className={`nums text-[12px] font-semibold ${mine ? 'text-white/90' : 'text-ink-soft'}`}>
+      <span
+        className={`nums text-[12px] font-semibold ${mine ? 'text-white/90' : 'text-ink-soft'}`}
+      >
         {fmt(t)}
       </span>
     </div>

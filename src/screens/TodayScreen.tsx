@@ -20,7 +20,13 @@ export function TodayScreen() {
     for (const c of SAMPLE_CONTACTS) {
       for (const t of c.tasks) {
         if (t.status === 'completed') continue
-        rows.push({ ...t, contactId: c.id, contactName: c.name, initials: c.initials, color: c.color })
+        rows.push({
+          ...t,
+          contactId: c.id,
+          contactName: c.name,
+          initials: c.initials,
+          color: c.color,
+        })
       }
     }
     const overdue = rows.filter((r) => r.overdue)
@@ -37,7 +43,11 @@ export function TodayScreen() {
     }
   }, [])
 
-  const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+  const today = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
 
   return (
     <div className="flex h-full flex-col">
@@ -51,19 +61,43 @@ export function TodayScreen() {
 
         {/* running tally */}
         <div className="flex overflow-hidden rounded-[18px] border border-line">
-          <div className="flex-1 bg-violet px-4 py-4 text-white" style={{ flexGrow: Math.max(1, totalThem) }}>
+          <div
+            className="flex-1 bg-violet px-4 py-4 text-white"
+            style={{ flexGrow: Math.max(1, totalThem) }}
+          >
             <p className="nums font-display text-[28px] font-extrabold leading-none">{totalThem}</p>
             <p className="mt-1 text-[12px] font-semibold text-white/80">owed to you</p>
           </div>
-          <div className="flex-1 bg-carbon px-4 py-4 text-white" style={{ flexGrow: Math.max(1, totalYou) }}>
+          <div
+            className="flex-1 bg-carbon px-4 py-4 text-white"
+            style={{ flexGrow: Math.max(1, totalYou) }}
+          >
             <p className="nums font-display text-[28px] font-extrabold leading-none">{totalYou}</p>
             <p className="mt-1 text-[12px] font-semibold text-white/70">you owe</p>
           </div>
         </div>
 
-        <Section title="Overdue" tone="overdue" rows={overdue} nav={nav} empty="Nothing overdue — nice." />
-        <Section title="Due today" tone="urgent" rows={dueToday} nav={nav} empty="Nothing due today." />
-        <Section title="They owe you" tone="violet" rows={owedToYou} nav={nav} empty="You're not waiting on anyone." />
+        <Section
+          title="Overdue"
+          tone="overdue"
+          rows={overdue}
+          nav={nav}
+          empty="Nothing overdue — nice."
+        />
+        <Section
+          title="Due today"
+          tone="urgent"
+          rows={dueToday}
+          nav={nav}
+          empty="Nothing due today."
+        />
+        <Section
+          title="They owe you"
+          tone="violet"
+          rows={owedToYou}
+          nav={nav}
+          empty="You're not waiting on anyone."
+        />
         <Section title="You owe" tone="ink" rows={youOwe} nav={nav} empty="You're all caught up." />
       </div>
     </div>
@@ -83,7 +117,9 @@ function Section({
   nav: ReturnType<typeof useNavigate>
   empty: string
 }) {
-  const dot = { overdue: 'bg-overdue', urgent: 'bg-urgent', violet: 'bg-violet', ink: 'bg-ink' }[tone]
+  const dot = { overdue: 'bg-overdue', urgent: 'bg-urgent', violet: 'bg-violet', ink: 'bg-ink' }[
+    tone
+  ]
   return (
     <section className="mt-6">
       <div className="mb-2 flex items-center gap-2">
@@ -106,13 +142,17 @@ function Section({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14.5px] font-medium text-ink">{r.title}</p>
                 <p className="text-[12.5px] text-ink-faint">
-                  {r.direction === 'they_owe_me' ? r.contactName : `for ${r.contactName.split(' ')[0]}`}
+                  {r.direction === 'they_owe_me'
+                    ? r.contactName
+                    : `for ${r.contactName.split(' ')[0]}`}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 {r.priority === 'urgent' && <Tag tone="urgent">Urgent</Tag>}
                 {r.overdue && <Tag tone="overdue">Overdue</Tag>}
-                <span className="rounded-full bg-wash px-2 py-0.5 text-[11px] font-semibold text-ink-soft">{r.expected}</span>
+                <span className="rounded-full bg-wash px-2 py-0.5 text-[11px] font-semibold text-ink-soft">
+                  {r.expected}
+                </span>
               </div>
             </button>
           ))}
@@ -124,5 +164,7 @@ function Section({
 
 function Tag({ tone, children }: { tone: 'overdue' | 'urgent'; children: React.ReactNode }) {
   const cls = tone === 'overdue' ? 'bg-overdue/10 text-overdue' : 'bg-urgent/10 text-urgent'
-  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{children}</span>
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{children}</span>
+  )
 }

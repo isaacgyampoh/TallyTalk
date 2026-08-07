@@ -9,7 +9,22 @@ export interface Parsed {
   expected: string
 }
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+const DAYS = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+  'mon',
+  'tue',
+  'wed',
+  'thu',
+  'fri',
+  'sat',
+  'sun',
+]
 const has = (s: string, re: RegExp) => re.test(s)
 
 /**
@@ -31,7 +46,11 @@ export function smartParse(input: string): Parsed {
   else if (has(lower, /\bnext week\b/)) expected = 'Next Week'
   else if (has(lower, /\b(this month|end of (the )?month|month end)\b/)) expected = 'This Month'
   else if (has(lower, /\btomorrow\b/)) expected = 'This Week'
-  else if (has(lower, /\bthis week\b/) || DAYS.some((d) => has(lower, new RegExp('\\b' + d + '\\b')))) expected = 'This Week'
+  else if (
+    has(lower, /\bthis week\b/) ||
+    DAYS.some((d) => has(lower, new RegExp('\\b' + d + '\\b')))
+  )
+    expected = 'This Week'
 
   let contactId: string | undefined
   let contactName: string | undefined
@@ -44,11 +63,12 @@ export function smartParse(input: string): Parsed {
     }
   }
 
-  let title = raw
-    .replace(/^\s*(please\s+)?(ask|tell|remind|get|have)\s+[a-z]+\s+to\s+/i, '')
+  let title = raw.replace(/^\s*(please\s+)?(ask|tell|remind|get|have)\s+[a-z]+\s+to\s+/i, '')
   if (contactName) {
     const first = contactName.split(' ')[0]
-    title = title.replace(new RegExp(contactName, 'ig'), '').replace(new RegExp('\\b' + first + '\\b', 'ig'), '')
+    title = title
+      .replace(new RegExp(contactName, 'ig'), '')
+      .replace(new RegExp('\\b' + first + '\\b', 'ig'), '')
   }
   title = title.replace(
     /\b(by|before|on|due|this|next)?\s*(today|tonight|this evening|tomorrow|next week|this week|this month|end of (the )?month|month end)\b/gi,
@@ -59,7 +79,11 @@ export function smartParse(input: string): Parsed {
     /\b(urgent|asap|immediately|right away|critical|important|high priority|high|priority|low|whenever|sometime|no rush|eventually)\b/gi,
     '',
   )
-  title = title.replace(/\s{2,}/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/^(to|for|the)\s+/i, '').trim()
+  title = title
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,!?])/g, '$1')
+    .replace(/^(to|for|the)\s+/i, '')
+    .trim()
   if (title) title = title[0].toUpperCase() + title.slice(1)
   if (!title) title = raw
 

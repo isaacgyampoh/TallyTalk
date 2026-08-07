@@ -39,12 +39,24 @@ function Gate() {
     if (session) registerPush()
   }, [session])
 
-  if (!ready) return <AppViewport><Splash /></AppViewport>
+  if (!ready)
+    return (
+      <AppViewport>
+        <Splash />
+      </AppViewport>
+    )
 
   if (!signedIn) {
     return (
       <Routes>
-        <Route path="/signin" element={<AppViewport><AuthFlow /></AppViewport>} />
+        <Route
+          path="/signin"
+          element={
+            <AppViewport>
+              <AuthFlow />
+            </AppViewport>
+          }
+        />
         <Route path="*" element={<Landing />} />
       </Routes>
     )

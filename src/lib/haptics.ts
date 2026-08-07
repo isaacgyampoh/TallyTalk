@@ -4,7 +4,9 @@ import { isNative } from './platform'
 export function buzz(pattern: number | number[] = 12) {
   if (isNative) {
     import('@capacitor/haptics')
-      .then(({ Haptics, ImpactStyle }) => Haptics.impact({ style: ImpactStyle.Light }).catch(() => {}))
+      .then(({ Haptics, ImpactStyle }) =>
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {}),
+      )
       .catch(() => {})
     return
   }

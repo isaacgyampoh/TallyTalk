@@ -32,15 +32,27 @@ export function InstallBanner() {
         <p className="min-w-0 flex-1 text-[13px] font-medium leading-tight text-violet-ink">
           Install {APP_NAME} for the full, offline-ready experience.
         </p>
-        <button onClick={onInstall} className="press shrink-0 rounded-full bg-violet px-3.5 py-1.5 text-[12.5px] font-semibold text-white">
+        <button
+          onClick={onInstall}
+          className="press shrink-0 rounded-full bg-violet px-3.5 py-1.5 text-[12.5px] font-semibold text-white"
+        >
           Install
         </button>
-        <button onClick={dismiss} aria-label="Dismiss" className="press shrink-0 px-1 text-lg leading-none text-violet-ink/60">
+        <button
+          onClick={dismiss}
+          aria-label="Dismiss"
+          className="press shrink-0 px-1 text-lg leading-none text-violet-ink/60"
+        >
           ×
         </button>
       </div>
       {showHelp && (
-        <InstallHelp isIOS={isIOS} canInstall={canInstall} onInstall={promptInstall} onClose={() => setShowHelp(false)} />
+        <InstallHelp
+          isIOS={isIOS}
+          canInstall={canInstall}
+          onInstall={promptInstall}
+          onClose={() => setShowHelp(false)}
+        />
       )}
     </>
   )
@@ -58,8 +70,14 @@ export function InstallHelp({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-card bg-paper p-6 shadow-card animate-rise-in" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-card bg-paper p-6 shadow-card animate-rise-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-violet text-white shadow-float">
           <WandIcon width={24} height={24} />
         </span>
@@ -70,14 +88,14 @@ export function InstallHelp({
           </p>
         ) : isIOS ? (
           <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
-            In Safari, tap the <span className="font-semibold text-ink">Share</span> icon, then choose{' '}
-            <span className="font-semibold text-ink">Add to Home Screen</span>.
+            In Safari, tap the <span className="font-semibold text-ink">Share</span> icon, then
+            choose <span className="font-semibold text-ink">Add to Home Screen</span>.
           </p>
         ) : (
           <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
             Open your browser menu and choose{' '}
-            <span className="font-semibold text-ink">Install app</span> (or “Add to Home Screen”). It
-            launches in its own window, offline-ready.
+            <span className="font-semibold text-ink">Install app</span> (or “Add to Home Screen”).
+            It launches in its own window, offline-ready.
           </p>
         )}
         <div className="mt-5 flex gap-2">
@@ -92,7 +110,10 @@ export function InstallHelp({
               Install now
             </button>
           )}
-          <button onClick={onClose} className={canInstall ? 'btn-ghost flex-1' : 'btn-primary w-full'}>
+          <button
+            onClick={onClose}
+            className={canInstall ? 'btn-ghost flex-1' : 'btn-primary w-full'}
+          >
             {canInstall ? 'Later' : 'Got it'}
           </button>
         </div>

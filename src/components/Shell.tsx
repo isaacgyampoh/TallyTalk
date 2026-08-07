@@ -59,13 +59,7 @@ export function Shell({ children }: { children: ReactNode }) {
   )
 }
 
-export function ScreenHeader({
-  title,
-  right,
-}: {
-  title: string
-  right?: ReactNode
-}) {
+export function ScreenHeader({ title, right }: { title: string; right?: ReactNode }) {
   return (
     <header
       className="sticky top-0 z-10 flex items-center justify-between bg-paper/95 px-5 pb-3 backdrop-blur"

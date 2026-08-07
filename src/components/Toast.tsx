@@ -23,14 +23,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2" style={{ bottom: 'calc(var(--safe-bottom) + 84px)' }}>
+      <div
+        className="pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2"
+        style={{ bottom: 'calc(var(--safe-bottom) + 84px)' }}
+      >
         {toasts.map((t) => (
           <div
             key={t.id}
             className="animate-rise-in flex items-center gap-2 rounded-full bg-carbon px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-card"
           >
             <span className={t.kind === 'poke' ? 'text-violet-glow' : 'text-done'}>
-              {t.kind === 'poke' ? <WandIcon width={16} height={16} /> : <CheckIcon width={16} height={16} />}
+              {t.kind === 'poke' ? (
+                <WandIcon width={16} height={16} />
+              ) : (
+                <CheckIcon width={16} height={16} />
+              )}
             </span>
             {t.message}
           </div>

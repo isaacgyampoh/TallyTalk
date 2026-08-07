@@ -58,7 +58,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid #6600FF;
+    outline: 2px solid #6600ff;
     outline-offset: 2px;
     border-radius: 4px;
   }

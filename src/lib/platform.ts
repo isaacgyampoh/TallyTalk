@@ -15,7 +15,9 @@ export async function initNative(resolvedTheme: 'light' | 'dark') {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
     await StatusBar.setStyle({ style: resolvedTheme === 'dark' ? Style.Dark : Style.Light })
     if (platform === 'android') {
-      await StatusBar.setBackgroundColor({ color: resolvedTheme === 'dark' ? '#14141a' : '#ffffff' })
+      await StatusBar.setBackgroundColor({
+        color: resolvedTheme === 'dark' ? '#14141a' : '#ffffff',
+      })
     }
   } catch {
     /* plugin not available */
@@ -36,7 +38,9 @@ export async function syncStatusBar(resolvedTheme: 'light' | 'dark') {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
     await StatusBar.setStyle({ style: resolvedTheme === 'dark' ? Style.Dark : Style.Light })
     if (platform === 'android') {
-      await StatusBar.setBackgroundColor({ color: resolvedTheme === 'dark' ? '#14141a' : '#ffffff' })
+      await StatusBar.setBackgroundColor({
+        color: resolvedTheme === 'dark' ? '#14141a' : '#ffffff',
+      })
     }
   } catch {
     /* ignore */

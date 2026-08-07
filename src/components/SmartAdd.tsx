@@ -58,7 +58,10 @@ export function SmartAdd() {
       </div>
 
       {parsed && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={() => setParsed(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+          onClick={() => setParsed(null)}
+        >
           <div
             className="animate-rise-in w-full max-w-[460px] rounded-t-[24px] bg-paper p-5 shadow-card sm:rounded-[24px]"
             style={{ paddingBottom: 'calc(var(--safe-bottom) + 16px)' }}
@@ -68,7 +71,11 @@ export function SmartAdd() {
               <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-violet-ink">
                 <WandIcon width={15} height={15} /> Understood as
               </span>
-              <button onClick={() => setParsed(null)} className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint" aria-label="Close">
+              <button
+                onClick={() => setParsed(null)}
+                className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint"
+                aria-label="Close"
+              >
                 <CloseIcon width={18} height={18} />
               </button>
             </div>
@@ -81,10 +88,18 @@ export function SmartAdd() {
             />
 
             <div className="mt-3 flex flex-wrap gap-1.5">
-              <span className="rounded-full bg-wash px-2.5 py-1 text-[12px] font-semibold text-ink-soft">Due {parsed.expected}</span>
-              <span className={`rounded-full px-2.5 py-1 text-[12px] font-semibold capitalize ${
-                parsed.priority === 'urgent' ? 'bg-urgent/15 text-urgent' : parsed.priority === 'high' ? 'bg-violet/10 text-violet-ink' : 'bg-wash text-ink-soft'
-              }`}>
+              <span className="rounded-full bg-wash px-2.5 py-1 text-[12px] font-semibold text-ink-soft">
+                Due {parsed.expected}
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-1 text-[12px] font-semibold capitalize ${
+                  parsed.priority === 'urgent'
+                    ? 'bg-urgent/15 text-urgent'
+                    : parsed.priority === 'high'
+                      ? 'bg-violet/10 text-violet-ink'
+                      : 'bg-wash text-ink-soft'
+                }`}
+              >
                 {parsed.priority} priority
               </span>
             </div>

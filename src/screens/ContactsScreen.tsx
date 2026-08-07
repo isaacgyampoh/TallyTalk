@@ -89,7 +89,11 @@ export function ContactsScreen() {
 
       <ul className="flex-1 overflow-y-auto px-2 pb-24">
         {rows.map((c, i) => (
-          <li key={c.id} className="animate-rise-in" style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}>
+          <li
+            key={c.id}
+            className="animate-rise-in"
+            style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}
+          >
             <button
               onClick={() => nav(`/contacts/${c.id}`)}
               className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash"
@@ -136,7 +140,10 @@ export function ContactsScreen() {
       </button>
 
       {picking && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={() => setPicking(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+          onClick={() => setPicking(false)}
+        >
           <div
             className="animate-rise-in w-full max-w-[460px] rounded-t-[24px] bg-paper p-5 shadow-card sm:rounded-[24px]"
             style={{ paddingBottom: 'calc(var(--safe-bottom) + 16px)' }}
@@ -144,7 +151,11 @@ export function ContactsScreen() {
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-[19px] font-bold">New request</h2>
-              <button onClick={() => setPicking(false)} className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint" aria-label="Close">
+              <button
+                onClick={() => setPicking(false)}
+                className="press grid h-8 w-8 place-items-center rounded-full text-ink-faint"
+                aria-label="Close"
+              >
                 <CloseIcon width={18} height={18} />
               </button>
             </div>
@@ -172,9 +183,7 @@ export function ContactsScreen() {
 function OweLedger({ contact }: { contact: SampleContact }) {
   return (
     <span className="nums shrink-0 text-[12.5px] font-semibold">
-      {contact.forThem > 0 && (
-        <span className="text-violet-ink">{contact.forThem} for them</span>
-      )}
+      {contact.forThem > 0 && <span className="text-violet-ink">{contact.forThem} for them</span>}
       {contact.forThem > 0 && contact.forYou > 0 && <span className="text-ink-faint"> · </span>}
       {contact.forYou > 0 && <span className="text-ink-soft">{contact.forYou} for you</span>}
       {contact.forThem === 0 && contact.forYou === 0 && (
