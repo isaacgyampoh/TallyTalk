@@ -65,19 +65,37 @@ npx cap sync
   app, so it runs true full-screen (even on tablets).
 - **Install prompts** — the web "Install app" UI is hidden inside the native app.
 
-## Push notifications (next step)
+## Push notifications
 
-The `@capacitor/push-notifications` plugin is installed and configured. To turn it
-on:
+The plumbing is in place; what's left is the provider credentials (only you can
+add those).
 
-1. **Android** — create a Firebase project, add the Android app
-   (`com.tallytalk.app`), download `google-services.json` into
-   `android/app/`, and add the Google Services Gradle plugin.
-2. **iOS** — enable the Push Notifications capability in Xcode, and set up an APNs
-   key in your Apple Developer account.
-3. On the web side, register for push on login and store the token in Supabase so
-   the backend (an Edge Function) can send "you've been poked" / overdue
-   reminders.
+**Already built**
+- App-side registration (`src/lib/push.ts`) — on a real (non-demo) login inside
+  the native app it asks permission, registers with APNs/FCM, and stores the
+  device token in Supabase.
+- `push_tokens` table + RLS — migration `supabase/migrations/0002_push_tokens.sql`.
+- `send-push` Edge Function (`supabase/functions/send-push/index.ts`) — looks up
+  a user's device tokens and sends via FCM HTTP v1. Call it after a Poke or when
+  a task goes overdue.
+
+**Remaining setup (your accounts)**
+1. Run migration `0002_push_tokens.sql` in Supabase.
+2. **Firebase** — create a project, add the Android app (`com.tallytalk.app`),
+   download `google-services.json` into `android/app/`, and add the Google
+   Services Gradle plugin. For iOS, upload an **APNs key** to Firebase and add
+   the iOS app + `GoogleService-Info.plist`.
+3. Deploy the function and set its secrets:
+   ```bash
+   supabase functions deploy send-push --no-verify-jwt
+   supabase secrets set SEND_PUSH_SECRET='<random>' \
+     FCM_SERVICE_ACCOUNT='<service-account JSON>'
+   ```
+4. From your backend/app, call `send-push` with `{ userId, title, body, data }`
+   when something notify-worthy happens.
+
+Note: the Edge Function hasn't been run against a live FCM project here — test it
+on a real device once your credentials are in.
 
 ## Store submission (overview)
 

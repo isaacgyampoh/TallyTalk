@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { registerPush } from '@/lib/push'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
 import { AppViewport } from '@/components/AppViewport'
@@ -31,7 +33,12 @@ function Splash() {
 }
 
 function Gate() {
-  const { ready, signedIn } = useAuth()
+  const { ready, signedIn, session } = useAuth()
+
+  useEffect(() => {
+    if (session) registerPush()
+  }, [session])
+
   if (!ready) return <AppViewport><Splash /></AppViewport>
 
   if (!signedIn) {
