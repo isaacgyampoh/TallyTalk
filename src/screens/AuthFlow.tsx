@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { APP_NAME, COUNTRIES } from '@/lib/config'
 import { WandIcon, BackIcon, PhoneIcon } from '@/components/icons'
+import { isAppMode } from '@/lib/platform'
 
 type Step = 'phone' | 'code'
 
@@ -57,7 +58,7 @@ export function AuthFlow() {
                 className="press mb-10 flex w-fit items-center gap-1 text-[14px] font-semibold text-ink-soft"
                 onClick={() => nav('/')}
               >
-                <BackIcon width={18} height={18} /> Back
+                <BackIcon width={18} height={18} /> {!isAppMode && 'Back'}
               </button>
               <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet text-white shadow-float">
                 <WandIcon width={28} height={28} />

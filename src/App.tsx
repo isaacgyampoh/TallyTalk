@@ -3,12 +3,14 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { registerPush } from '@/lib/push'
+import { isAppMode } from '@/lib/platform'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
 import { AppViewport } from '@/components/AppViewport'
 import { Shell } from '@/components/Shell'
 import { Landing } from '@/screens/Landing'
 import { AuthFlow } from '@/screens/AuthFlow'
+import { Welcome } from '@/screens/Welcome'
 import { ContactsScreen } from '@/screens/ContactsScreen'
 import { ContactSpaceScreen } from '@/screens/ContactSpaceScreen'
 import { PersonalScreen } from '@/screens/PersonalScreen'
@@ -58,7 +60,18 @@ function Gate() {
             </AppViewport>
           }
         />
-        <Route path="*" element={<Landing />} />
+        <Route
+          path="*"
+          element={
+            isAppMode ? (
+              <AppViewport>
+                <Welcome />
+              </AppViewport>
+            ) : (
+              <Landing />
+            )
+          }
+        />
       </Routes>
     )
   }

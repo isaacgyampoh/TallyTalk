@@ -1,5 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/download",
+      "destination": "https://github.com/isaacgyampoh/TallyTalk/releases/download/android-latest/tallytalk.apk",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/((?!.*\\.).*)", "destination": "/index.html" }
   ],
