@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { APP_NAME, COUNTRIES } from '@/lib/config'
-import { WandIcon, BackIcon, PhoneIcon } from '@/components/icons'
+import { COUNTRIES } from '@/lib/config'
+import { BackIcon, PhoneIcon } from '@/components/icons'
 import { isAppMode } from '@/lib/platform'
 
 type Step = 'phone' | 'code'
@@ -55,23 +55,20 @@ export function AuthFlow() {
           {step === 'phone' ? (
             <div className="animate-rise-in">
               <button
-                className="press mb-10 flex w-fit items-center gap-1 text-[14px] font-semibold text-ink-soft"
+                className="press mb-8 flex w-fit items-center gap-1 text-[14px] font-semibold text-ink-soft"
                 onClick={() => nav('/')}
               >
                 <BackIcon width={18} height={18} /> {!isAppMode && 'Back'}
               </button>
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet text-white shadow-float">
-                <WandIcon width={28} height={28} />
-              </div>
-              <h1 className="font-display text-[40px] font-bold leading-[1.02] tracking-tight">
-                {APP_NAME}
+              <h1 className="font-display text-[30px] font-bold leading-tight tracking-tight">
+                What&rsquo;s your number?
               </h1>
-              <p className="mt-3 max-w-[19rem] text-[16px] leading-snug text-ink-soft">
-                Know what you asked others to do, what they asked you, and what is actually done.
+              <p className="mt-2.5 max-w-[20rem] text-[15px] leading-snug text-ink-soft">
+                We&rsquo;ll text you a 6-digit code to confirm it&rsquo;s you.
               </p>
 
-              <div className="mt-9 space-y-3">
-                <label className="eyebrow block">Your mobile number</label>
+              <div className="mt-8 space-y-3">
+                <label className="eyebrow block">Mobile number</label>
                 <div className="flex gap-2">
                   <div className="relative">
                     <select
