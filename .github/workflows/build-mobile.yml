@@ -12,6 +12,9 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -36,9 +39,27 @@ jobs:
 
       - name: Build debug APK
         run: |
+          set -o pipefail
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/gradle.log
+
+      - name: Report build failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          log = open('/tmp/gradle.log').read()[-6000:] if os.path.exists('/tmp/gradle.log') else '(no log)'
+          data = json.dumps({'title': 'CI diag: gradle assembleDebug', 'body': '```\n' + log + '\n```'}).encode()
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['REPO']}/issues", data=data,
+              headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                       'Accept': 'application/vnd.github+json', 'User-Agent': 'ci'})
+          print('issue:', urllib.request.urlopen(req).status)
+          PY
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
