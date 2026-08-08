@@ -76,23 +76,33 @@ phones and in the native app.
 
 ## The demo/real split — and how to scale
 
-Today the screens read from `sampleData.ts` and mutate `demoStore` (in-memory).
-This is deliberate: the demo works with zero backend. **To move to real data**,
-introduce a data-access layer and swap the source without touching UILayout:
+Screens currently read from `sampleData.ts` / `demoStore` so the demo works with
+zero backend. The **live data layer is now built** in `src/data/`:
 
-1. Add `src/data/` with one module per entity (e.g. `tasks.ts`, `contacts.ts`,
-   `groups.ts`) exposing typed functions: `listContacts()`, `createTask()`,
-   `acceptTask()`, etc., implemented with `supabase.from(...)`.
-2. Adopt **TanStack Query** for server state (caching, optimistic updates,
-   realtime invalidation). Wrap the app in a `QueryClientProvider`.
-3. Replace each screen's `sampleData`/`demoStore` calls with the corresponding
-   query/mutation hook. The component shapes already match the DB (`tasks`,
-   `contacts`, `checklists`, `groups`, `group_members`), so this is mechanical.
-4. Subscribe to Supabase Realtime channels and invalidate queries so task spaces
-   update live like a chat.
+- `types.ts` — DB row types mirroring the schema.
+- `tasks.ts` / `checklists.ts` — typed Supabase query & mutation functions
+  (contacts + tallies, task spaces, accept/complete/poke, checklists, groups).
+- `mappers.ts` — convert DB rows into the UI's existing shapes.
+- `hooks.ts` — TanStack Query hooks (`useContacts`, `useSpaceTasks`,
+  `useChecklists`, `useGroups`) that return **sample data in preview** and **live
+  queries when there's a real session** (`useIsLive`).
 
-Because every table already has **Row-Level Security** (see `0001_init.sql`), the
-client can query directly with the anon key — no bespoke API tier needed.
+The app is wrapped in a `QueryClientProvider`. To finish going live:
+
+1. Run the migrations in Supabase (`0001_init.sql`, `0002_push_tokens.sql`).
+2. Flip each screen from its sample import to the matching hook — e.g. in
+   `ContactsScreen`, replace `SAMPLE_CONTACTS` with
+   `const { data: contacts = [] } = useContacts()`. The shapes already match, so
+   this is mechanical. Add optimistic mutations for create/accept/complete.
+3. Subscribe to Supabase Realtime and invalidate queries so task spaces update
+   live like a chat.
+
+Because every table has **Row-Level Security** (`0001_init.sql`), the client can
+query directly with the anon key — no bespoke API tier needed.
+
+> The live query functions are written against the validated schema but have not
+> yet been exercised against a running database; verify them once the migration
+> is applied.
 
 ## Theming
 

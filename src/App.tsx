@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { registerPush } from '@/lib/push'
 import { ThemeProvider } from '@/context/ThemeContext'
@@ -90,14 +91,20 @@ function Gate() {
   )
 }
 
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+})
+
 export default function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <ToastProvider>
-            <Gate />
-          </ToastProvider>
+          <QueryClientProvider client={queryClient}>
+            <ToastProvider>
+              <Gate />
+            </ToastProvider>
+          </QueryClientProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
