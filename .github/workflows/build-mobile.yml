@@ -12,15 +12,12 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - uses: actions/setup-java@v4
@@ -35,27 +32,7 @@ jobs:
         run: npm run build
 
       - name: Copy web assets to Android
-        run: |
-          set -o pipefail
-          npx cap copy android 2>&1 | tee /tmp/copy.log
-
-      - name: Report copy failure
-        if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-        run: |
-          python3 - <<'PY'
-          import json, os, urllib.request
-          log = open('/tmp/copy.log').read()[-5000:] if os.path.exists('/tmp/copy.log') else '(no /tmp/copy.log)'
-          data = json.dumps({'title': 'CI diag: cap copy android', 'body': '```\n' + log + '\n```'}).encode()
-          req = urllib.request.Request(
-              f"https://api.github.com/repos/{os.environ['REPO']}/issues",
-              data=data,
-              headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
-                       'Accept': 'application/vnd.github+json', 'User-Agent': 'ci'})
-          print('issue created:', urllib.request.urlopen(req).status)
-          PY
+        run: npx cap copy android
 
       - name: Build debug APK
         run: |
@@ -78,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies

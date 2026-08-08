@@ -56,7 +56,7 @@ npm run ios           # builds, syncs, opens Xcode  (macOS only)
 - Xcode (latest) + CocoaPods (`sudo gem install cocoapods`)
 - An Apple Developer account to run on a real device / submit
 
-The web toolchain (Node 20+) you already have.
+The web toolchain (Node 22+) you already have.
 
 ## Run on a device
 

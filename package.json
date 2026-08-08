@@ -58,6 +58,6 @@
     "vite-plugin-pwa": "^0.20.5"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }

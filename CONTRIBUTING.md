@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Node 20+** (see `.nvmrc`)
+- **Node 22+** (see `.nvmrc`)
 - For native builds: Android Studio (Android) and/or Xcode + CocoaPods (iOS, macOS
   only). See `MOBILE.md`.
 
