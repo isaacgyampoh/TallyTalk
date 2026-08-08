@@ -49,6 +49,9 @@ jobs:
   ios-compile-check:
     name: iOS compile check (no signing)
     runs-on: macos-latest
+    # Non-blocking: a runnable iOS build needs Apple signing (your Developer
+    # account). This job just flags iOS build breakages; it never blocks the APK.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

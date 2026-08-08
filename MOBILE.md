@@ -13,23 +13,24 @@ notifications).
 ## Get the Android app WITHOUT a laptop (cloud build)
 
 You don't need Android Studio or a powerful machine. A GitHub Action builds the
-APK in the cloud for you:
+APK in the cloud for you — this is verified working.
 
 1. Open the repo on GitHub → **Actions** tab → **Build mobile apps** →
    **Run workflow** (it also runs automatically on every push to `main`).
-2. Wait for the **Android APK** job to finish (a few minutes).
+2. Wait for the **Android APK** job to finish (~3–4 minutes).
 3. Open the finished run → scroll to **Artifacts** → download
-   **`tallytalk-android-debug`** (a zip containing `app-debug.apk`).
+   **`tallytalk-android-debug`** (a zip containing `app-debug.apk`, ~5–6 MB).
 4. Transfer the APK to your Android phone and open it. Allow "install from
    unknown sources" if prompted. Done — the app is on your phone.
 
 This is a **debug** build (auto-signed, for testing/sharing). For the Play Store
 you'll later produce a signed release bundle (below).
 
-The workflow also runs an **iOS compile check** on a Mac runner to confirm the iOS
-app builds — but a *runnable* iOS app needs Apple signing (see iOS below), which
-requires your Apple Developer account. For iOS without a Mac, use a Capacitor
-cloud-build service (Ionic Appflow or Codemagic) connected to this repo.
+**iOS:** the workflow runs an iOS compile check, but it's non-blocking — a
+*runnable* iOS app requires Apple signing (your Apple Developer account), which
+can't be done from a Linux cloud runner. For iOS without a Mac, connect this repo
+to a Capacitor cloud-build service (Ionic Appflow or Codemagic) with your Apple
+credentials.
 
 ## The core workflow (if you do have the tools)
 
