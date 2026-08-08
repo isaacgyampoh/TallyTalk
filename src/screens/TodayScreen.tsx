@@ -140,7 +140,7 @@ function Section({
             >
               <Avatar initials={r.initials} color={r.color} size={38} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[14.5px] font-medium text-ink">{r.title}</p>
+                <p className="line-clamp-2 text-[14.5px] font-medium text-ink">{r.title}</p>
                 <p className="text-[12.5px] text-ink-faint">
                   {r.direction === 'they_owe_me'
                     ? r.contactName

@@ -11,6 +11,7 @@ import { Shell } from '@/components/Shell'
 import { Landing } from '@/screens/Landing'
 import { AuthFlow } from '@/screens/AuthFlow'
 import { Welcome } from '@/screens/Welcome'
+import { Onboarding, isOnboarded } from '@/screens/Onboarding'
 import { ContactsScreen } from '@/screens/ContactsScreen'
 import { ContactSpaceScreen } from '@/screens/ContactSpaceScreen'
 import { PersonalScreen } from '@/screens/PersonalScreen'
@@ -64,9 +65,7 @@ function Gate() {
           path="*"
           element={
             isAppMode ? (
-              <AppViewport>
-                <Welcome />
-              </AppViewport>
+              <AppViewport>{isOnboarded() ? <Welcome /> : <Onboarding />}</AppViewport>
             ) : (
               <Landing />
             )
