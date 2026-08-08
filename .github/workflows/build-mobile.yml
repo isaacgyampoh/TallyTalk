@@ -12,6 +12,8 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -39,12 +41,24 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Upload APK (build artifact)
         uses: actions/upload-artifact@v4
         with:
           name: tallytalk-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish APK to a shareable release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk tallytalk.apk
+          gh release create android-latest \
+            --title "TallyTalk — latest Android build" \
+            --notes "Debug build for testing. On Android: open the file and allow install from unknown sources." \
+            --prerelease 2>/dev/null || true
+          gh release upload android-latest tallytalk.apk --clobber
 
   ios-compile-check:
     name: iOS compile check (no signing)
