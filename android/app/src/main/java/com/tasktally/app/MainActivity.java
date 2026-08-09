@@ -1,4 +1,4 @@
-package com.tallytalk.app;
+package com.tasktally.app;
 
 import com.getcapacitor.BridgeActivity;
 
