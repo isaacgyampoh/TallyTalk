@@ -1,4 +1,4 @@
-# TallyTalk
+# TaskTally
 
 A task-first, WhatsApp-familiar accountability app. Instead of chatting, people
 send each other **tasks**. Every contact is a two-sided ledger — what they owe
@@ -53,7 +53,7 @@ wired up.
 3. Open **Edge Functions → send-sms-hook → Secrets** (or Project Settings →
    Edge Functions secrets) and add:
    - `ARKESEL_API_KEY` — your Arkesel API key
-   - `ARKESEL_SENDER_ID` — your registered Arkesel sender ID (e.g. `TallyTalk`)
+   - `ARKESEL_SENDER_ID` — your registered Arkesel sender ID (e.g. `TaskTally`)
    - `SEND_SMS_HOOK_SECRET` — you'll get this value in the next step; add it
      after.
 

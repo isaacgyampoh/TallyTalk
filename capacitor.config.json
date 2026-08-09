@@ -1,6 +1,6 @@
 {
   "appId": "com.tallytalk.app",
-  "appName": "TallyTalk",
+  "appName": "TaskTally",
   "webDir": "dist",
   "backgroundColor": "#ffffff",
   "plugins": {

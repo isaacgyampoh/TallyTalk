@@ -420,5 +420,5 @@ export const SAMPLE_GROUPS: SampleGroup[] = [
 export const SAMPLE_PROFILE = {
   name: 'Isaac',
   phone: '+233 24 000 0000',
-  description: 'Building TallyTalk.',
+  description: 'Building TaskTally.',
 }

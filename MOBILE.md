@@ -1,4 +1,4 @@
-# TallyTalk — Mobile app (Capacitor)
+# TaskTally — Mobile app (Capacitor)
 
 The native iOS and Android apps wrap the **same** web codebase (in `src/`) — no
 separate mobile code to maintain. Capacitor packages the built web app (`dist/`)

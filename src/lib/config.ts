@@ -1,4 +1,4 @@
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'TallyTalk'
+export const APP_NAME = import.meta.env.VITE_APP_NAME || 'TaskTally'
 
 export const ACCENT = '#6600FF'
 

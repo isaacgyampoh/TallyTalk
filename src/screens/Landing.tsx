@@ -145,7 +145,7 @@ function Phone({ src }: { src: string }) {
   return (
     <div className="relative w-[248px] sm:w-[280px]">
       <div className="overflow-hidden rounded-[40px] border-[10px] border-carbon bg-carbon shadow-soft">
-        <img src={src} alt="TallyTalk app" className="block w-full" />
+        <img src={src} alt="TaskTally app" className="block w-full" />
       </div>
     </div>
   )

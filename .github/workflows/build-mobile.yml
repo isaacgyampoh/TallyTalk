@@ -54,13 +54,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk TallyTalk.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk TaskTally.apk
           gh release create android-latest \
             --title "TallyTalk — latest Android build" \
             --notes "Debug build for testing. On Android: open the file and allow install from unknown sources." \
             --prerelease 2>/dev/null || true
+          gh release delete-asset android-latest TallyTalk.apk -y 2>/dev/null || true
           gh release delete-asset android-latest tallytalk.apk -y 2>/dev/null || true
-          gh release upload android-latest TallyTalk.apk --clobber
+          gh release upload android-latest TaskTally.apk --clobber
 
   ios-compile-check:
     name: iOS compile check (no signing)

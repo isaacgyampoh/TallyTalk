@@ -1,6 +1,6 @@
 # Architecture
 
-TallyTalk is a **task-first accountability app**: instead of chatting, people
+TaskTally is a **task-first accountability app**: instead of chatting, people
 send each other tasks, and each contact is a two-sided ledger ("they owe me" /
 "I owe them"). One codebase ships to **web (PWA)** and **native iOS/Android**
 (via Capacitor).
