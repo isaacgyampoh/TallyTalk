@@ -5,7 +5,7 @@ send each other **tasks**. Every contact is a two-sided ledger — what they owe
 you on one side, what you owe them on the other — plus private checklists,
 shared group checklists, and a **Poke** nudge.
 
-Built as an installable **PWA** and as native **iOS + Android** apps from the same
+Built as an **web app** and as native **iOS + Android** apps from the same
 codebase (Capacitor), on **Supabase** (Postgres + Auth + Realtime + Storage) with
 **Arkesel** for SMS one-time codes. Deploys on **Vercel**.
 

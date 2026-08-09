@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { InstallBanner } from './InstallBanner'
 import { TodayIcon, ContactsIcon, PersonalIcon, GroupsIcon, ProfileIcon } from './icons'
 
 const TABS = [
@@ -15,7 +14,6 @@ export function Shell({ children }: { children: ReactNode }) {
   const loc = useLocation()
   return (
     <div className="app-frame">
-      <InstallBanner />
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div key={loc.pathname} className="h-full animate-page-in">
           {children}

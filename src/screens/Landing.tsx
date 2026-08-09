@@ -1,10 +1,6 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { useInstallPrompt } from '@/hooks/useInstallPrompt'
-import { isNative } from '@/lib/platform'
 import { APP_NAME } from '@/lib/config'
-import { InstallHelp } from '@/components/InstallBanner'
 import { WandIcon, ContactsIcon, PersonalIcon, GroupsIcon, CheckIcon } from '@/components/icons'
 
 const DOT_GRID = 'radial-gradient(rgba(255,255,255,0.16) 1px, transparent 1.4px)'
@@ -12,28 +8,13 @@ const DOT_GRID = 'radial-gradient(rgba(255,255,255,0.16) 1px, transparent 1.4px)
 export function Landing() {
   const nav = useNavigate()
   const { enterPreview } = useAuth()
-  const { canInstall, promptInstall, installed, isIOS } = useInstallPrompt()
-  const [showInstall, setShowInstall] = useState(false)
-  const hideInstall = installed || isNative
-
-  // Nudge install on first arrival (once per session), as requested.
-  useEffect(() => {
-    if (hideInstall) return
-    if (sessionStorage.getItem('tt.installNudge')) return
-    const t = setTimeout(() => {
-      sessionStorage.setItem('tt.installNudge', '1')
-      setShowInstall(true)
-    }, 1400)
-    return () => clearTimeout(t)
-  }, [hideInstall])
 
   function tryDemo() {
     enterPreview()
     nav('/today')
   }
-  function onInstall() {
-    if (canInstall) promptInstall()
-    else setShowInstall(true)
+  function getApp() {
+    window.location.href = '/download'
   }
 
   return (
@@ -51,14 +32,12 @@ export function Landing() {
             <span className="font-display text-[19px] font-bold tracking-tight">{APP_NAME}</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {!hideInstall && (
-              <button
-                onClick={onInstall}
-                className="press rounded-full bg-violet-tint px-4 py-2 text-[13.5px] font-semibold text-violet-ink"
-              >
-                Install app
-              </button>
-            )}
+            <button
+              onClick={getApp}
+              className="press rounded-full bg-violet-tint px-4 py-2 text-[13.5px] font-semibold text-violet-ink"
+            >
+              Get the app
+            </button>
             <button
               onClick={() => nav('/signin')}
               className="press rounded-full px-3 py-2 text-[13.5px] font-semibold text-ink-soft"
@@ -113,11 +92,9 @@ export function Landing() {
               <button onClick={tryDemo} className="btn-primary px-7 text-[15.5px]">
                 Open the demo
               </button>
-              {!hideInstall && (
-                <button onClick={onInstall} className="btn-ghost px-6">
-                  Install app
-                </button>
-              )}
+              <button onClick={getApp} className="btn-ghost px-6">
+                Get the app
+              </button>
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-medium text-ink-faint">
@@ -213,19 +190,10 @@ export function Landing() {
             </div>
           </div>
           <p className="mt-8 pb-8 text-center text-[12.5px] text-ink-faint">
-            {APP_NAME} · a task-first way to stay accountable · installable on any phone
+            {APP_NAME} · a task-first way to stay accountable · available on web and Android
           </p>
         </section>
       </div>
-
-      {showInstall && (
-        <InstallHelp
-          isIOS={isIOS}
-          canInstall={canInstall}
-          onInstall={promptInstall}
-          onClose={() => setShowInstall(false)}
-        />
-      )}
     </div>
   )
 }
