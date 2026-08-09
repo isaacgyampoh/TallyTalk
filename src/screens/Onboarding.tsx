@@ -42,13 +42,24 @@ export function Onboarding() {
   }
 
   return (
-    <div className="app-frame aura-bg">
+    <div className="app-frame relative overflow-hidden">
+      <img
+        src="/welcome-bg-light.jpg"
+        alt=""
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover dark:hidden"
+      />
+      <img
+        src="/welcome-bg-dark.jpg"
+        alt=""
+        className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover dark:block"
+      />
+
       <div
-        className="flex items-center justify-end px-5"
+        className="relative flex items-center justify-end px-5"
         style={{ paddingTop: 'calc(var(--safe-top) + 14px)' }}
       >
         {!last && (
-          <button onClick={skip} className="press text-[14px] font-semibold text-ink-faint">
+          <button onClick={skip} className="press text-[14px] font-semibold text-ink-soft">
             Skip
           </button>
         )}
@@ -57,13 +68,16 @@ export function Onboarding() {
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {SLIDES.map((s, idx) => (
-          <section key={idx} className="flex w-full flex-none snap-center flex-col px-8">
-            <div className="flex flex-1 items-center justify-center py-4">{s.art}</div>
-            <div className="pb-2">
-              <h2 className="font-display text-[28px] font-extrabold leading-tight tracking-tight">
+          <section
+            key={idx}
+            className="flex w-full flex-none snap-center flex-col justify-center px-8 pb-6"
+          >
+            <div className="flex justify-center">{s.art}</div>
+            <div className="mt-10">
+              <h2 className="font-display text-[29px] font-extrabold leading-tight tracking-tight">
                 {s.title}
               </h2>
               <p className="mt-2.5 max-w-[20rem] text-[16px] leading-relaxed text-ink-soft">
@@ -75,7 +89,7 @@ export function Onboarding() {
       </div>
 
       {/* dots */}
-      <div className="flex justify-center gap-2 py-5">
+      <div className="relative flex justify-center gap-2 py-5">
         {SLIDES.map((_, idx) => (
           <span
             key={idx}
@@ -85,7 +99,10 @@ export function Onboarding() {
       </div>
 
       {/* actions */}
-      <div className="space-y-3 px-8" style={{ paddingBottom: 'calc(var(--safe-bottom) + 22px)' }}>
+      <div
+        className="relative space-y-3 px-8"
+        style={{ paddingBottom: 'calc(var(--safe-bottom) + 22px)' }}
+      >
         {last ? (
           <>
             <button onClick={getStarted} className="btn-primary h-14 w-full text-[16px]">
@@ -110,7 +127,7 @@ export function Onboarding() {
 function TaskArt() {
   return (
     <div className="w-full max-w-[300px]">
-      <div className="rounded-bubble bg-violet-tint p-4 shadow-card">
+      <div className="rounded-bubble bg-paper p-4 shadow-soft">
         <div className="flex items-start gap-2.5">
           <span className="mt-0.5 grid h-5 w-5 place-items-center rounded-md border border-ink-faint" />
           <div>
@@ -138,7 +155,7 @@ function TaskArt() {
 function LedgerArt() {
   return (
     <div className="w-full max-w-[300px]">
-      <div className="flex overflow-hidden rounded-[20px] border border-line">
+      <div className="flex overflow-hidden rounded-[20px] border border-line shadow-soft">
         <div className="flex-[23] bg-violet px-5 py-6 text-white">
           <p className="nums font-display text-[32px] font-extrabold leading-none">23</p>
           <p className="mt-1.5 text-[12.5px] font-semibold text-white/80">they owe you</p>
@@ -155,7 +172,7 @@ function LedgerArt() {
         ].map((r) => (
           <div
             key={r.i}
-            className="flex items-center gap-3 rounded-2xl border border-line px-3 py-2.5"
+            className="flex items-center gap-3 rounded-2xl border border-line bg-paper px-3 py-2.5 shadow-card"
           >
             <span
               className="grid h-9 w-9 place-items-center rounded-full text-[12px] font-semibold text-white"
@@ -175,7 +192,7 @@ function LedgerArt() {
 function PokeArt() {
   return (
     <div className="w-full max-w-[300px]">
-      <div className="relative rounded-bubble bg-violet-tint p-4 shadow-card ring-2 ring-violet-glow">
+      <div className="relative rounded-bubble bg-paper p-4 shadow-soft ring-2 ring-violet-glow">
         <span className="absolute -right-2 -top-3 text-violet-glow">
           <WandIcon width={26} height={26} />
         </span>
