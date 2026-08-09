@@ -82,8 +82,7 @@
   /* Soft, dreamy violet wash (inspired by calm assistant UIs) — works light + dark. */
   .aura-bg {
     background:
-      radial-gradient(85% 45% at 12% 0%, rgb(var(--c-aura-a) / 0.5), transparent 55%),
-      radial-gradient(80% 45% at 100% 6%, rgb(var(--c-aura-b) / 0.42), transparent 55%),
+      radial-gradient(70% 34% at 10% 0%, rgb(var(--c-aura-a) / 0.22), transparent 55%),
       rgb(var(--c-paper));
   }
 

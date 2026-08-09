@@ -24,7 +24,7 @@ export function Welcome() {
     <div className="app-frame relative overflow-hidden">
       {/* branded backdrop */}
       <AuroraBg />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-paper/80 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-paper/60 to-transparent" />
 
       <div
         className="relative flex flex-1 flex-col px-7"
