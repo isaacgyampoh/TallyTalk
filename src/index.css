@@ -81,9 +81,7 @@
 @layer components {
   /* Soft, dreamy violet wash (inspired by calm assistant UIs) — works light + dark. */
   .aura-bg {
-    background:
-      radial-gradient(70% 34% at 10% 0%, rgb(var(--c-aura-a) / 0.22), transparent 55%),
-      rgb(var(--c-paper));
+    background: rgb(var(--c-paper));
   }
 
   /* The routed app fills its container (the device on desktop, the screen on mobile). */

@@ -37,10 +37,6 @@ export function Onboarding() {
     enterPreview()
     nav('/today')
   }
-  function skip() {
-    markOnboarded()
-    nav('/')
-  }
 
   return (
     <div className="app-frame relative overflow-hidden">
@@ -49,13 +45,7 @@ export function Onboarding() {
       <div
         className="relative flex items-center justify-end px-5"
         style={{ paddingTop: 'calc(var(--safe-top) + 14px)' }}
-      >
-        {!last && (
-          <button onClick={skip} className="press text-[14px] font-semibold text-ink-soft">
-            Skip
-          </button>
-        )}
-      </div>
+      ></div>
 
       <div
         ref={scroller}
