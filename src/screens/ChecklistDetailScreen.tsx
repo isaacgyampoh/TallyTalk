@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { isAppMode } from '@/lib/platform'
+import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { BackIcon, CheckIcon, PhoneIcon, PlusIcon } from '@/components/icons'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
 import { SAMPLE_CHECKLIST_ITEMS, type ChecklistItem } from '@/lib/sampleData'
@@ -12,6 +14,7 @@ const listColor = (key: string) => {
 
 export function ChecklistDetailScreen() {
   const nav = useNavigate()
+  useSwipeBack()
   const { key = '' } = useParams()
   const meta = PREDEFINED_CHECKLISTS.find((l) => l.key === key)
   const custom = meta ? undefined : getCustomList(key)
@@ -50,13 +53,15 @@ export function ChecklistDetailScreen() {
         className="flex items-center gap-3 border-b border-line px-4 pb-3"
         style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}
       >
-        <button
-          className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
-          onClick={() => nav(-1)}
-          aria-label="Back"
-        >
-          <BackIcon />
-        </button>
+        {!isAppMode && (
+          <button
+            className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
+            onClick={() => nav(-1)}
+            aria-label="Back"
+          >
+            <BackIcon />
+          </button>
+        )}
         <span
           className="grid h-10 w-10 shrink-0 place-items-center rounded-xl font-display text-[17px] font-bold text-white"
           style={{ background: color }}

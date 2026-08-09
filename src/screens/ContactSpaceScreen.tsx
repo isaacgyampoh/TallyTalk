@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { isAppMode } from '@/lib/platform'
+import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { Avatar } from '@/components/Avatar'
 import { VoiceNote } from '@/components/VoiceNote'
 import { TaskDetail, type DetailTask } from '@/components/TaskDetail'
@@ -29,6 +31,7 @@ type Item =
 
 export function ContactSpaceScreen() {
   const nav = useNavigate()
+  useSwipeBack()
   const { id } = useParams()
   const contact = SAMPLE_CONTACTS.find((c) => c.id === id) ?? SAMPLE_CONTACTS[0]
   const firstName = contact.name.split(' ')[0]
@@ -159,13 +162,15 @@ export function ContactSpaceScreen() {
         className="flex items-center gap-3 border-b border-line px-4 pb-3"
         style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}
       >
-        <button
-          className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
-          onClick={() => nav(-1)}
-          aria-label="Back"
-        >
-          <BackIcon />
-        </button>
+        {!isAppMode && (
+          <button
+            className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
+            onClick={() => nav(-1)}
+            aria-label="Back"
+          >
+            <BackIcon />
+          </button>
+        )}
         <Avatar initials={contact.initials} color={contact.color} size={38} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-[17px] font-bold leading-tight">

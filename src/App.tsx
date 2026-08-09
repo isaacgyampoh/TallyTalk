@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
@@ -12,6 +12,8 @@ import { Landing } from '@/screens/Landing'
 import { AuthFlow } from '@/screens/AuthFlow'
 import { Welcome } from '@/screens/Welcome'
 import { Onboarding, isOnboarded } from '@/screens/Onboarding'
+import { IntroSplash } from '@/screens/IntroSplash'
+import { useAndroidBack } from '@/hooks/useSwipeBack'
 import { ContactsScreen } from '@/screens/ContactsScreen'
 import { ContactSpaceScreen } from '@/screens/ContactSpaceScreen'
 import { PersonalScreen } from '@/screens/PersonalScreen'
@@ -36,12 +38,29 @@ function Splash() {
   )
 }
 
+let introPlayed = false
+
 function Gate() {
   const { ready, signedIn, session } = useAuth()
+  const [intro, setIntro] = useState(isAppMode && !introPlayed)
+  useAndroidBack()
 
   useEffect(() => {
     if (session) registerPush()
   }, [session])
+
+  if (intro) {
+    return (
+      <AppViewport>
+        <IntroSplash
+          onDone={() => {
+            introPlayed = true
+            setIntro(false)
+          }}
+        />
+      </AppViewport>
+    )
+  }
 
   if (!ready)
     return (

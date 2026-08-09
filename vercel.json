@@ -3,7 +3,7 @@
   "redirects": [
     {
       "source": "/download",
-      "destination": "https://github.com/isaacgyampoh/TallyTalk/releases/download/android-latest/tallytalk.apk",
+      "destination": "https://github.com/isaacgyampoh/TallyTalk/releases/download/android-latest/TallyTalk.apk",
       "permanent": false
     }
   ],

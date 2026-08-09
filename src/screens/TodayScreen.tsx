@@ -69,12 +69,12 @@ export function TodayScreen() {
           <SmartAdd />
         </div>
 
-        {/* quick actions */}
-        <div className="mt-3.5 grid grid-cols-2 gap-2.5 px-5">
-          <Quick Icon={ContactsIcon} label="Send a request" onClick={() => nav('/contacts')} />
-          <Quick Icon={WandIcon} label="Poke a contact" onClick={() => nav('/contacts')} />
-          <Quick Icon={PersonalIcon} label="My checklists" onClick={() => nav('/personal')} />
-          <Quick Icon={GroupsIcon} label="My groups" onClick={() => nav('/groups')} />
+        {/* quick prompts */}
+        <div className="mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [&::-webkit-scrollbar]:hidden">
+          <Chip Icon={ContactsIcon} label="Send a request" onClick={() => nav('/contacts')} />
+          <Chip Icon={WandIcon} label="Poke" onClick={() => nav('/contacts')} />
+          <Chip Icon={PersonalIcon} label="Checklists" onClick={() => nav('/personal')} />
+          <Chip Icon={GroupsIcon} label="Groups" onClick={() => nav('/groups')} />
         </div>
 
         <div className="px-5">
@@ -134,7 +134,7 @@ export function TodayScreen() {
   )
 }
 
-function Quick({
+function Chip({
   Icon,
   label,
   onClick,
@@ -146,12 +146,10 @@ function Quick({
   return (
     <button
       onClick={onClick}
-      className="press flex items-center gap-3 rounded-card border border-line bg-paper/70 px-3.5 py-3 text-left shadow-card backdrop-blur-sm transition hover:-translate-y-0.5"
+      className="press flex shrink-0 items-center gap-2 rounded-full border border-line bg-paper/70 px-3.5 py-2 text-[13px] font-semibold text-ink shadow-card backdrop-blur-sm"
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-tint text-violet-ink">
-        <Icon width={18} height={18} />
-      </span>
-      <span className="text-[13px] font-semibold leading-tight text-ink">{label}</span>
+      <Icon width={16} height={16} className="text-violet-ink" />
+      {label}
     </button>
   )
 }

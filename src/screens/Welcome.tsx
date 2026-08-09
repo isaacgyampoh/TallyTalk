@@ -22,14 +22,18 @@ export function Welcome() {
   return (
     <div className="app-frame">
       <div
-        className="aura-bg flex flex-1 flex-col px-7"
+        className="aura-bg relative flex flex-1 flex-col overflow-hidden px-7"
         style={{
           paddingTop: 'calc(var(--safe-top) + 34px)',
           paddingBottom: 'calc(var(--safe-bottom) + 22px)',
         }}
       >
+        {/* soft decorative orbs */}
+        <div className="pointer-events-none absolute -left-20 -top-16 h-60 w-60 rounded-full bg-violet/20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 top-28 h-72 w-72 rounded-full bg-violet-glow/20 blur-3xl" />
+
         {/* brand — anchored near the top */}
-        <div>
+        <div className="relative">
           <span className="mb-6 grid h-[68px] w-[68px] place-items-center rounded-[20px] bg-violet text-white shadow-float">
             <WandIcon width={36} height={36} />
           </span>

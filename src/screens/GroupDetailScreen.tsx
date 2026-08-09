@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { isAppMode } from '@/lib/platform'
+import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { Avatar } from '@/components/Avatar'
 import { BackIcon, CheckIcon, PlusIcon } from '@/components/icons'
 import { SAMPLE_GROUPS, type GroupTask } from '@/lib/sampleData'
@@ -7,6 +9,7 @@ import { getCustomGroup } from '@/lib/demoStore'
 
 export function GroupDetailScreen() {
   const nav = useNavigate()
+  useSwipeBack()
   const { id } = useParams()
   const group =
     SAMPLE_GROUPS.find((g) => g.id === id) ?? getCustomGroup(id ?? '') ?? SAMPLE_GROUPS[0]
@@ -41,13 +44,15 @@ export function GroupDetailScreen() {
         className="flex items-center gap-3 border-b border-line px-4 pb-3"
         style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}
       >
-        <button
-          className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
-          onClick={() => nav(-1)}
-          aria-label="Back"
-        >
-          <BackIcon />
-        </button>
+        {!isAppMode && (
+          <button
+            className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
+            onClick={() => nav(-1)}
+            aria-label="Back"
+          >
+            <BackIcon />
+          </button>
+        )}
         <Avatar initials={group.name.slice(0, 2)} color={group.color} size={40} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-[18px] font-bold leading-tight">{group.name}</p>
