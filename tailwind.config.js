@@ -31,12 +31,13 @@ export default {
         sans: ['"Plus Jakarta Sans Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        card: '18px',
-        bubble: '20px',
+        card: '24px',
+        bubble: '22px',
       },
       boxShadow: {
-        card: '0 1px 2px rgba(17,17,20,0.04), 0 6px 24px -12px rgba(17,17,20,0.12)',
-        float: '0 8px 30px -8px rgba(102,0,255,0.45)',
+        card: '0 2px 10px -4px rgba(17,17,20,0.06), 0 16px 40px -20px rgba(60,20,120,0.18)',
+        soft: '0 10px 40px -16px rgba(60,20,120,0.20)',
+        float: '0 12px 34px -10px rgba(102,0,255,0.42)',
       },
       keyframes: {
         'wand-glitter': {

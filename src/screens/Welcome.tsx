@@ -22,7 +22,7 @@ export function Welcome() {
   return (
     <div className="app-frame">
       <div
-        className="flex flex-1 flex-col px-7"
+        className="aura-bg flex flex-1 flex-col px-7"
         style={{
           paddingTop: 'calc(var(--safe-top) + 34px)',
           paddingBottom: 'calc(var(--safe-bottom) + 22px)',

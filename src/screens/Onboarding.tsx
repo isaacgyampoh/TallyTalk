@@ -42,7 +42,7 @@ export function Onboarding() {
   }
 
   return (
-    <div className="app-frame">
+    <div className="app-frame aura-bg">
       <div
         className="flex items-center justify-end px-5"
         style={{ paddingTop: 'calc(var(--safe-top) + 14px)' }}

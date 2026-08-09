@@ -45,7 +45,7 @@ export function AuthFlow() {
   }
 
   return (
-    <div className="app-frame">
+    <div className="app-frame aura-bg">
       <div
         className="flex flex-1 flex-col px-6"
         style={{ paddingTop: 'calc(var(--safe-top) + 20px)' }}

@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
 import { SmartAdd } from '@/components/SmartAdd'
+import { WandIcon, ContactsIcon, PersonalIcon, GroupsIcon } from '@/components/icons'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
 
 interface Row extends SampleTask {
@@ -43,64 +43,116 @@ export function TodayScreen() {
     }
   }, [])
 
-  const today = new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 
   return (
     <div className="flex h-full flex-col">
-      <ScreenHeader title="Today" />
-      <div className="flex-1 overflow-y-auto px-5 pb-24">
-        <p className="-mt-1 mb-4 text-[13.5px] text-ink-faint">{today}</p>
+      <div className="aura-bg flex-1 overflow-y-auto pb-24">
+        {/* assistant greeting */}
+        <div className="px-5" style={{ paddingTop: 'calc(var(--safe-top) + 22px)' }}>
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-violet text-white shadow-float">
+              <WandIcon width={22} height={22} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-ink-faint">{greeting}</p>
+              <h1 className="font-display text-[23px] font-extrabold leading-tight tracking-tight">
+                What needs tracking?
+              </h1>
+            </div>
+          </div>
+        </div>
 
-        <div className="mb-5">
+        {/* assistant input */}
+        <div className="mt-5 px-5">
           <SmartAdd />
         </div>
 
-        {/* running tally */}
-        <div className="flex overflow-hidden rounded-[18px] border border-line">
-          <div
-            className="flex-1 bg-violet px-4 py-4 text-white"
-            style={{ flexGrow: Math.max(1, totalThem) }}
-          >
-            <p className="nums font-display text-[28px] font-extrabold leading-none">{totalThem}</p>
-            <p className="mt-1 text-[12px] font-semibold text-white/80">owed to you</p>
-          </div>
-          <div
-            className="flex-1 bg-carbon px-4 py-4 text-white"
-            style={{ flexGrow: Math.max(1, totalYou) }}
-          >
-            <p className="nums font-display text-[28px] font-extrabold leading-none">{totalYou}</p>
-            <p className="mt-1 text-[12px] font-semibold text-white/70">you owe</p>
-          </div>
+        {/* quick actions */}
+        <div className="mt-3.5 grid grid-cols-2 gap-2.5 px-5">
+          <Quick Icon={ContactsIcon} label="Send a request" onClick={() => nav('/contacts')} />
+          <Quick Icon={WandIcon} label="Poke a contact" onClick={() => nav('/contacts')} />
+          <Quick Icon={PersonalIcon} label="My checklists" onClick={() => nav('/personal')} />
+          <Quick Icon={GroupsIcon} label="My groups" onClick={() => nav('/groups')} />
         </div>
 
-        <Section
-          title="Overdue"
-          tone="overdue"
-          rows={overdue}
-          nav={nav}
-          empty="Nothing overdue — nice."
-        />
-        <Section
-          title="Due today"
-          tone="urgent"
-          rows={dueToday}
-          nav={nav}
-          empty="Nothing due today."
-        />
-        <Section
-          title="They owe you"
-          tone="violet"
-          rows={owedToYou}
-          nav={nav}
-          empty="You're not waiting on anyone."
-        />
-        <Section title="You owe" tone="ink" rows={youOwe} nav={nav} empty="You're all caught up." />
+        <div className="px-5">
+          {/* running tally */}
+          <div className="mt-6 flex overflow-hidden rounded-card shadow-card">
+            <div
+              className="flex-1 bg-violet px-4 py-4 text-white"
+              style={{ flexGrow: Math.max(1, totalThem) }}
+            >
+              <p className="nums font-display text-[28px] font-extrabold leading-none">
+                {totalThem}
+              </p>
+              <p className="mt-1 text-[12px] font-semibold text-white/80">owed to you</p>
+            </div>
+            <div
+              className="flex-1 bg-carbon px-4 py-4 text-white"
+              style={{ flexGrow: Math.max(1, totalYou) }}
+            >
+              <p className="nums font-display text-[28px] font-extrabold leading-none">
+                {totalYou}
+              </p>
+              <p className="mt-1 text-[12px] font-semibold text-white/70">you owe</p>
+            </div>
+          </div>
+
+          <Section
+            title="Overdue"
+            tone="overdue"
+            rows={overdue}
+            nav={nav}
+            empty="Nothing overdue — nice."
+          />
+          <Section
+            title="Due today"
+            tone="urgent"
+            rows={dueToday}
+            nav={nav}
+            empty="Nothing due today."
+          />
+          <Section
+            title="They owe you"
+            tone="violet"
+            rows={owedToYou}
+            nav={nav}
+            empty="You're not waiting on anyone."
+          />
+          <Section
+            title="You owe"
+            tone="ink"
+            rows={youOwe}
+            nav={nav}
+            empty="You're all caught up."
+          />
+        </div>
       </div>
     </div>
+  )
+}
+
+function Quick({
+  Icon,
+  label,
+  onClick,
+}: {
+  Icon: (p: React.SVGProps<SVGSVGElement>) => JSX.Element
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="press flex items-center gap-3 rounded-card border border-line bg-paper/70 px-3.5 py-3 text-left shadow-card backdrop-blur-sm transition hover:-translate-y-0.5"
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-tint text-violet-ink">
+        <Icon width={18} height={18} />
+      </span>
+      <span className="text-[13px] font-semibold leading-tight text-ink">{label}</span>
+    </button>
   )
 }
 
