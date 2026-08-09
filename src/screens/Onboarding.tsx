@@ -1,3 +1,4 @@
+import { AuroraBg } from '@/components/AuroraBg'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
@@ -43,16 +44,7 @@ export function Onboarding() {
 
   return (
     <div className="app-frame relative overflow-hidden">
-      <img
-        src="/welcome-bg-light.jpg"
-        alt=""
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover dark:hidden"
-      />
-      <img
-        src="/welcome-bg-dark.jpg"
-        alt=""
-        className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover dark:block"
-      />
+      <AuroraBg />
 
       <div
         className="relative flex items-center justify-end px-5"

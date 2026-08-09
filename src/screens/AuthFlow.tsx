@@ -1,3 +1,4 @@
+import { AuroraBg } from '@/components/AuroraBg'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
@@ -45,13 +46,15 @@ export function AuthFlow() {
   }
 
   return (
-    <div className="app-frame aura-bg">
+    <div className="app-frame relative overflow-hidden">
+      <AuroraBg />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-paper/80 to-transparent" />
       <div
-        className="flex flex-1 flex-col px-6"
+        className="relative flex flex-1 flex-col px-6"
         style={{ paddingTop: 'calc(var(--safe-top) + 20px)' }}
       >
         {/* Brand hero — the wand is the one bold thing here. */}
-        <div className="flex flex-1 flex-col justify-center">
+        <div className="flex flex-1 flex-col justify-center pb-6 pt-4">
           {step === 'phone' ? (
             <div className="animate-rise-in">
               <button

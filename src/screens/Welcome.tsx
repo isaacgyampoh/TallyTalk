@@ -1,3 +1,4 @@
+import { AuroraBg } from '@/components/AuroraBg'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { buzz } from '@/lib/haptics'
@@ -22,16 +23,7 @@ export function Welcome() {
   return (
     <div className="app-frame relative overflow-hidden">
       {/* branded backdrop */}
-      <img
-        src="/welcome-bg-light.jpg"
-        alt=""
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover dark:hidden"
-      />
-      <img
-        src="/welcome-bg-dark.jpg"
-        alt=""
-        className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover dark:block"
-      />
+      <AuroraBg />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-paper/80 to-transparent" />
 
       <div
