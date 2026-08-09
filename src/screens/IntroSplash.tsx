@@ -14,8 +14,18 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
   }, [onDone])
 
   return (
-    <div className="app-frame aura-bg animate-intro-out items-center justify-center">
-      <div className="flex flex-col items-center">
+    <div className="app-frame relative animate-intro-out items-center justify-center overflow-hidden">
+      <img
+        src="/welcome-bg-light.jpg"
+        alt=""
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover dark:hidden"
+      />
+      <img
+        src="/welcome-bg-dark.jpg"
+        alt=""
+        className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover dark:block"
+      />
+      <div className="relative flex flex-col items-center">
         <span className="grid h-24 w-24 animate-intro-pop place-items-center rounded-[28px] bg-violet text-white shadow-float">
           <WandIcon width={52} height={52} />
         </span>
