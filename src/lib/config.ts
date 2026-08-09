@@ -56,3 +56,6 @@ export const PREDEFINED_CHECKLISTS = [
 ] as const
 
 export const TASK_TITLE_MAX = 60
+
+export const APP_VERSION = '1.0'
+export const BUILD_ID = __BUILD_ID__

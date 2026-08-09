@@ -1,3 +1,4 @@
+import { APP_NAME, APP_VERSION, BUILD_ID } from '@/lib/config'
 import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
 import { useAuth } from '@/context/AuthContext'
@@ -109,6 +110,10 @@ export function ProfileScreen() {
         <button className="btn-ghost w-full" onClick={signOut}>
           Sign out
         </button>
+
+        <p className="pb-2 pt-1 text-center text-[12px] text-ink-faint">
+          {APP_NAME} v{APP_VERSION} · build {BUILD_ID}
+        </p>
       </div>
     </div>
   )
