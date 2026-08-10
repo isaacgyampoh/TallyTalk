@@ -14,8 +14,10 @@
 //   supabase secrets set SEND_PUSH_SECRET='<a long random string>'
 //   (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by the platform)
 //
-// NOTE: This has not been run against a live FCM project here — plug in your
-// service account and test on a real device.
+// STATUS: Firebase project task-tally-77b90 is configured and the app ships with
+// FCM enabled. This function is ready to deploy — set the two secrets below and
+// run `supabase functions deploy send-push`. Push delivers once a real user is
+// signed in (so their device token is stored in push_tokens).
 
 interface ServiceAccount {
   client_email: string
