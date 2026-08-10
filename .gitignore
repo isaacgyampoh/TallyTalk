@@ -38,3 +38,4 @@ supabase/.temp
 
 # committed production values (anon key is public-safe; security is RLS)
 !.env.production
+android/app/google-services.json

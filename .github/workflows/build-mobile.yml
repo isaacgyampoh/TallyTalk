@@ -35,6 +35,17 @@ jobs:
           npm run build
           npx cap sync android
 
+      - name: Add Firebase config
+        env:
+          GS: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GS" ]; then
+            echo "$GS" | base64 -d > android/app/google-services.json
+            echo "google-services.json written ($(wc -c < android/app/google-services.json) bytes)"
+          else
+            echo "No GOOGLE_SERVICES_JSON secret set — building without Firebase."
+          fi
+
       - name: Build debug APK
         run: |
           cd android
