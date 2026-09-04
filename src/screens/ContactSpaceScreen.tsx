@@ -1,482 +1,214 @@
-import { useEffect, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { isAppMode } from '@/lib/platform'
 import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { Avatar } from '@/components/Avatar'
-import { VoiceNote } from '@/components/VoiceNote'
-import { TaskDetail, type DetailTask } from '@/components/TaskDetail'
+import { TaskWallpaper } from '@/components/TaskWallpaper'
+import { TaskRow, type Side } from '@/components/TaskRow'
 import { useToast } from '@/components/Toast'
 import { buzz } from '@/lib/haptics'
-import {
-  BackIcon,
-  CheckIcon,
-  PlusIcon,
-  WandIcon,
-  MicIcon,
-  PaperclipIcon,
-  ImageIcon,
-  DocIcon,
-  StopIcon,
-  CloseIcon,
-} from '@/components/icons'
-import { TASK_TITLE_MAX, type Priority } from '@/lib/config'
+import { daysAgo } from '@/lib/time'
+import { BackIcon, ChevronRightIcon, ChevronUpIcon } from '@/components/icons'
+import { TASK_TITLE_MAX } from '@/lib/config'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
 import { getDemoTasks } from '@/lib/demoStore'
 
-type Item =
-  | ({ kind: 'task' } & SampleTask & { mine: boolean })
-  | { kind: 'voice'; id: string; mine: boolean; duration: number }
-  | { kind: 'image'; id: string; mine: boolean; caption: string }
-  | { kind: 'file'; id: string; mine: boolean; name: string; size: string }
-
+/**
+ * The two-sided task space: what I owe them down the left in green, what they
+ * owe me down the right in white, on the shared task wallpaper. Tapping a task
+ * opens its comments; the composer only ever creates a task for them.
+ */
 export function ContactSpaceScreen() {
   const nav = useNavigate()
   useSwipeBack()
   const { id } = useParams()
-  const contact = SAMPLE_CONTACTS.find((c) => c.id === id) ?? SAMPLE_CONTACTS[0]
-  const firstName = contact.name.split(' ')[0]
-
-  const seed: Item[] = [
-    ...contact.tasks
-      .filter((t) => t.status !== 'completed')
-      .map((t) => ({ kind: 'task' as const, ...t, mine: t.direction === 'they_owe_me' })),
-    ...getDemoTasks(contact.id).map((t) => ({
-      kind: 'task' as const,
-      ...t,
-      mine: t.direction === 'they_owe_me',
-    })),
-  ]
-  if (contact.id === 'ben') {
-    seed.splice(1, 0, { kind: 'voice', id: 'v-seed', mine: false, duration: 8 })
-    seed.splice(3, 0, {
-      kind: 'file',
-      id: 'f-seed',
-      mine: true,
-      name: 'Ecobank-agreement.pdf',
-      size: '240 KB',
-    })
-  }
-
-  const [items, setItems] = useState<Item[]>(seed)
-  const [draft, setDraft] = useState('')
-  const [sheet, setSheet] = useState(false)
-  const [recording, setRecording] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null)
-  const [pokedId, setPokedId] = useState<string | null>(null)
-  const recRef = useRef<number | null>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const contact = SAMPLE_CONTACTS.find((c) => c.id === id)
   const toast = useToast()
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  const openTask = items.find((it) => it.kind === 'task' && it.id === openTaskId) as
-    (Item & { kind: 'task' }) | undefined
+  const [tasks, setTasks] = useState<SampleTask[]>(() =>
+    contact ? [...contact.tasks, ...getDemoTasks(contact.id)] : [],
+  )
+  const [draft, setDraft] = useState('')
+  const [showDone, setShowDone] = useState<Record<Side, boolean>>({ owe: true, owed: true })
 
-  function updateTask(id: string, patch: Partial<SampleTask>) {
-    setItems((prev) =>
-      prev.map((it) => (it.kind === 'task' && it.id === id ? { ...it, ...patch } : it)),
+  const { owe, owed } = useMemo(
+    () => ({
+      owe: tasks.filter((t) => t.direction === 'i_owe_them'),
+      owed: tasks.filter((t) => t.direction === 'they_owe_me'),
+    }),
+    [tasks],
+  )
+
+  if (!contact) {
+    return (
+      <div className="app-frame items-center justify-center px-8 text-center">
+        <div>
+          <p className="font-display text-lg font-semibold">We can&rsquo;t find that person</p>
+          <button onClick={() => nav('/contacts')} className="btn-ghost mt-5">
+            Back to Contacts
+          </button>
+        </div>
+      </div>
     )
   }
-  function removeItem(id: string) {
-    setItems((prev) => prev.filter((it) => it.id !== id))
+
+  // Narrowed past the guard above, so the closures below can rely on it.
+  const person = contact
+  const firstName = person.name.split(' ')[0]
+
+  function patch(taskId: string, next: Partial<SampleTask>) {
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...next } : t)))
   }
 
-  function poke(id: string) {
-    // Lift the task to the top and sparkle it — the wand in action.
-    setItems((prev) => {
-      const hit = prev.find((it) => it.id === id)
-      if (!hit) return prev
-      return [hit, ...prev.filter((it) => it.id !== id)]
-    })
-    setPokedId(id)
-    buzz([10, 40, 10])
-    toast(`You poked ${firstName}`, 'poke')
-    window.setTimeout(() => setPokedId((p) => (p === id ? null : p)), 1200)
+  function toggleDone(task: SampleTask) {
+    buzz(15)
+    patch(task.id, { status: task.status === 'completed' ? 'active' : 'completed' })
   }
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [items.length])
-
-  function push(item: Item) {
-    setItems((prev) => [...prev, item])
+  function accept(task: SampleTask) {
+    buzz(15)
+    patch(task.id, { status: 'active', receipt: 'accepted' })
+    toast('Task accepted', 'success')
   }
 
-  function sendTask() {
+  function send() {
     const title = draft.trim()
     if (!title) return
-    push({
-      kind: 'task',
-      id: `t-${Date.now()}`,
-      title,
-      direction: 'they_owe_me',
-      status: 'pending_acceptance',
-      priority: 'normal',
-      expected: 'This Week',
-      mine: true,
-    })
+    buzz(12)
+    setTasks((prev) => [
+      ...prev,
+      {
+        id: `t-${Date.now()}`,
+        title,
+        direction: 'they_owe_me',
+        status: 'pending_acceptance',
+        priority: 'normal',
+        expected: 'This Week',
+        at: daysAgo(0),
+        receipt: 'sent',
+      },
+    ])
     setDraft('')
-  }
-
-  function toggleComplete(id: string) {
-    buzz(15)
-    setItems((prev) =>
-      prev.map((it) =>
-        it.kind === 'task' && it.id === id
-          ? { ...it, status: it.status === 'completed' ? 'active' : 'completed' }
-          : it,
-      ),
+    toast(`Sent to ${firstName}`, 'success')
+    window.requestAnimationFrame(() =>
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }),
     )
   }
 
-  function addImage() {
-    push({ kind: 'image', id: `img-${Date.now()}`, mine: true, caption: 'Photo attached' })
-    setSheet(false)
-  }
-  function addFile() {
-    push({
-      kind: 'file',
-      id: `file-${Date.now()}`,
-      mine: true,
-      name: 'Document.pdf',
-      size: '180 KB',
-    })
-    setSheet(false)
+  function renderSide(side: Side, rows: SampleTask[], total: number) {
+    const open = rows.filter((t) => t.status !== 'completed')
+    const done = rows.filter((t) => t.status === 'completed')
+    const expanded = showDone[side]
+
+    return (
+      <>
+        <div className={side === 'owe' ? 'flex' : 'flex justify-end'}>
+          <span className="side-pill">
+            {side === 'owe' ? `I Owe ${firstName}` : `${firstName} Owes Me`}
+          </span>
+        </div>
+
+        {open.map((t) => (
+          <TaskRow
+            key={t.id}
+            task={t}
+            side={side}
+            onOpen={() => nav(`/contacts/${person.id}/t/${t.id}`)}
+            onToggle={() => toggleDone(t)}
+            onAccept={() => accept(t)}
+          />
+        ))}
+
+        {expanded &&
+          done.map((t) => (
+            <TaskRow
+              key={t.id}
+              task={t}
+              side={side}
+              onOpen={() => nav(`/contacts/${person.id}/t/${t.id}`)}
+              onToggle={() => toggleDone(t)}
+            />
+          ))}
+
+        <button
+          onClick={() => setShowDone((s) => ({ ...s, [side]: !s[side] }))}
+          className={`press flex items-center gap-1.5 py-0.5 text-[15px] font-medium text-ink ${
+            side === 'owe' ? 'self-start' : 'flex-row-reverse self-end'
+          }`}
+          aria-expanded={expanded}
+        >
+          <ChevronRightIcon
+            width={19}
+            height={19}
+            className={`transition-transform ${
+              expanded ? 'rotate-90' : side === 'owe' ? 'rotate-180' : ''
+            }`}
+          />
+          {total} Completed
+        </button>
+      </>
+    )
   }
 
-  function startRec() {
-    setRecording(true)
-    setElapsed(0)
-    recRef.current = window.setInterval(() => setElapsed((e) => e + 1), 1000)
-  }
-  function stopRec(send: boolean) {
-    if (recRef.current) window.clearInterval(recRef.current)
-    const dur = Math.max(1, elapsed)
-    setRecording(false)
-    setElapsed(0)
-    if (send) push({ kind: 'voice', id: `v-${Date.now()}`, mine: true, duration: dur })
-  }
+  const doneByMe = person.doneByMe ?? owe.filter((t) => t.status === 'completed').length
+  const doneByThem = person.doneByThem ?? owed.filter((t) => t.status === 'completed').length
 
   return (
     <div className="app-frame">
       <header
-        className="flex items-center gap-3 border-b border-line px-4 pb-3"
-        style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}
+        className="flex items-center gap-3 bg-bar px-3 pb-2.5"
+        style={{ paddingTop: 'calc(var(--safe-top) + 10px)' }}
       >
-        {!isAppMode && (
-          <button
-            className="press grid h-9 w-9 place-items-center rounded-full text-ink-soft"
-            onClick={() => nav(-1)}
-            aria-label="Back"
-          >
-            <BackIcon />
-          </button>
-        )}
-        <Avatar initials={contact.initials} color={contact.color} size={38} />
+        <button
+          className="press grid h-9 w-7 place-items-center text-ink"
+          onClick={() => nav('/contacts')}
+          aria-label="Back to Contacts"
+        >
+          <BackIcon width={22} height={22} />
+        </button>
+        <Avatar initials={contact.initials} color={contact.color} size={42} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-[17px] font-bold leading-tight">
+          <p className="truncate font-display text-[19px] font-bold leading-tight">
             {contact.name}
           </p>
-          <p className="nums text-[12.5px] text-ink-faint">
-            {contact.forThem} for {firstName} · {contact.forYou} for you
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
+            Tasks
           </p>
         </div>
       </header>
 
-      <div className="flex items-center justify-between px-5 py-2 text-[11px] font-semibold uppercase tracking-wide">
-        <span className="text-violet-ink">{firstName} owes me</span>
-        <span className="text-ink-faint">I owe {firstName}</span>
+      <div ref={scrollRef} className="thread-surface min-h-0 flex-1 overflow-y-auto">
+        <TaskWallpaper />
+        <div className="relative flex flex-col gap-2.5 px-3 py-4">
+          {renderSide('owe', owe, doneByMe)}
+          <div className="h-3" />
+          {renderSide('owed', owed, doneByThem)}
+        </div>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
-        {items.map((it) => (
-          <Bubble
-            key={it.id}
-            item={it}
-            peer={firstName}
-            poked={pokedId === it.id}
-            onToggle={() => it.kind === 'task' && toggleComplete(it.id)}
-            onOpen={() => it.kind === 'task' && setOpenTaskId(it.id)}
-            onPoke={() => poke(it.id)}
-          />
-        ))}
-        {items.length === 0 && (
-          <div className="px-6 py-16 text-center">
-            <p className="font-display text-lg font-semibold">All clear with {firstName}</p>
-            <p className="mt-1 text-[14px] text-ink-soft">Send a request below to get started.</p>
-          </div>
-        )}
-      </div>
-
-      {/* composer */}
       <div
-        className="border-t border-line px-3 pt-2"
+        className="bg-bar px-2.5 pt-2.5"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 10px)' }}
       >
-        {recording ? (
-          <div className="flex items-center gap-3 rounded-bubble bg-overdue/10 px-4 py-3">
-            <span className="h-3 w-3 animate-pulse rounded-full bg-overdue" />
-            <span className="nums flex-1 text-[14px] font-semibold text-overdue">
-              Recording… 0:{String(elapsed).padStart(2, '0')}
-            </span>
-            <button
-              onClick={() => stopRec(false)}
-              className="press grid h-9 w-9 place-items-center rounded-full bg-wash text-ink-soft"
-              aria-label="Cancel"
-            >
-              <CloseIcon width={18} height={18} />
-            </button>
-            <button
-              onClick={() => stopRec(true)}
-              className="press grid h-10 w-10 place-items-center rounded-full bg-violet text-white shadow-float"
-              aria-label="Send voice note"
-            >
-              <StopIcon width={18} height={18} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-end gap-2">
-            <button
-              onClick={() => setSheet((s) => !s)}
-              className="press mb-0.5 grid h-11 w-10 shrink-0 place-items-center rounded-full text-ink-soft"
-              aria-label="Attach"
-            >
-              <PaperclipIcon width={22} height={22} />
-            </button>
-            <div className="flex-1 rounded-bubble border border-line bg-wash px-3 py-2 focus-within:border-violet focus-within:bg-paper">
-              <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value.slice(0, TASK_TITLE_MAX))}
-                onKeyDown={(e) => e.key === 'Enter' && sendTask()}
-                placeholder={`Ask ${firstName} to…`}
-                className="w-full bg-transparent text-[15px] outline-none placeholder:text-ink-faint"
-                aria-label="New task request"
-              />
-              <div className="mt-0.5 flex items-center justify-between">
-                <span className="text-[11px] text-ink-faint">
-                  Task · attach a file · or hold to talk
-                </span>
-                <span className="nums text-[11px] text-ink-faint">
-                  {draft.length}/{TASK_TITLE_MAX}
-                </span>
-              </div>
-            </div>
-            {draft.trim() ? (
-              <button
-                onClick={sendTask}
-                className="press grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet text-white shadow-float"
-                aria-label="Send request"
-              >
-                <PlusIcon width={22} height={22} />
-              </button>
-            ) : (
-              <button
-                onClick={startRec}
-                className="press grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet text-white shadow-float"
-                aria-label="Record voice note"
-              >
-                <MicIcon width={21} height={21} />
-              </button>
-            )}
-          </div>
-        )}
-
-        {sheet && !recording && (
-          <div className="mt-2 flex gap-2">
-            <button
-              onClick={addImage}
-              className="press flex flex-1 items-center gap-2 rounded-2xl border border-line bg-paper px-4 py-3 text-[14px] font-semibold"
-            >
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet-ink">
-                <ImageIcon width={18} height={18} />
-              </span>
-              Photo
-            </button>
-            <button
-              onClick={addFile}
-              className="press flex flex-1 items-center gap-2 rounded-2xl border border-line bg-paper px-4 py-3 text-[14px] font-semibold"
-            >
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-tint text-violet-ink">
-                <DocIcon width={18} height={18} />
-              </span>
-              Document
-            </button>
-          </div>
-        )}
-      </div>
-
-      {openTask && (
-        <TaskDetail
-          task={openTask as DetailTask}
-          peer={firstName}
-          onClose={() => setOpenTaskId(null)}
-          onAccept={() => {
-            updateTask(openTask.id, { status: 'active' })
-            buzz(15)
-            toast('Task accepted', 'success')
-            setOpenTaskId(null)
-          }}
-          onDecline={() => {
-            removeItem(openTask.id)
-            setOpenTaskId(null)
-          }}
-          onComplete={() => {
-            updateTask(openTask.id, { status: 'completed' })
-            buzz(15)
-            toast('Marked done', 'success')
-            setOpenTaskId(null)
-          }}
-          onReopen={() => {
-            updateTask(openTask.id, { status: 'active' })
-            setOpenTaskId(null)
-          }}
-          onCancel={() => {
-            removeItem(openTask.id)
-            setOpenTaskId(null)
-          }}
-          onPoke={() => {
-            poke(openTask.id)
-            setOpenTaskId(null)
-          }}
-          onSetPriority={(p: Priority) => updateTask(openTask.id, { priority: p })}
-          onSetExpected={(e: string) => updateTask(openTask.id, { expected: e })}
-        />
-      )}
-    </div>
-  )
-}
-
-function Bubble({
-  item,
-  peer,
-  poked,
-  onToggle,
-  onOpen,
-  onPoke,
-}: {
-  item: Item
-  peer: string
-  poked: boolean
-  onToggle: () => void
-  onOpen: () => void
-  onPoke: () => void
-}) {
-  const mine = item.mine
-  const wrap = `flex ${mine ? 'justify-start' : 'justify-end'} animate-rise-in`
-  const shell = `max-w-[82%] rounded-bubble shadow-card ${mine ? 'bg-violet-tint' : 'border border-line bg-paper'}`
-
-  if (item.kind === 'voice') {
-    return (
-      <div className={wrap}>
-        <div
-          className={`${mine ? 'bg-violet' : 'border border-line bg-paper'} max-w-[82%] rounded-bubble px-3.5 py-3 shadow-card`}
-        >
-          <VoiceNote duration={item.duration} mine={mine} />
-        </div>
-      </div>
-    )
-  }
-
-  if (item.kind === 'image') {
-    return (
-      <div className={wrap}>
-        <div className={`${shell} overflow-hidden p-1.5`}>
-          <div className="grid h-40 w-56 place-items-center rounded-[14px] bg-gradient-to-br from-violet/20 to-violet/5 text-violet-ink">
-            <ImageIcon width={34} height={34} />
-          </div>
-          <p className="px-2 py-1.5 text-[12.5px] text-ink-soft">{item.caption}</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (item.kind === 'file') {
-    return (
-      <div className={wrap}>
-        <div className={`${shell} flex items-center gap-3 px-3 py-3`}>
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet text-white">
-            <DocIcon width={20} height={20} />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-semibold text-ink">{item.name}</p>
-            <p className="nums text-[12px] text-ink-faint">{item.size} · PDF</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // task
-  const done = item.status === 'completed'
-  const pending = item.status === 'pending_acceptance'
-  return (
-    <div className={wrap}>
-      <div
-        onClick={onOpen}
-        className={`${shell} relative cursor-pointer px-3.5 py-3 transition ${poked ? 'animate-poke ring-2 ring-violet-glow' : ''}`}
-      >
-        {poked && (
-          <span className="pointer-events-none absolute -right-1 -top-2 animate-wand text-violet-glow">
-            <WandIcon width={20} height={20} />
-          </span>
-        )}
-        <div className="flex items-start gap-2.5">
+        <div className="flex items-center gap-2">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value.slice(0, TASK_TITLE_MAX))}
+            onKeyDown={(e) => e.key === 'Enter' && send()}
+            placeholder={`Enter task for ${firstName} to complete...`}
+            className="h-12 min-w-0 flex-1 rounded-full bg-paper px-4 text-[15.5px] text-ink outline-none placeholder:text-ink-faint"
+            aria-label={`New task for ${firstName}`}
+          />
           <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggle()
-            }}
-            className={`press mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${done ? 'border-done bg-done text-white' : 'border-ink-faint text-transparent'}`}
-            aria-label={done ? 'Mark active' : 'Mark complete'}
+            onClick={send}
+            disabled={!draft.trim()}
+            className="press grid h-12 w-12 shrink-0 place-items-center rounded-full bg-ink text-paper disabled:opacity-40"
+            aria-label="Send task"
           >
-            <CheckIcon width={14} height={14} />
+            <ChevronUpIcon width={24} height={24} />
           </button>
-          <div className="min-w-0">
-            <p
-              className={`text-[15px] leading-snug ${done ? 'text-ink-faint line-through' : 'text-ink'}`}
-            >
-              {item.title}
-            </p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              {pending && <Chip>Pending {mine ? peer : 'your'} acceptance</Chip>}
-              {item.priority === 'urgent' && <Chip tone="urgent">Urgent</Chip>}
-              {item.priority === 'high' && <Chip tone="high">High</Chip>}
-              <Chip tone="muted">{item.expected}</Chip>
-              {item.overdue && <Chip tone="overdue">Overdue</Chip>}
-              {mine && !done && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onPoke()
-                  }}
-                  className="press ml-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-ink"
-                >
-                  <WandIcon width={13} height={13} /> Poke
-                </button>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>
-  )
-}
-
-function Chip({
-  children,
-  tone = 'muted',
-}: {
-  children: React.ReactNode
-  tone?: 'muted' | 'urgent' | 'high' | 'overdue'
-}) {
-  const map = {
-    muted: 'bg-ink/5 text-ink-soft',
-    urgent: 'bg-urgent/20 text-urgent',
-    high: 'bg-violet/10 text-violet-ink',
-    overdue: 'bg-overdue/12 text-overdue',
-  }
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${map[tone]}`}>
-      {children}
-    </span>
   )
 }

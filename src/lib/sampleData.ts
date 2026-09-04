@@ -1,4 +1,8 @@
 import type { Priority } from './config'
+import { daysAgo, minutesAgo } from './time'
+
+/** How far the other side has got with a task, shown as a glyph on the row. */
+export type Receipt = 'sent' | 'seen' | 'accepted' | 'approved'
 
 export interface SampleTask {
   id: string
@@ -9,6 +13,11 @@ export interface SampleTask {
   expected: string
   note?: string
   overdue?: boolean
+  /** ISO. Drives the "2 DAYS AGO" stamp on the row. */
+  at?: string
+  attachments?: number
+  comments?: number
+  receipt?: Receipt
 }
 
 export interface SampleContact {
@@ -25,6 +34,27 @@ export interface SampleContact {
   favorite?: boolean
   lastActivity: string
   tasks: SampleTask[]
+  /** Lifetime totals behind the "246 Completed" strips. */
+  doneByMe?: number
+  doneByThem?: number
+}
+
+/** A message inside one task's comment thread. */
+export interface TaskComment {
+  id: string
+  body: string
+  mine: boolean
+  at: string
+  /** Seconds — set when the comment is a voice note rather than text. */
+  voice?: number
+}
+
+export interface TaskFile {
+  id: string
+  name: string
+  kind: 'pdf' | 'image' | 'doc'
+  size: string
+  at: string
 }
 
 const C = {
@@ -38,6 +68,131 @@ const C = {
 }
 
 export const SAMPLE_CONTACTS: SampleContact[] = [
+  {
+    id: 'felicia',
+    name: 'Felicia Hammond',
+    initials: 'FH',
+    color: C.amber,
+    forThem: 3,
+    forYou: 4,
+    overdue: 0,
+    urgent: 2,
+    unread: true,
+    work: true,
+    favorite: true,
+    lastActivity: 'Ask Oscar to transport all the grass',
+    doneByMe: 246,
+    doneByThem: 16,
+    tasks: [
+      // --- I owe Felicia (she asked me) ---
+      {
+        id: 'f-files',
+        title: 'The files',
+        direction: 'i_owe_them',
+        status: 'pending_acceptance',
+        priority: 'urgent',
+        expected: 'Today',
+        note: 'I need you to update these files for me so I can present it to the faculty as soon as possible. I will forward the spreadsheet by email.',
+        at: daysAgo(2),
+        attachments: 1,
+        comments: 4,
+        receipt: 'seen',
+      },
+      {
+        id: 'f-airport',
+        title: 'Get this from the airport',
+        direction: 'i_owe_them',
+        status: 'active',
+        priority: 'normal',
+        expected: 'This Week',
+        at: daysAgo(2),
+        attachments: 1,
+        receipt: 'accepted',
+      },
+      {
+        id: 'f-townspeople',
+        title: 'Hold the meeting with the townspeople',
+        direction: 'i_owe_them',
+        status: 'pending_acceptance',
+        priority: 'urgent',
+        expected: 'This Week',
+        at: daysAgo(2),
+        comments: 5,
+        receipt: 'seen',
+      },
+      {
+        id: 'f-ecobank',
+        title: 'Meet with Ecobank',
+        direction: 'i_owe_them',
+        status: 'active',
+        priority: 'normal',
+        expected: 'This Week',
+        at: daysAgo(2),
+        receipt: 'accepted',
+      },
+      {
+        id: 'f-washroom-1',
+        title: 'Clean the washroom',
+        direction: 'i_owe_them',
+        status: 'completed',
+        priority: 'normal',
+        expected: 'This Week',
+        at: daysAgo(7),
+      },
+      {
+        id: 'f-clean-it',
+        title: 'Clean it',
+        direction: 'i_owe_them',
+        status: 'completed',
+        priority: 'normal',
+        expected: 'This Week',
+        note: 'The store room, not the office.',
+        at: daysAgo(11),
+      },
+
+      // --- Felicia owes me (I asked her) ---
+      {
+        id: 'f-gi-accra',
+        title: 'Go to GI-Accra',
+        direction: 'they_owe_me',
+        status: 'active',
+        priority: 'normal',
+        expected: 'This Week',
+        at: daysAgo(4),
+        attachments: 1,
+        receipt: 'seen',
+      },
+      {
+        id: 'f-dzorwulu',
+        title: 'Pass through Dzorwulu',
+        direction: 'they_owe_me',
+        status: 'active',
+        priority: 'normal',
+        expected: 'This Week',
+        at: daysAgo(3),
+        receipt: 'approved',
+      },
+      {
+        id: 'f-oscar',
+        title: 'Ask Oscar to transport all the grass',
+        direction: 'they_owe_me',
+        status: 'active',
+        priority: 'normal',
+        expected: 'This Week',
+        at: daysAgo(2),
+        receipt: 'sent',
+      },
+      {
+        id: 'f-washroom-2',
+        title: 'Clean the washroom',
+        direction: 'they_owe_me',
+        status: 'completed',
+        priority: 'normal',
+        expected: 'This Week',
+        at: daysAgo(2),
+      },
+    ],
+  },
   {
     id: 'ben',
     name: 'Ben Owusu',
@@ -421,4 +576,43 @@ export const SAMPLE_PROFILE = {
   name: 'Isaac',
   phone: '+233 24 000 0000',
   description: 'Building TaskTally.',
+}
+
+// --- Per-task comment threads and attachments (keyed by task id) ---
+
+export const SAMPLE_TASK_COMMENTS: Record<string, TaskComment[]> = {
+  'f-files': [
+    { id: 'c-1', body: 'How do I proceed with this?', mine: true, at: minutesAgo(200) },
+    { id: 'c-2', body: 'Just manage and do something for me.', mine: false, at: minutesAgo(195) },
+    { id: 'c-3', body: 'Just give it a try.', mine: false, at: minutesAgo(194) },
+    { id: 'c-4', body: 'Ok', mine: true, at: minutesAgo(190) },
+  ],
+  'f-townspeople': [
+    { id: 'm-1', body: 'Which day works for the chiefs?', mine: true, at: minutesAgo(1500) },
+    { id: 'm-2', body: 'Thursday morning, after the durbar.', mine: false, at: minutesAgo(1460) },
+    { id: 'm-3', body: 'And the venue?', mine: true, at: minutesAgo(1450) },
+    {
+      id: 'm-4',
+      body: 'The community centre. I have booked it.',
+      mine: false,
+      at: minutesAgo(1400),
+    },
+    { id: 'm-5', body: 'Perfect, I will be there.', mine: true, at: minutesAgo(1380) },
+  ],
+}
+
+export const SAMPLE_TASK_FILES: Record<string, TaskFile[]> = {
+  'f-files': [
+    {
+      id: 'a-1',
+      name: 'Implementing The Science Behind Homeostasis',
+      kind: 'pdf',
+      size: '32 KB',
+      at: daysAgo(2),
+    },
+  ],
+  'f-airport': [{ id: 'a-2', name: 'Collection slip', kind: 'pdf', size: '78 KB', at: daysAgo(2) }],
+  'f-gi-accra': [
+    { id: 'a-3', name: 'Site directions', kind: 'doc', size: '14 KB', at: daysAgo(4) },
+  ],
 }

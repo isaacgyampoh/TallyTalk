@@ -25,6 +25,28 @@ export default {
         overdue: '#E5484D',
         urgent: '#F76808',
         done: '#30A46C',
+        // Task thread surface (see the --c-thread-* tokens in index.css).
+        thread: {
+          DEFAULT: 'rgb(var(--c-thread) / <alpha-value>)',
+          ink: 'rgb(var(--c-thread-ink) / <alpha-value>)',
+          meta: 'rgb(var(--c-thread-meta) / <alpha-value>)',
+        },
+        bar: 'rgb(var(--c-bar) / <alpha-value>)',
+        owe: {
+          DEFAULT: 'rgb(var(--c-owe) / <alpha-value>)',
+          done: 'rgb(var(--c-owe-done) / <alpha-value>)',
+        },
+        owed: {
+          DEFAULT: 'rgb(var(--c-owed) / <alpha-value>)',
+          done: 'rgb(var(--c-owed-done) / <alpha-value>)',
+        },
+        accept: {
+          DEFAULT: 'rgb(var(--c-accept) / <alpha-value>)',
+          ink: 'rgb(var(--c-accept-ink) / <alpha-value>)',
+        },
+        brief: 'rgb(var(--c-brief) / <alpha-value>)',
+        flag: 'rgb(var(--c-flag) / <alpha-value>)',
+        tick: 'rgb(var(--c-tick) / <alpha-value>)',
       },
       fontFamily: {
         display: ['"Bricolage Grotesque Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],

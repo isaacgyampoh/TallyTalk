@@ -16,6 +16,7 @@ import { IntroSplash } from '@/screens/IntroSplash'
 import { useAndroidBack } from '@/hooks/useSwipeBack'
 import { ContactsScreen } from '@/screens/ContactsScreen'
 import { ContactSpaceScreen } from '@/screens/ContactSpaceScreen'
+import { TaskCommentsScreen } from '@/screens/TaskCommentsScreen'
 import { PersonalScreen } from '@/screens/PersonalScreen'
 import { ChecklistDetailScreen } from '@/screens/ChecklistDetailScreen'
 import { GroupsScreen } from '@/screens/GroupsScreen'
@@ -99,6 +100,7 @@ function Gate() {
       <Routes>
         {/* Full-screen detail views (no bottom nav), like a chat thread. */}
         <Route path="/contacts/:id" element={<ContactSpaceScreen />} />
+        <Route path="/contacts/:id/t/:taskId" element={<TaskCommentsScreen />} />
         <Route path="/personal/:key" element={<ChecklistDetailScreen />} />
         <Route path="/groups/:id" element={<GroupDetailScreen />} />
 

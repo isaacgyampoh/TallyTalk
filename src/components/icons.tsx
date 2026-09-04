@@ -145,3 +145,70 @@ export const CloseIcon = (p: P) => (
     <path d="M6 6l12 12M18 6L6 18" />
   </svg>
 )
+
+// --- task thread: receipts, task metadata, navigation ---
+
+/** Seen by the other person. */
+export const EyeIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" />
+    <circle cx="12" cy="12" r="2.8" />
+  </svg>
+)
+
+/** Accepted — the two ticks. */
+export const DoubleCheckIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M1.8 12.6l3.9 3.9 7.6-7.6" />
+    <path d="M9.6 16.5l1.1 1.1L22.2 6" />
+  </svg>
+)
+
+/** Approved by the person who asked. */
+export const ThumbUpIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M7.5 21.5V10.2l4.3-6.7a1.9 1.9 0 0 1 2.8 2.3l-1.4 4.2h5.2a2.3 2.3 0 0 1 2.2 2.9l-1.8 6.7a2.3 2.3 0 0 1-2.2 1.7H7.5Z" />
+    <path d="M7.5 10.2H5a1.4 1.4 0 0 0-1.4 1.4v8.5A1.4 1.4 0 0 0 5 21.5h2.5" />
+  </svg>
+)
+
+/** The task carries a written brief. */
+export const NoteLinesIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 7h16M4 12h16M4 17h10" />
+  </svg>
+)
+
+/** Urgent — a clock running out. */
+export const UrgentIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M1.5 8.5h4M0.8 12h4.4M2.5 15.5h3" />
+    <circle cx="15" cy="12" r="6.6" />
+    <path d="M15 8.4V12l2.5 1.7" />
+  </svg>
+)
+
+export const CommentIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M20.8 11.6a8.4 8.4 0 0 1-11.9 7.6L3.2 20.8l1.6-5.5a8.4 8.4 0 1 1 16-3.7Z" />
+  </svg>
+)
+
+export const ChevronRightIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M9.5 5l7 7-7 7" />
+  </svg>
+)
+
+export const ChevronUpIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M5 15.5l7-7 7 7" />
+  </svg>
+)
+
+export const DownloadIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 3.5v11M7.5 10.4l4.5 4.6 4.5-4.6" />
+    <path d="M4.5 19.5h15" />
+  </svg>
+)
