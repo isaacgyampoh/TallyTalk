@@ -29,15 +29,32 @@ const SEND_PUSH_SECRET = Deno.env.get('SEND_PUSH_SECRET') ?? ''
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
+/** Length-independent compare, so a wrong secret leaks nothing through timing. */
+function secretMatches(presented: string): boolean {
+  const expected = `Bearer ${SEND_PUSH_SECRET}`
+  if (presented.length !== expected.length) return false
+  let diff = 0
+  for (let i = 0; i < expected.length; i++) {
+    diff |= presented.charCodeAt(i) ^ expected.charCodeAt(i)
+  }
+  return diff === 0
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 Deno.serve(async (req) => {
   try {
     const auth = req.headers.get('Authorization') ?? ''
-    if (!SEND_PUSH_SECRET || auth !== `Bearer ${SEND_PUSH_SECRET}`) {
+    if (!SEND_PUSH_SECRET || !secretMatches(auth)) {
       return json({ error: 'Unauthorized' }, 401)
     }
 
     const { userId, title, body, data } = await req.json()
     if (!userId || !title) return json({ error: 'userId and title are required' }, 400)
+    // userId lands in a PostgREST query string below; only ever accept a uuid.
+    if (typeof userId !== 'string' || !UUID.test(userId)) {
+      return json({ error: 'userId must be a uuid' }, 400)
+    }
 
     const account = JSON.parse(Deno.env.get('FCM_SERVICE_ACCOUNT') ?? '{}') as ServiceAccount
     if (!account.private_key) return json({ error: 'FCM_SERVICE_ACCOUNT not configured' }, 500)
@@ -59,7 +76,7 @@ Deno.serve(async (req) => {
 
 async function getTokens(userId: string): Promise<string[]> {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/push_tokens?user_id=eq.${userId}&select=token`,
+    `${SUPABASE_URL}/rest/v1/push_tokens?user_id=eq.${encodeURIComponent(userId)}&select=token`,
     { headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` } },
   )
   if (!res.ok) return []

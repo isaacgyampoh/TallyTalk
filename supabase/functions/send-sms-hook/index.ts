@@ -57,8 +57,20 @@ Deno.serve(async (req) => {
       }),
     })
 
-    if (!res.ok) {
-      const detail = await res.text()
+    // Arkesel answers 200 even when it refuses the message (bad sender ID, no
+    // credit, invalid recipient) and puts the real outcome in the body, so a
+    // status check alone would report undelivered codes as sent.
+    const detail = await res.text()
+    let accepted = res.ok
+    if (accepted) {
+      try {
+        accepted = (JSON.parse(detail) as { status?: string }).status === 'success'
+      } catch {
+        accepted = false
+      }
+    }
+
+    if (!accepted) {
       console.error('Arkesel send failed', res.status, detail)
       // Returning a non-2xx tells Supabase the OTP could not be delivered.
       return json({ error: { message: 'SMS provider rejected the request' } }, 502)
