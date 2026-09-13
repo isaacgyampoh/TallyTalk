@@ -21,13 +21,43 @@ const AuthContext = createContext<AuthState | null>(null)
 
 const PREVIEW_KEY = 'tallytalk.preview'
 
+/** sessionStorage throws in some privacy modes; never let that break boot. */
+function readPreviewFlag(): boolean {
+  try {
+    return sessionStorage.getItem(PREVIEW_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writePreviewFlag(on: boolean) {
+  try {
+    if (on) sessionStorage.setItem(PREVIEW_KEY, '1')
+    else sessionStorage.removeItem(PREVIEW_KEY)
+  } catch {
+    /* private mode — the flag just won't survive the reload */
+  }
+}
+
+const UNREACHABLE =
+  "We can't reach the server right now. Check your connection, or explore with sample data."
+
+/** supabase-js reports a dead host or no network as a bare fetch failure. */
+function readableAuthError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err)
+  return /failed to fetch|networkerror|network request failed|load failed/i.test(message)
+    ? UNREACHABLE
+    : message
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const mode: AuthMode = isSupabaseConfigured ? 'live' : 'preview'
   const [ready, setReady] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
-  const [previewSignedIn, setPreviewSignedIn] = useState(
-    () => !isSupabaseConfigured && sessionStorage.getItem(PREVIEW_KEY) === '1',
-  )
+  // Only an explicit "explore with sample data" tap sets this, so honour it in
+  // both modes — reading it only when Supabase is unconfigured meant a reload
+  // dropped the demo on any build that does have a backend configured.
+  const [previewSignedIn, setPreviewSignedIn] = useState(readPreviewFlag)
 
   useEffect(() => {
     if (!supabase) {
@@ -57,24 +87,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       async sendCode(phone: string) {
         if (!supabase) return {}
-        const { error } = await supabase.auth.signInWithOtp({ phone })
-        return error ? { error: error.message } : {}
+        try {
+          const { error } = await supabase.auth.signInWithOtp({ phone })
+          return error ? { error: readableAuthError(error) } : {}
+        } catch (err) {
+          return { error: readableAuthError(err) }
+        }
       },
 
       async verifyCode(phone: string, code: string) {
         if (!supabase) return {}
-        const { error } = await supabase.auth.verifyOtp({ phone, token: code, type: 'sms' })
-        return error ? { error: error.message } : {}
+        try {
+          const { error } = await supabase.auth.verifyOtp({ phone, token: code, type: 'sms' })
+          return error ? { error: readableAuthError(error) } : {}
+        } catch (err) {
+          return { error: readableAuthError(err) }
+        }
       },
 
       enterPreview() {
-        sessionStorage.setItem(PREVIEW_KEY, '1')
+        writePreviewFlag(true)
         setPreviewSignedIn(true)
       },
 
       async signOut() {
-        if (supabase) await supabase.auth.signOut()
-        sessionStorage.removeItem(PREVIEW_KEY)
+        if (supabase) await supabase.auth.signOut().catch(() => {})
+        writePreviewFlag(false)
         setPreviewSignedIn(false)
       },
     }
