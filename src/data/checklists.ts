@@ -97,6 +97,16 @@ export async function getGroupTasks(groupId: string): Promise<TaskRow[]> {
   return (data ?? []) as TaskRow[]
 }
 
+/**
+ * Create a group and return its id.
+ *
+ * Do not add a `group_members` insert here. The `on_group_created` trigger
+ * (migration 0003) already seats the creator as administrator, and it has to:
+ * `group_members_admin_manage` only admits existing admins, so a client-side
+ * insert cannot add the very first member. Inserting again from here violates
+ * `unique (group_id, user_id)` and throws after the group row already exists,
+ * leaving an orphaned group.
+ */
 export async function createGroup(name: string): Promise<string> {
   const me = await myId()
   const { data, error } = await db()
@@ -105,10 +115,5 @@ export async function createGroup(name: string): Promise<string> {
     .select('id')
     .single()
   if (error) throw error
-  const groupId = (data as { id: string }).id
-  const { error: mErr } = await db()
-    .from('group_members')
-    .insert({ group_id: groupId, user_id: me, role: 'administrator' })
-  if (mErr) throw mErr
-  return groupId
+  return (data as { id: string }).id
 }

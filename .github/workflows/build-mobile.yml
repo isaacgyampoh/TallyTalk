@@ -46,12 +46,18 @@ jobs:
             echo "No GOOGLE_SERVICES_JSON secret set — building without Firebase."
           fi
 
+      # package.json is the single source of the version number (see
+      # vite.config.ts, which injects the same value into the web app).
+      - name: Read app version
+        id: ver
+        run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Build debug APK
         run: |
           cd android
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace \
-            -Pvcode=${{ github.run_number }} -Pvname=1.0.${{ github.run_number }}
+            -Pvcode=${{ github.run_number }} -Pvname=${{ steps.ver.outputs.v }}
 
       - name: Upload APK (build artifact)
         uses: actions/upload-artifact@v4

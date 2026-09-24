@@ -4,10 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { buzz } from '@/lib/haptics'
 import { WandIcon, CheckIcon } from '@/components/icons'
-
-const ONBOARDED_KEY = 'tt.onboarded'
-export const isOnboarded = () => localStorage.getItem(ONBOARDED_KEY) === '1'
-const markOnboarded = () => localStorage.setItem(ONBOARDED_KEY, '1')
+import { markOnboarded } from '@/lib/onboarding'
 
 export function Onboarding() {
   const nav = useNavigate()

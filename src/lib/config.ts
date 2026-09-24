@@ -57,5 +57,6 @@ export const PREDEFINED_CHECKLISTS = [
 
 export const TASK_TITLE_MAX = 60
 
-export const APP_VERSION = '1.0'
+// Injected from package.json at build time — see vite.config.ts.
+export const APP_VERSION = __APP_VERSION__
 export const BUILD_ID = __BUILD_ID__

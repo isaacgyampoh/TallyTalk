@@ -1,30 +1,48 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { registerPush } from '@/lib/push'
 import { isAppMode } from '@/lib/platform'
+import { isOnboarded } from '@/lib/onboarding'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
 import { AppViewport } from '@/components/AppViewport'
 import { Shell } from '@/components/Shell'
-import { Landing } from '@/screens/Landing'
-import { AuthFlow } from '@/screens/AuthFlow'
-import { Welcome } from '@/screens/Welcome'
-import { Onboarding, isOnboarded } from '@/screens/Onboarding'
 import { IntroSplash } from '@/screens/IntroSplash'
 import { useAndroidBack } from '@/hooks/useSwipeBack'
-import { ContactsScreen } from '@/screens/ContactsScreen'
-import { ContactSpaceScreen } from '@/screens/ContactSpaceScreen'
-import { TaskCommentsScreen } from '@/screens/TaskCommentsScreen'
-import { PersonalScreen } from '@/screens/PersonalScreen'
-import { ChecklistDetailScreen } from '@/screens/ChecklistDetailScreen'
-import { GroupsScreen } from '@/screens/GroupsScreen'
-import { GroupDetailScreen } from '@/screens/GroupDetailScreen'
-import { ProfileScreen } from '@/screens/ProfileScreen'
-import { TodayScreen } from '@/screens/TodayScreen'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon } from '@/components/icons'
+
+// Screens load on demand. The marketing landing page and the onboarding slides
+// are the big win: a signed-in user never downloads them, and a visitor to the
+// website never downloads the app. `screen` unwraps the named export so these
+// read like the static imports they replaced.
+const screen = <T extends string>(name: T, load: () => Promise<Record<T, React.ComponentType>>) =>
+  lazy(() => load().then((m) => ({ default: m[name] })))
+
+const Landing = screen('Landing', () => import('@/screens/Landing'))
+const AuthFlow = screen('AuthFlow', () => import('@/screens/AuthFlow'))
+const Welcome = screen('Welcome', () => import('@/screens/Welcome'))
+const Onboarding = screen('Onboarding', () => import('@/screens/Onboarding'))
+const ContactsScreen = screen('ContactsScreen', () => import('@/screens/ContactsScreen'))
+const ContactSpaceScreen = screen(
+  'ContactSpaceScreen',
+  () => import('@/screens/ContactSpaceScreen'),
+)
+const TaskCommentsScreen = screen(
+  'TaskCommentsScreen',
+  () => import('@/screens/TaskCommentsScreen'),
+)
+const PersonalScreen = screen('PersonalScreen', () => import('@/screens/PersonalScreen'))
+const ChecklistDetailScreen = screen(
+  'ChecklistDetailScreen',
+  () => import('@/screens/ChecklistDetailScreen'),
+)
+const GroupsScreen = screen('GroupsScreen', () => import('@/screens/GroupsScreen'))
+const GroupDetailScreen = screen('GroupDetailScreen', () => import('@/screens/GroupDetailScreen'))
+const ProfileScreen = screen('ProfileScreen', () => import('@/screens/ProfileScreen'))
+const TodayScreen = screen('TodayScreen', () => import('@/screens/TodayScreen'))
 
 function Splash() {
   return (
@@ -135,7 +153,15 @@ export default function App() {
         <AuthProvider>
           <QueryClientProvider client={queryClient}>
             <ToastProvider>
-              <Gate />
+              <Suspense
+                fallback={
+                  <AppViewport>
+                    <Splash />
+                  </AppViewport>
+                }
+              >
+                <Gate />
+              </Suspense>
             </ToastProvider>
           </QueryClientProvider>
         </AuthProvider>
