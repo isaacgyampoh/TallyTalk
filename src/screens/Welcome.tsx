@@ -40,7 +40,7 @@ export function Welcome() {
               <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border border-ink-faint" />
               <div>
                 <p className="text-[13.5px] leading-snug text-ink">Send me the report</p>
-                <span className="mt-1.5 inline-block rounded-full bg-urgent/15 px-2 py-0.5 text-[10.5px] font-semibold text-urgent">
+                <span className="mt-1.5 inline-block rounded-full bg-urgent/15 px-2 py-0.5 text-[10.5px] font-semibold text-urgent-ink">
                   Urgent
                 </span>
               </div>

@@ -105,7 +105,7 @@ export function GroupDetailScreen() {
                       {t.assignee}
                     </span>
                     {t.priority === 'urgent' && (
-                      <span className="rounded-full bg-urgent/12 px-2 py-0.5 text-[11px] font-semibold text-urgent">
+                      <span className="rounded-full bg-urgent/12 px-2 py-0.5 text-[11px] font-semibold text-urgent-ink">
                         Urgent
                       </span>
                     )}

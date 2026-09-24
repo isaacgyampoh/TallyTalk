@@ -213,7 +213,7 @@ function Section({
 }
 
 function Tag({ tone, children }: { tone: 'overdue' | 'urgent'; children: React.ReactNode }) {
-  const cls = tone === 'overdue' ? 'bg-overdue/10 text-overdue' : 'bg-urgent/10 text-urgent'
+  const cls = tone === 'overdue' ? 'bg-overdue/10 text-overdue-ink' : 'bg-urgent/10 text-urgent-ink'
   return (
     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{children}</span>
   )

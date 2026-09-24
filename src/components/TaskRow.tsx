@@ -19,9 +19,9 @@ function ReceiptMark({ task }: { task: SampleTask }) {
   if (task.status === 'completed') return null
   switch (task.receipt) {
     case 'seen':
-      return <EyeIcon width={15} height={15} className="text-thread-meta" aria-label="Seen" />
+      return <EyeIcon width={15} height={15} className="text-thread-meta" aria-hidden="true" />
     case 'accepted':
-      return <DoubleCheckIcon width={16} height={16} className="text-tick" aria-label="Accepted" />
+      return <DoubleCheckIcon width={16} height={16} className="text-tick" aria-hidden="true" />
     case 'approved':
       return (
         <ThumbUpIcon
@@ -29,7 +29,7 @@ function ReceiptMark({ task }: { task: SampleTask }) {
           height={14}
           className="text-done"
           fill="currentColor"
-          aria-label="Approved"
+          aria-hidden="true"
         />
       )
     default:
@@ -62,6 +62,22 @@ export function TaskRow({
   // You accept what someone asked of you, never what you asked of them.
   const canAccept = side === 'owe' && task.status === 'pending_acceptance'
 
+  // Read aloud, the visible text runs together as "The files2 DAYS AGO" and the
+  // inline glyphs are silent. Spell the row out instead, in the order it reads.
+  const stamp = agoLabel(task.at ?? new Date().toISOString())
+  const spoken = [
+    task.title,
+    done ? 'done' : null,
+    flagged && !done ? (task.priority === 'urgent' ? 'urgent' : 'high priority') : null,
+    task.attachments ? 'has an attachment' : null,
+    task.note ? 'has a brief' : null,
+    stamp,
+    !done && task.receipt && task.receipt !== 'sent' ? task.receipt : null,
+    task.comments ? `${task.comments} comments` : null,
+  ]
+    .filter(Boolean)
+    .join('. ')
+
   const skin = done
     ? side === 'owe'
       ? 'bg-owe-done'
@@ -73,33 +89,24 @@ export function TaskRow({
   return (
     <div className={`flex flex-col ${side === 'owe' ? 'items-start' : 'items-end'}`}>
       <div className="flex max-w-[86%] items-start gap-2">
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={onOpen}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              onOpen?.()
-            }
-          }}
-          className={`bubble animate-rise-in cursor-pointer ${skin}`}
-        >
+        {/* The bubble is a plain container. The checkbox and the title are
+            sibling buttons — nesting one control inside another breaks both
+            keyboard navigation and screen readers. */}
+        <div className={`bubble animate-rise-in ${skin}`}>
           <div className="flex items-start gap-2">
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggle?.()
-              }}
+              onClick={onToggle}
               className="press mt-[3px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[4px] border-[1.6px] border-ink/40"
-              aria-label={done ? 'Mark not done' : 'Mark done'}
+              aria-label={done ? `Mark "${task.title}" not done` : `Mark "${task.title}" done`}
               aria-pressed={done}
             >
               {done && <CheckIcon width={12} height={12} className="text-ink" />}
             </button>
 
-            <p
-              className={`text-[15.5px] leading-[1.35] ${done ? 'text-ink/65 line-through' : 'text-ink'}`}
+            <button
+              onClick={onOpen}
+              aria-label={spoken}
+              className={`min-w-0 flex-1 cursor-pointer text-left text-[15.5px] leading-[1.35] ${done ? 'text-ink/65 line-through' : 'text-ink'}`}
             >
               {task.title}
               {flagged && !done && (
@@ -107,7 +114,7 @@ export function TaskRow({
                   width={17}
                   height={17}
                   className="mx-1 inline-block shrink-0 -translate-y-px text-ink/70"
-                  aria-label="Urgent"
+                  aria-hidden="true"
                 />
               )}
               {!!task.attachments && (
@@ -115,7 +122,7 @@ export function TaskRow({
                   width={15}
                   height={15}
                   className="mx-0.5 inline-block shrink-0 -translate-y-px text-ink/70"
-                  aria-label="Has an attachment"
+                  aria-hidden="true"
                 />
               )}
               {task.note && (
@@ -123,14 +130,17 @@ export function TaskRow({
                   width={15}
                   height={15}
                   className="mx-0.5 inline-block shrink-0 -translate-y-px text-ink/70"
-                  aria-label="Has a brief"
+                  aria-hidden="true"
                 />
               )}
-              <span className="stamp ml-1.5 inline-flex items-center gap-1 align-baseline">
-                {agoLabel(task.at ?? new Date().toISOString())}
+              <span
+                aria-hidden="true"
+                className="stamp ml-1.5 inline-flex items-center gap-1 align-baseline"
+              >
+                {stamp}
                 <ReceiptMark task={task} />
               </span>
-            </p>
+            </button>
           </div>
         </div>
 

@@ -30,9 +30,9 @@ import {
 } from '@/lib/sampleData'
 
 const KIND_SKIN: Record<TaskFile['kind'], string> = {
-  pdf: 'bg-overdue',
-  doc: 'bg-tick',
-  image: 'bg-done',
+  pdf: 'bg-badge-pdf',
+  doc: 'bg-badge-doc',
+  image: 'bg-badge-image',
 }
 
 /** The brief, the files, and the conversation — everything about one task. */
@@ -298,7 +298,7 @@ export function TaskCommentsScreen() {
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && send()}
                 placeholder={`Chat with ${firstName} about task...`}
-                className="min-w-0 flex-1 bg-transparent text-[15.5px] text-ink outline-none placeholder:text-ink-faint"
+                className="min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-faint"
                 aria-label={`Comment on ${task.title}`}
               />
               <button

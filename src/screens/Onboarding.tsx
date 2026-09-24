@@ -112,7 +112,7 @@ function TaskArt() {
           <div>
             <p className="text-[15px] leading-snug text-ink">Send me the Ecobank document</p>
             <div className="mt-2 flex gap-1.5">
-              <span className="rounded-full bg-urgent/15 px-2 py-0.5 text-[11px] font-semibold text-urgent">
+              <span className="rounded-full bg-urgent/15 px-2 py-0.5 text-[11px] font-semibold text-urgent-ink">
                 Urgent
               </span>
               <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-semibold text-ink-soft">

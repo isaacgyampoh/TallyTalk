@@ -45,7 +45,7 @@ export function SmartAdd() {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && analyse()}
           placeholder="Add anything — e.g. “ask Ben for the report by Friday”"
-          className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-ink-faint"
+          className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-faint"
           aria-label="Smart add a task"
         />
         <button
@@ -94,7 +94,7 @@ export function SmartAdd() {
               <span
                 className={`rounded-full px-2.5 py-1 text-[12px] font-semibold capitalize ${
                   parsed.priority === 'urgent'
-                    ? 'bg-urgent/15 text-urgent'
+                    ? 'bg-urgent/15 text-urgent-ink'
                     : parsed.priority === 'high'
                       ? 'bg-violet/10 text-violet-ink'
                       : 'bg-wash text-ink-soft'

@@ -196,7 +196,7 @@ export function ContactSpaceScreen() {
             onChange={(e) => setDraft(e.target.value.slice(0, TASK_TITLE_MAX))}
             onKeyDown={(e) => e.key === 'Enter' && send()}
             placeholder={`Enter task for ${firstName} to complete...`}
-            className="h-12 min-w-0 flex-1 rounded-full bg-paper px-4 text-[15.5px] text-ink outline-none placeholder:text-ink-faint"
+            className="h-12 min-w-0 flex-1 rounded-full bg-paper px-4 text-[16px] text-ink outline-none placeholder:text-ink-faint"
             aria-label={`New task for ${firstName}`}
           />
           <button

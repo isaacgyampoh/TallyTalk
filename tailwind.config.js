@@ -23,7 +23,11 @@ export default {
           glow: '#8A3BFF',
         },
         overdue: '#E5484D',
+        'overdue-ink': 'rgb(var(--c-overdue-ink) / <alpha-value>)',
         urgent: '#F76808',
+        'urgent-ink': 'rgb(var(--c-urgent-ink) / <alpha-value>)',
+        // Fills dark enough for white label text at small sizes.
+        badge: { pdf: '#D34247', doc: '#217EAD', image: '#278658' },
         done: '#30A46C',
         // Task thread surface (see the --c-thread-* tokens in index.css).
         thread: {
@@ -76,8 +80,14 @@ export default {
           '100%': { opacity: '0', visibility: 'hidden' },
         },
         'wand-glitter': {
-          '0%, 100%': { transform: 'rotate(-8deg) scale(1)', filter: 'drop-shadow(0 0 0 rgba(138,59,255,0))' },
-          '50%': { transform: 'rotate(8deg) scale(1.12)', filter: 'drop-shadow(0 0 8px rgba(138,59,255,0.8))' },
+          '0%, 100%': {
+            transform: 'rotate(-8deg) scale(1)',
+            filter: 'drop-shadow(0 0 0 rgba(138,59,255,0))',
+          },
+          '50%': {
+            transform: 'rotate(8deg) scale(1.12)',
+            filter: 'drop-shadow(0 0 8px rgba(138,59,255,0.8))',
+          },
         },
         'rise-in': {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
