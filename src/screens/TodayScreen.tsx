@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Avatar } from '@/components/Avatar'
 import { SmartAdd } from '@/components/SmartAdd'
 import { WandIcon, ContactsIcon, PersonalIcon, GroupsIcon } from '@/components/icons'
-import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
+import { type SampleTask } from '@/lib/sampleData'
+import { useContacts } from '@/data/hooks'
 
 interface Row extends SampleTask {
   contactId: string
@@ -14,10 +15,11 @@ interface Row extends SampleTask {
 
 export function TodayScreen() {
   const nav = useNavigate()
+  const { data: contacts, isPending, isError, refetch } = useContacts()
 
   const { overdue, dueToday, owedToYou, youOwe, totalThem, totalYou } = useMemo(() => {
     const rows: Row[] = []
-    for (const c of SAMPLE_CONTACTS) {
+    for (const c of contacts ?? []) {
       for (const t of c.tasks) {
         if (t.status === 'completed') continue
         rows.push({
@@ -41,10 +43,34 @@ export function TodayScreen() {
       totalThem: rows.filter((r) => r.direction === 'they_owe_me').length,
       totalYou: rows.filter((r) => r.direction === 'i_owe_them').length,
     }
-  }, [])
+  }, [contacts])
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+
+  if (isPending) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-[15px] text-ink-soft">Loading your day…</p>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex h-full items-center justify-center px-8 text-center">
+        <div>
+          <p className="font-display text-[17px] font-semibold text-ink">
+            We couldn&rsquo;t load your tasks
+          </p>
+          <p className="mt-2 text-[14px] text-ink-soft">Check your connection and try again.</p>
+          <button onClick={() => refetch()} className="btn-ghost mt-5">
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col">

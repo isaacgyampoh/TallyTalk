@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
-import { WandIcon, CheckIcon } from './icons'
+import { WandIcon, CheckIcon, CloseIcon } from './icons'
 
-type ToastKind = 'poke' | 'success' | 'info'
+type ToastKind = 'poke' | 'success' | 'info' | 'error'
 interface Toast {
   id: number
   message: string
@@ -17,7 +17,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const show = useCallback((message: string, kind: ToastKind = 'info') => {
     const id = ++idRef.current
     setToasts((t) => [...t, { id, message, kind }])
-    window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2400)
+    window.setTimeout(
+      () => setToasts((t) => t.filter((x) => x.id !== id)),
+      kind === 'error' ? 4200 : 2400,
+    )
   }, [])
 
   return (
@@ -32,9 +35,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             className="animate-rise-in flex items-center gap-2 rounded-full bg-carbon px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-card"
           >
-            <span className={t.kind === 'poke' ? 'text-violet-glow' : 'text-done'}>
+            <span
+              className={
+                t.kind === 'poke'
+                  ? 'text-violet-glow'
+                  : t.kind === 'error'
+                    ? 'text-overdue'
+                    : 'text-done'
+              }
+            >
               {t.kind === 'poke' ? (
                 <WandIcon width={16} height={16} />
+              ) : t.kind === 'error' ? (
+                <CloseIcon width={16} height={16} />
               ) : (
                 <CheckIcon width={16} height={16} />
               )}

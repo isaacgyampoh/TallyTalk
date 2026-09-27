@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
 import { SearchIcon, PlusIcon, CloseIcon } from '@/components/icons'
-import { SAMPLE_CONTACTS, type SampleContact } from '@/lib/sampleData'
+import { type SampleContact } from '@/lib/sampleData'
+import { useContacts } from '@/data/hooks'
 
 const FILTERS = ['All', 'Unread', 'Work', 'Favorites', 'Urgent', 'Overdue', 'Newest'] as const
 type Filter = (typeof FILTERS)[number]
@@ -43,7 +44,9 @@ export function ContactsScreen() {
   const [showSearch, setShowSearch] = useState(false)
   const [picking, setPicking] = useState(false)
 
-  const rows = useMemo(() => applyFilter(SAMPLE_CONTACTS, filter, q), [filter, q])
+  const { data: contacts, isPending, isError, refetch } = useContacts()
+  const all = useMemo(() => contacts ?? [], [contacts])
+  const rows = useMemo(() => applyFilter(all, filter, q), [all, filter, q])
 
   return (
     <div className="relative flex h-full flex-col">
@@ -87,7 +90,25 @@ export function ContactsScreen() {
         ))}
       </div>
 
-      <ul className="flex-1 overflow-y-auto px-2 pb-24">
+      {isPending && (
+        <div className="flex-1 px-5 pt-10 text-center">
+          <p className="text-[15px] text-ink-soft">Loading your contacts…</p>
+        </div>
+      )}
+
+      {isError && (
+        <div className="flex-1 px-8 pt-10 text-center">
+          <p className="font-display text-[17px] font-semibold text-ink">
+            We couldn&rsquo;t load your contacts
+          </p>
+          <p className="mt-2 text-[14px] text-ink-soft">Check your connection and try again.</p>
+          <button onClick={() => refetch()} className="btn-ghost mt-5">
+            Try again
+          </button>
+        </div>
+      )}
+
+      <ul className={`flex-1 overflow-y-auto px-2 pb-24 ${isPending || isError ? 'hidden' : ''}`}>
         {rows.map((c, i) => (
           <li
             key={c.id}
@@ -161,7 +182,7 @@ export function ContactsScreen() {
             </div>
             <p className="mb-3 text-[13.5px] text-ink-soft">Who do you want to send a task to?</p>
             <div className="max-h-[46vh] overflow-y-auto">
-              {SAMPLE_CONTACTS.map((c) => (
+              {all.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => nav(`/contacts/${c.id}`)}

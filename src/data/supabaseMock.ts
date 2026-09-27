@@ -1,0 +1,76 @@
+/**
+ * A stand-in for the Supabase client, used by the data-layer tests.
+ *
+ * The real client builds a query by chaining (`.from().select().eq()`) and only
+ * runs it when the chain is awaited. This mirrors that: every method records
+ * its call and returns the chain, and awaiting resolves to whatever result was
+ * registered for that table. That lets a test assert both the query that was
+ * built and the rows the caller mapped out of it.
+ *
+ * Test-only, but it lives in src/ so it type-checks against the real shapes.
+ */
+
+export interface Recorded {
+  method: string
+  args: unknown[]
+}
+
+export interface TableResult {
+  data?: unknown
+  error?: { message: string } | null
+}
+
+export interface MockClient {
+  auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> }
+  from: (table: string) => unknown
+  /** Every chained call, per table, in order. */
+  calls: Record<string, Recorded[]>
+  /** Convenience: the argument a given method was called with. */
+  argFor: (table: string, method: string) => unknown
+}
+
+export function makeSupabaseMock(options: {
+  userId?: string | null
+  /** Result per table. A function receives the calls made so far. */
+  results?: Record<string, TableResult | ((calls: Recorded[]) => TableResult)>
+}): MockClient {
+  const { userId = 'me-uuid', results = {} } = options
+  const calls: Record<string, Recorded[]> = {}
+
+  function chainFor(table: string) {
+    const recorded = (calls[table] ||= [])
+    const resolve = () => {
+      const r = results[table] ?? { data: [], error: null }
+      return typeof r === 'function' ? r(recorded) : r
+    }
+    const chain: Record<string | symbol, unknown> = {}
+    return new Proxy(chain, {
+      get(_t, prop) {
+        // Awaiting the chain runs the query.
+        if (prop === 'then') {
+          return (onFulfilled: (v: TableResult) => unknown) => onFulfilled(resolve())
+        }
+        return (...args: unknown[]) => {
+          recorded.push({ method: String(prop), args })
+          return proxyRef
+        }
+      },
+    })
+  }
+
+  let proxyRef: unknown
+  const client: MockClient = {
+    auth: {
+      getUser: async () => ({ data: { user: userId ? { id: userId } : null } }),
+    },
+    from: (table: string) => {
+      proxyRef = chainFor(table)
+      return proxyRef
+    },
+    calls,
+    argFor(table, method) {
+      return (calls[table] ?? []).find((c) => c.method === method)?.args[0]
+    },
+  }
+  return client
+}

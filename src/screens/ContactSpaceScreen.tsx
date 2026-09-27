@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { Avatar } from '@/components/Avatar'
@@ -9,8 +9,9 @@ import { buzz } from '@/lib/haptics'
 import { daysAgo } from '@/lib/time'
 import { BackIcon, ChevronRightIcon, ChevronUpIcon } from '@/components/icons'
 import { TASK_TITLE_MAX } from '@/lib/config'
-import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
+import { type SampleTask } from '@/lib/sampleData'
 import { getDemoTasks } from '@/lib/demoStore'
+import { useContacts, useIsLive, useSpaceTasks, useTaskSpaceMutations } from '@/data/hooks'
 
 /**
  * The two-sided task space: what I owe them down the left in green, what they
@@ -20,14 +21,30 @@ import { getDemoTasks } from '@/lib/demoStore'
 export function ContactSpaceScreen() {
   const nav = useNavigate()
   useSwipeBack()
-  const { id } = useParams()
-  const contact = SAMPLE_CONTACTS.find((c) => c.id === id)
+  const { id = '' } = useParams()
   const toast = useToast()
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const [tasks, setTasks] = useState<SampleTask[]>(() =>
-    contact ? [...contact.tasks, ...getDemoTasks(contact.id)] : [],
+  const live = useIsLive()
+  const { data: contacts, isPending: contactsPending } = useContacts()
+  const contact = contacts?.find((c) => c.id === id)
+
+  const space = useSpaceTasks(id)
+  const { setStatus, create } = useTaskSpaceMutations(id)
+
+  // Preview keeps its own rows in memory; live reads them from the database.
+  const [previewTasks, setPreviewTasks] = useState<SampleTask[]>([])
+  useEffect(() => {
+    if (!live && contact) setPreviewTasks([...contact.tasks, ...getDemoTasks(contact.id)])
+  }, [live, contact])
+
+  // Memoised so the split below does not recompute on every render: the
+  // `?? []` fallback would otherwise hand it a fresh array each time.
+  const tasks = useMemo(
+    () => (live ? (space.data ?? []) : previewTasks),
+    [live, space.data, previewTasks],
   )
+
   const [draft, setDraft] = useState('')
   const [showDone, setShowDone] = useState<Record<Side, boolean>>({ owe: true, owed: true })
 
@@ -38,6 +55,14 @@ export function ContactSpaceScreen() {
     }),
     [tasks],
   )
+
+  if (contactsPending) {
+    return (
+      <div className="app-frame items-center justify-center">
+        <p className="text-[15px] text-ink-soft">Loading…</p>
+      </div>
+    )
+  }
 
   if (!contact) {
     return (
@@ -56,43 +81,76 @@ export function ContactSpaceScreen() {
   const person = contact
   const firstName = person.name.split(' ')[0]
 
-  function patch(taskId: string, next: Partial<SampleTask>) {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...next } : t)))
+  function patchPreview(taskId: string, next: Partial<SampleTask>) {
+    setPreviewTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...next } : t)))
   }
 
   function toggleDone(task: SampleTask) {
     buzz(15)
-    patch(task.id, { status: task.status === 'completed' ? 'active' : 'completed' })
+    const status = task.status === 'completed' ? 'active' : 'completed'
+    if (!live) return patchPreview(task.id, { status })
+    setStatus.mutate(
+      { taskId: task.id, status },
+      { onError: () => toast('Could not save that — put back as it was', 'error') },
+    )
   }
 
   function accept(task: SampleTask) {
     buzz(15)
-    patch(task.id, { status: 'active', receipt: 'accepted' })
-    toast('Task accepted', 'success')
+    if (!live) {
+      patchPreview(task.id, { status: 'active', receipt: 'accepted' })
+      toast('Task accepted', 'success')
+      return
+    }
+    setStatus.mutate(
+      { taskId: task.id, status: 'active' },
+      {
+        onSuccess: () => toast('Task accepted', 'success'),
+        onError: () => toast('Could not accept that — put back as it was', 'error'),
+      },
+    )
+  }
+
+  function toBottom() {
+    window.requestAnimationFrame(() =>
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }),
+    )
   }
 
   function send() {
     const title = draft.trim()
     if (!title) return
     buzz(12)
-    setTasks((prev) => [
-      ...prev,
-      {
-        id: `t-${Date.now()}`,
-        title,
-        direction: 'they_owe_me',
-        status: 'pending_acceptance',
-        priority: 'normal',
-        expected: 'This Week',
-        at: daysAgo(0),
-        receipt: 'sent',
+
+    if (!live) {
+      setPreviewTasks((prev) => [
+        ...prev,
+        {
+          id: `t-${Date.now()}`,
+          title,
+          direction: 'they_owe_me',
+          status: 'pending_acceptance',
+          priority: 'normal',
+          expected: 'This Week',
+          at: daysAgo(0),
+          receipt: 'sent',
+        },
+      ])
+      setDraft('')
+      toast(`Sent to ${firstName}`, 'success')
+      toBottom()
+      return
+    }
+
+    // Only say it was sent once the insert has actually succeeded.
+    create.mutate(title, {
+      onSuccess: () => {
+        setDraft('')
+        toast(`Sent to ${firstName}`, 'success')
+        toBottom()
       },
-    ])
-    setDraft('')
-    toast(`Sent to ${firstName}`, 'success')
-    window.requestAnimationFrame(() =>
-      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }),
-    )
+      onError: () => toast(`Could not send that to ${firstName}`, 'error'),
+    })
   }
 
   function renderSide(side: Side, rows: SampleTask[], total: number) {
@@ -179,6 +237,17 @@ export function ContactSpaceScreen() {
 
       <div ref={scrollRef} className="thread-surface min-h-0 flex-1 overflow-y-auto">
         <TaskWallpaper />
+        {live && space.isError && (
+          <div className="relative px-6 py-8 text-center">
+            <p className="font-display text-[16px] font-semibold text-ink">
+              We couldn&rsquo;t load these tasks
+            </p>
+            <p className="mt-1.5 text-[14px] text-ink-soft">Check your connection.</p>
+            <button onClick={() => space.refetch()} className="btn-ghost mt-4">
+              Try again
+            </button>
+          </div>
+        )}
         <div className="relative flex flex-col gap-2.5 px-3 py-4">
           {renderSide('owe', owe, doneByMe)}
           <div className="h-3" />
