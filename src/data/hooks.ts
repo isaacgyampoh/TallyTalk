@@ -6,6 +6,8 @@ import type { ChecklistItemRow } from './types'
 import { addTaskComment, eventsKey, listTaskEvents, recordTaskEvent } from './events'
 import { poke } from './tasks'
 import { getMyProfile, updateMyProfile, uploadAvatar, type ProfilePatch } from './profile'
+import { attachmentsKey, listTaskAttachments, uploadTaskAttachment } from './attachments'
+import { useEffect } from 'react'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
 import { addContact, findProfileByPhone, setContactFlags, type ContactFlags } from './contacts'
 import {
@@ -315,4 +317,76 @@ export function useUpdateProfile() {
   })
 
   return { save, changePhoto }
+}
+
+export function useTaskAttachments(taskId: string) {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: attachmentsKey(taskId),
+    enabled: live && !!taskId,
+    queryFn: () => listTaskAttachments(taskId),
+  })
+}
+
+export function useUploadAttachment(taskId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => uploadTaskAttachment(taskId, file),
+    onSettled: () => qc.invalidateQueries({ queryKey: attachmentsKey(taskId) }),
+  })
+}
+
+/**
+ * Keep one task's timeline and files current while the screen is open.
+ *
+ * `task_events` and `task_attachments` are both in the realtime publication,
+ * and both are gated by can_access_task, so a subscriber only ever hears about
+ * rows it was already allowed to read. The channel is torn down on unmount —
+ * leaving it open is how these turn into a slow leak across navigations.
+ */
+export function useTaskRealtime(taskId: string) {
+  const qc = useQueryClient()
+  const live = useIsLive()
+
+  useEffect(() => {
+    if (!live || !supabase || !taskId) return
+    const channel = supabase
+      .channel(`task:${taskId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_events', filter: `task_id=eq.${taskId}` },
+        () => qc.invalidateQueries({ queryKey: eventsKey(taskId) }),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_attachments', filter: `task_id=eq.${taskId}` },
+        () => qc.invalidateQueries({ queryKey: attachmentsKey(taskId) }),
+      )
+      .subscribe()
+
+    return () => {
+      supabase?.removeChannel(channel)
+    }
+  }, [live, taskId, qc])
+}
+
+/** Keep a contact's task space current while it is on screen. */
+export function useSpaceRealtime(contactId: string) {
+  const qc = useQueryClient()
+  const live = useIsLive()
+
+  useEffect(() => {
+    if (!live || !supabase || !contactId) return
+    const channel = supabase
+      .channel(`space:${contactId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        qc.invalidateQueries({ queryKey: spaceKey(contactId, true) })
+        qc.invalidateQueries({ queryKey: ['contacts', true] })
+      })
+      .subscribe()
+
+    return () => {
+      supabase?.removeChannel(channel)
+    }
+  }, [live, contactId, qc])
 }

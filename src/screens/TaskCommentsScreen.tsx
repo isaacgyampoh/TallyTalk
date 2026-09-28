@@ -21,7 +21,18 @@ import {
   UrgentIcon,
   WandIcon,
 } from '@/components/icons'
-import { useAddComment, useContacts, useIsLive, usePoke, useTaskEvents } from '@/data/hooks'
+import {
+  useAddComment,
+  useContacts,
+  useIsLive,
+  usePoke,
+  useTaskAttachments,
+  useTaskEvents,
+  useTaskRealtime,
+  useUploadAttachment,
+} from '@/data/hooks'
+import { RecorderUnavailable, recordingFileName, startRecording } from '@/lib/recorder'
+import type { ActiveRecording } from '@/lib/recorder'
 import {
   SAMPLE_CONTACTS,
   SAMPLE_TASK_COMMENTS,
@@ -45,6 +56,7 @@ const KIND_SKIN: Record<TaskFile['kind'], string> = {
   pdf: 'bg-badge-pdf',
   doc: 'bg-badge-doc',
   image: 'bg-badge-image',
+  audio: 'bg-violet',
 }
 
 /** The brief, the files, and the conversation — everything about one task. */
@@ -63,6 +75,11 @@ export function TaskCommentsScreen() {
   const events = useTaskEvents(taskId ?? '')
   const addComment = useAddComment(taskId ?? '')
   const pokeThem = usePoke(taskId ?? '')
+  const liveFiles = useTaskAttachments(taskId ?? '')
+  const uploadFile = useUploadAttachment(taskId ?? '')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const recordingRef = useRef<ActiveRecording | null>(null)
+  useTaskRealtime(taskId ?? '')
 
   const [task, setTask] = useState<SampleTask | undefined>(seed)
   const [previewComments, setPreviewComments] = useState<TaskComment[]>(
@@ -114,7 +131,22 @@ export function TaskCommentsScreen() {
 
   const firstName = contact.name.split(' ')[0]
   const side = task.direction === 'i_owe_them' ? 'owe' : 'owed'
-  const files = SAMPLE_TASK_FILES[task.id] ?? []
+  const files: TaskFile[] = live
+    ? (liveFiles.data ?? []).map((a) => ({
+        id: a.id,
+        name: a.file_name ?? 'Attachment',
+        kind:
+          a.attachment_type === 'image'
+            ? 'image'
+            : a.attachment_type === 'audio'
+              ? 'audio'
+              : a.file_name?.toLowerCase().endsWith('.pdf')
+                ? 'pdf'
+                : 'doc',
+        size: a.file_size ? `${Math.max(1, Math.round(a.file_size / 1024))} KB` : '',
+        at: a.created_at,
+      }))
+    : (SAMPLE_TASK_FILES[task.id] ?? [])
   const flagged = task.priority === 'urgent' || task.priority === 'high'
 
   function toBottom(smooth = true) {
@@ -147,27 +179,62 @@ export function TaskCommentsScreen() {
     })
   }
 
-  function startRec() {
-    setRecording(true)
-    setElapsed(0)
-    recRef.current = window.setInterval(() => setElapsed((e) => e + 1), 1000)
+  async function startRec() {
+    if (!live) {
+      // Preview has nowhere to upload to; keep the existing mimed recorder.
+      setRecording(true)
+      setElapsed(0)
+      recRef.current = window.setInterval(() => setElapsed((e) => e + 1), 1000)
+      return
+    }
+    try {
+      recordingRef.current = await startRecording()
+      setRecording(true)
+      setElapsed(0)
+      recRef.current = window.setInterval(() => setElapsed((e) => e + 1), 1000)
+    } catch (err) {
+      const reason = err instanceof RecorderUnavailable ? err.reason : 'failed'
+      toast(
+        reason === 'denied'
+          ? 'Microphone access is off. Turn it on in settings to send a voice note.'
+          : reason === 'unsupported'
+            ? 'This device cannot record audio.'
+            : 'Could not start recording.',
+        'error',
+      )
+    }
   }
 
-  function stopRec(keep: boolean) {
+  async function stopRec(keep: boolean) {
     if (recRef.current) window.clearInterval(recRef.current)
     const seconds = Math.max(1, elapsed)
     setRecording(false)
     setElapsed(0)
-    if (keep) {
-      buzz(12)
-      post({
-        id: `v-${Date.now()}`,
-        body: 'Voice note',
-        mine: true,
-        at: new Date().toISOString(),
-        voice: seconds,
-      })
+
+    const active = recordingRef.current
+    recordingRef.current = null
+
+    if (!live) {
+      if (keep) {
+        buzz(12)
+        post({
+          id: `v-${Date.now()}`,
+          body: 'Voice note',
+          mine: true,
+          at: new Date().toISOString(),
+          voice: seconds,
+        })
+      }
+      return
     }
+
+    const blob = await active?.stop(keep)
+    if (!keep || !blob) return
+    buzz(12)
+    const file = new File([blob], recordingFileName(blob.type), { type: blob.type })
+    uploadFile.mutate(file, {
+      onError: () => toast('Could not send that voice note', 'error'),
+    })
   }
 
   return (
@@ -355,10 +422,27 @@ export function TaskCommentsScreen() {
             <button
               className="press grid h-10 w-8 shrink-0 place-items-center text-ink"
               aria-label="Attach to this task"
-              onClick={() => toast('Attachments arrive with the live backend', 'info')}
+              onClick={() =>
+                live
+                  ? fileRef.current?.click()
+                  : toast('Attachments arrive with the live backend', 'info')
+              }
             >
               <PlusIcon width={26} height={26} />
             </button>
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (!f) return
+                uploadFile.mutate(f, {
+                  onError: () => toast('Could not attach that file', 'error'),
+                })
+                e.target.value = ''
+              }}
+            />
             <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-full bg-paper px-4">
               <input
                 value={draft}

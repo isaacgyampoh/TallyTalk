@@ -28,6 +28,10 @@ export interface MockClient {
     from: (bucket: string) => {
       upload: (path: string, file: unknown, opts?: unknown) => Promise<{ error: unknown }>
       getPublicUrl: (path: string) => { data: { publicUrl: string } }
+      createSignedUrl: (
+        path: string,
+        seconds: number,
+      ) => Promise<{ data: { signedUrl: string } | null; error: unknown }>
     }
   }
   /** Every chained call, per table, in order. */
@@ -97,6 +101,13 @@ export function makeSupabaseMock(options: {
         getPublicUrl: (path: string) => ({
           data: { publicUrl: `https://example.test/storage/${bucket}/${path}` },
         }),
+        createSignedUrl: async (path: string, seconds: number) =>
+          uploadError
+            ? { data: null, error: uploadError }
+            : {
+                data: { signedUrl: `https://example.test/signed/${bucket}/${path}?exp=${seconds}` },
+                error: null,
+              },
       }),
     },
     calls,

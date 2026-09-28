@@ -11,7 +11,13 @@ import { BackIcon, ChevronRightIcon, ChevronUpIcon } from '@/components/icons'
 import { TASK_TITLE_MAX } from '@/lib/config'
 import { type SampleTask } from '@/lib/sampleData'
 import { getDemoTasks } from '@/lib/demoStore'
-import { useContacts, useIsLive, useSpaceTasks, useTaskSpaceMutations } from '@/data/hooks'
+import {
+  useContacts,
+  useIsLive,
+  useSpaceRealtime,
+  useSpaceTasks,
+  useTaskSpaceMutations,
+} from '@/data/hooks'
 import { ContactActionsSheet } from '@/components/ContactActionsSheet'
 
 /**
@@ -32,6 +38,7 @@ export function ContactSpaceScreen() {
 
   const space = useSpaceTasks(id)
   const { setStatus, create } = useTaskSpaceMutations(id)
+  useSpaceRealtime(id)
 
   // Preview keeps its own rows in memory; live reads them from the database.
   const [previewTasks, setPreviewTasks] = useState<SampleTask[]>([])

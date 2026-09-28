@@ -52,7 +52,7 @@ export interface TaskComment {
 export interface TaskFile {
   id: string
   name: string
-  kind: 'pdf' | 'image' | 'doc'
+  kind: 'pdf' | 'image' | 'doc' | 'audio'
   size: string
   at: string
 }
