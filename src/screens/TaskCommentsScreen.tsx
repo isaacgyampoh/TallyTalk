@@ -356,11 +356,29 @@ export function TaskCommentsScreen() {
             </div>
           ))}
 
+          {live && events.isError && (
+            <div className="mx-auto max-w-[88%] rounded-[10px] bg-paper px-4 py-3 text-center">
+              <p className="text-[14px] text-ink">We couldn&rsquo;t load this conversation.</p>
+              <button
+                onClick={() => events.refetch()}
+                className="press mt-1 text-[14px] font-semibold text-violet-ink"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
           {history.map((e) => (
             <p key={e.id} className="stamp mx-auto rounded-full bg-paper/70 px-3 py-1 text-center">
               {HISTORY_LABEL[e.event_type] ?? e.event_type} · {agoLabel(e.created_at)}
             </p>
           ))}
+
+          {comments.length === 0 && !events.isPending && !events.isError && (
+            <p className="px-6 py-6 text-center text-[14px] text-ink-soft">
+              No comments yet. Ask a question about this task below.
+            </p>
+          )}
 
           {comments.map((c) => (
             <div key={c.id} className={`flex ${c.mine ? 'justify-end' : 'justify-start'}`}>

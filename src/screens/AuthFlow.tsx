@@ -4,6 +4,7 @@ import { useAuth } from '@/context/authState'
 import { COUNTRIES } from '@/lib/config'
 import { BackIcon, PhoneIcon } from '@/components/icons'
 import { isAppMode } from '@/lib/platform'
+import { OfflineBar } from '@/components/OfflineBar'
 
 type Step = 'phone' | 'code'
 
@@ -46,6 +47,7 @@ export function AuthFlow() {
 
   return (
     <div className="app-frame relative overflow-hidden">
+      <OfflineBar />
       <div
         className="relative flex flex-1 flex-col px-6"
         style={{ paddingTop: 'calc(var(--safe-top) + 20px)' }}

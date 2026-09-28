@@ -279,6 +279,17 @@ export function ContactSpaceScreen() {
           </div>
         )}
         <div className="relative flex flex-col gap-2.5 px-3 py-4">
+          {tasks.length === 0 && !space.isPending && (
+            <div className="relative px-8 py-12 text-center">
+              <p className="font-display text-[16px] font-semibold text-ink">
+                Nothing between you yet
+              </p>
+              <p className="mt-1.5 text-[14px] text-ink-soft">
+                Send {firstName} a task using the box below, and it will appear here.
+              </p>
+            </div>
+          )}
+
           {renderSide('owe', owe, doneByMe)}
           <div className="h-3" />
           {renderSide('owed', owed, doneByThem)}
