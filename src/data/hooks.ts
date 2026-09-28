@@ -3,6 +3,8 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
 import type { ChecklistItemRow } from './types'
+import { addTaskComment, eventsKey, listTaskEvents, recordTaskEvent } from './events'
+import { poke } from './tasks'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
 import { addContact, findProfileByPhone, setContactFlags, type ContactFlags } from './contacts'
 import {
@@ -15,6 +17,8 @@ import {
   getGroupTasks,
   listMyGroups,
   removeChecklistItem,
+  needsDailyReset,
+  resetChecklist,
   seedPredefinedChecklists,
   toggleChecklistItem,
 } from './checklists'
@@ -146,8 +150,14 @@ export function useTaskSpaceMutations(contactId: string) {
   }
 
   const setStatus = useMutation({
-    mutationFn: (v: { taskId: string; status: 'active' | 'completed' | 'declined' }) =>
-      setTaskStatus(v.taskId, v.status),
+    mutationFn: async (v: { taskId: string; status: 'active' | 'completed' | 'declined' }) => {
+      await setTaskStatus(v.taskId, v.status)
+      const type =
+        v.status === 'active' ? 'accepted' : v.status === 'completed' ? 'completed' : 'declined'
+      // Best effort: the status change is what matters; a missing log line
+      // must not make a successful accept look like a failure.
+      await recordTaskEvent(v.taskId, type).catch(() => {})
+    },
     onMutate: async ({ taskId, status }) => {
       const prev = await snapshot()
       qc.setQueryData<SampleTask[]>(key, (old) =>
@@ -226,3 +236,48 @@ export function useCreateGroup() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['groups', live] }),
   })
 }
+
+/** The timeline on one task: its history and its comments, in one list. */
+export function useTaskEvents(taskId: string) {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: eventsKey(taskId),
+    enabled: live && !!taskId,
+    queryFn: () => listTaskEvents(taskId),
+  })
+}
+
+export function useAddComment(taskId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: string) => addTaskComment(taskId, body),
+    onSettled: () => qc.invalidateQueries({ queryKey: eventsKey(taskId) }),
+  })
+}
+
+/** The wand. Records the poke and logs it on the task. */
+export function usePoke(taskId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (toUserId: string) => {
+      await poke(toUserId, taskId)
+      await recordTaskEvent(taskId, 'poked').catch(() => {})
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: eventsKey(taskId) }),
+  })
+}
+
+/** Clear a list and stamp last_reset_at — daily lists on open, others on demand. */
+export function useResetChecklist(checklistId: string) {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  return useMutation({
+    mutationFn: () => resetChecklist(checklistId),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: itemsKey(checklistId) })
+      qc.invalidateQueries({ queryKey: ['checklists', live] })
+    },
+  })
+}
+
+export { needsDailyReset }

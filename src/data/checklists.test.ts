@@ -23,6 +23,8 @@ const {
   createGroup,
   listMyGroups,
   getGroupTasks,
+  needsDailyReset,
+  resetChecklist,
 } = await import('./checklists')
 
 beforeEach(() => {
@@ -155,5 +157,66 @@ describe('groups', () => {
       'in',
       '(declined,deleted)',
     ])
+  })
+})
+
+describe('needsDailyReset', () => {
+  it('ignores lists that are not daily', () => {
+    expect(needsDailyReset({ behavior: 'normal', last_reset_at: null })).toBe(false)
+    expect(needsDailyReset({ behavior: 'manual_reset', last_reset_at: null })).toBe(false)
+  })
+
+  it('resets a daily list that has never been reset', () => {
+    expect(needsDailyReset({ behavior: 'daily_reset', last_reset_at: null })).toBe(true)
+  })
+
+  it('does not reset again once cleared today', () => {
+    const earlierToday = new Date()
+    earlierToday.setHours(1, 0, 0, 0)
+    expect(
+      needsDailyReset({ behavior: 'daily_reset', last_reset_at: earlierToday.toISOString() }),
+    ).toBe(false)
+  })
+
+  it('resets a list last cleared yesterday', () => {
+    const yesterday = new Date(Date.now() - 24 * 3600 * 1000)
+    expect(
+      needsDailyReset({ behavior: 'daily_reset', last_reset_at: yesterday.toISOString() }),
+    ).toBe(true)
+  })
+
+  it('measures from local midnight, not a rolling 24 hours', () => {
+    // Ticked late last night, opened this morning: fewer than 24 hours have
+    // passed, but it is a new day, so the list must be clear.
+    const lastNight = new Date()
+    lastNight.setDate(lastNight.getDate() - 1)
+    lastNight.setHours(23, 30, 0, 0)
+    expect(
+      needsDailyReset({ behavior: 'daily_reset', last_reset_at: lastNight.toISOString() }),
+    ).toBe(true)
+  })
+})
+
+describe('resetChecklist', () => {
+  it('unticks only the completed items, and stamps the list', async () => {
+    client = makeSupabaseMock({
+      results: { checklist_items: { error: null }, checklists: { error: null } },
+    })
+    await resetChecklist('list-1')
+    const itemPatch = client.argFor('checklist_items', 'update') as Record<string, unknown>
+    expect(itemPatch).toEqual({ is_completed: false, completed_at: null })
+    const eqs = client.calls.checklist_items.filter((c) => c.method === 'eq').map((c) => c.args)
+    expect(eqs).toContainEqual(['checklist_id', 'list-1'])
+    expect(eqs).toContainEqual(['is_completed', true])
+    const listPatch = client.argFor('checklists', 'update') as Record<string, unknown>
+    expect(typeof listPatch.last_reset_at).toBe('string')
+  })
+
+  it('does not stamp the list if the items could not be cleared', async () => {
+    client = makeSupabaseMock({
+      results: { checklist_items: { error: { message: 'rls' } }, checklists: { error: null } },
+    })
+    await expect(resetChecklist('list-1')).rejects.toMatchObject({ message: 'rls' })
+    expect(client.calls.checklists).toBeUndefined()
   })
 })

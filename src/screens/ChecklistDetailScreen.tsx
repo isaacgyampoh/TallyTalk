@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { isAppMode } from '@/lib/platform'
 import { useSwipeBack } from '@/hooks/useSwipeBack'
@@ -6,7 +6,14 @@ import { BackIcon, CheckIcon, PhoneIcon, PlusIcon } from '@/components/icons'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
 import { SAMPLE_CHECKLIST_ITEMS, type ChecklistItem } from '@/lib/sampleData'
 import { getCustomList } from '@/lib/demoStore'
-import { useChecklistItems, useChecklistMutations, useChecklists, useIsLive } from '@/data/hooks'
+import {
+  needsDailyReset,
+  useChecklistItems,
+  useChecklistMutations,
+  useChecklists,
+  useIsLive,
+  useResetChecklist,
+} from '@/data/hooks'
 
 const listColor = (key: string) => {
   const i = PREDEFINED_CHECKLISTS.findIndex((l) => l.key === key)
@@ -22,6 +29,7 @@ export function ChecklistDetailScreen() {
   const liveList = live ? lists?.find((l) => l.id === key) : undefined
   const itemsQuery = useChecklistItems(key)
   const { toggle: toggleItem, add: addItem } = useChecklistMutations(key)
+  const resetList = useResetChecklist(key)
 
   const meta = PREDEFINED_CHECKLISTS.find((l) => l.key === key)
   const custom = meta || live ? undefined : getCustomList(key)
@@ -47,6 +55,17 @@ export function ChecklistDetailScreen() {
     [live, itemsQuery.data, previewItems],
   )
   const [draft, setDraft] = useState('')
+
+  // A daily list clears itself the first time it is opened on a new day. Guarded
+  // by a ref as well as the stamp so a re-render cannot fire it twice while the
+  // first write is still in flight.
+  const resetFired = useRef(false)
+  useEffect(() => {
+    if (!live || !liveList || resetFired.current) return
+    if (!needsDailyReset(liveList)) return
+    resetFired.current = true
+    resetList.mutate()
+  }, [live, liveList, resetList])
 
   const { open, done } = useMemo(
     () => ({ open: items.filter((i) => !i.done).length, done: items.filter((i) => i.done).length }),
@@ -79,10 +98,7 @@ export function ChecklistDetailScreen() {
       setPreviewItems((prev) => prev.map((i) => ({ ...i, done: false })))
       return
     }
-    // Untick each completed item; the database has no bulk reset.
-    for (const i of items.filter((x) => x.done)) {
-      toggleItem.mutate({ itemId: i.id, isCompleted: false })
-    }
+    resetList.mutate()
   }
 
   const sorted = [...items].sort((a, b) => Number(a.done) - Number(b.done))

@@ -50,6 +50,7 @@ export interface ChecklistRow {
   predefined_key: string | null
   behavior: ChecklistBehavior
   icon_color: string | null
+  last_reset_at: string | null
 }
 
 export interface ChecklistItemRow {

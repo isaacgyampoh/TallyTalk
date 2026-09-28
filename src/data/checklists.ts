@@ -147,3 +147,34 @@ export async function removeChecklistItem(itemId: string): Promise<void> {
   const { error } = await db().from('checklist_items').delete().eq('id', itemId)
   if (error) throw error
 }
+
+/**
+ * True when a daily list has not been cleared since before today began.
+ *
+ * Compared against local midnight, not a rolling 24 hours: "clear each morning"
+ * is what people mean, so a list ticked at 11pm is clear at 7am rather than at
+ * 11pm the following night.
+ */
+export function needsDailyReset(list: Pick<ChecklistRow, 'behavior' | 'last_reset_at'>): boolean {
+  if (list.behavior !== 'daily_reset') return false
+  if (!list.last_reset_at) return true
+  const midnight = new Date()
+  midnight.setHours(0, 0, 0, 0)
+  return new Date(list.last_reset_at).getTime() < midnight.getTime()
+}
+
+/** Untick everything on a list and record when that happened. */
+export async function resetChecklist(checklistId: string): Promise<void> {
+  const { error: itemsError } = await db()
+    .from('checklist_items')
+    .update({ is_completed: false, completed_at: null })
+    .eq('checklist_id', checklistId)
+    .eq('is_completed', true)
+  if (itemsError) throw itemsError
+
+  const { error } = await db()
+    .from('checklists')
+    .update({ last_reset_at: new Date().toISOString() })
+    .eq('id', checklistId)
+  if (error) throw error
+}

@@ -19,7 +19,9 @@ import {
   PlusIcon,
   StopIcon,
   UrgentIcon,
+  WandIcon,
 } from '@/components/icons'
+import { useAddComment, useContacts, useIsLive, usePoke, useTaskEvents } from '@/data/hooks'
 import {
   SAMPLE_CONTACTS,
   SAMPLE_TASK_COMMENTS,
@@ -28,6 +30,16 @@ import {
   type TaskComment,
   type TaskFile,
 } from '@/lib/sampleData'
+
+/** How each logged event reads in the timeline. */
+const HISTORY_LABEL: Record<string, string> = {
+  created: 'Task sent',
+  accepted: 'Accepted',
+  completed: 'Marked done',
+  reopened: 'Reopened',
+  declined: 'Declined',
+  poked: 'Poked',
+}
 
 const KIND_SKIN: Record<TaskFile['kind'], string> = {
   pdf: 'bg-badge-pdf',
@@ -43,13 +55,34 @@ export function TaskCommentsScreen() {
   const toast = useToast()
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const contact = SAMPLE_CONTACTS.find((c) => c.id === id)
+  const live = useIsLive()
+  const { data: contacts } = useContacts()
+  const contact = (live ? contacts : SAMPLE_CONTACTS)?.find((c) => c.id === id)
   const seed = contact?.tasks.find((t) => t.id === taskId)
 
+  const events = useTaskEvents(taskId ?? '')
+  const addComment = useAddComment(taskId ?? '')
+  const pokeThem = usePoke(taskId ?? '')
+
   const [task, setTask] = useState<SampleTask | undefined>(seed)
-  const [comments, setComments] = useState<TaskComment[]>(
+  const [previewComments, setPreviewComments] = useState<TaskComment[]>(
     () => SAMPLE_TASK_COMMENTS[taskId ?? ''] ?? [],
   )
+
+  // Live comments are task_events carrying a body; the rest of the timeline is
+  // the task's own history, rendered as quiet system lines.
+  const comments: TaskComment[] = live
+    ? (events.data ?? [])
+        .filter((e) => e.event_type === 'comment' && e.metadata?.body)
+        .map((e) => ({
+          id: e.id,
+          body: e.metadata!.body!,
+          mine: e.actor_id === contact?.id ? false : true,
+          at: e.created_at,
+        }))
+    : previewComments
+
+  const history = live ? (events.data ?? []).filter((e) => e.event_type !== 'comment') : []
   const [draft, setDraft] = useState('')
   const [recording, setRecording] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -92,7 +125,7 @@ export function TaskCommentsScreen() {
   }
 
   function post(comment: TaskComment) {
-    setComments((prev) => [...prev, comment])
+    setPreviewComments((prev) => [...prev, comment])
     window.requestAnimationFrame(() => toBottom())
   }
 
@@ -100,8 +133,18 @@ export function TaskCommentsScreen() {
     const body = draft.trim()
     if (!body) return
     buzz(12)
-    post({ id: `c-${Date.now()}`, body, mine: true, at: new Date().toISOString() })
-    setDraft('')
+    if (!live) {
+      post({ id: `c-${Date.now()}`, body, mine: true, at: new Date().toISOString() })
+      setDraft('')
+      return
+    }
+    addComment.mutate(body, {
+      onSuccess: () => {
+        setDraft('')
+        window.requestAnimationFrame(() => toBottom())
+      },
+      onError: () => toast('Could not post that comment', 'error'),
+    })
   }
 
   function startRec() {
@@ -153,6 +196,24 @@ export function TaskCommentsScreen() {
 
       {/* The task itself, pinned above its conversation. */}
       <div className="border-b border-line bg-paper px-3 py-2.5">
+        {live && side === 'owed' && task.status !== 'completed' && contact && (
+          <button
+            onClick={() =>
+              pokeThem.mutate(contact.id, {
+                onSuccess: () => {
+                  buzz(18)
+                  toast(`You poked ${firstName}`, 'poke')
+                },
+                onError: () => toast('Could not send that poke', 'error'),
+              })
+            }
+            disabled={pokeThem.isPending}
+            className="press mb-2 inline-flex items-center gap-1.5 rounded-full bg-violet-tint px-3 py-1.5 text-[13px] font-semibold text-violet-ink disabled:opacity-50"
+          >
+            <WandIcon width={15} height={15} />
+            {pokeThem.isPending ? 'Poking…' : `Poke ${firstName}`}
+          </button>
+        )}
         <TaskRow
           task={task}
           side={side}
@@ -224,6 +285,12 @@ export function TaskCommentsScreen() {
                 </span>
               </div>
             </div>
+          ))}
+
+          {history.map((e) => (
+            <p key={e.id} className="stamp mx-auto rounded-full bg-paper/70 px-3 py-1 text-center">
+              {HISTORY_LABEL[e.event_type] ?? e.event_type} · {agoLabel(e.created_at)}
+            </p>
           ))}
 
           {comments.map((c) => (
