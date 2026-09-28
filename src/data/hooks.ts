@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/authState'
 import { supabase } from '@/lib/supabase'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
 import type { ChecklistItemRow } from './types'
 import { addTaskComment, eventsKey, listTaskEvents, recordTaskEvent } from './events'
-import { poke } from './tasks'
+import { createGroupTask, poke } from './tasks'
 import { getMyProfile, updateMyProfile, uploadAvatar, type ProfilePatch } from './profile'
 import { attachmentsKey, listTaskAttachments, uploadTaskAttachment } from './attachments'
 import { useEffect } from 'react'
@@ -425,4 +425,23 @@ export function useInvitations(groupId?: string) {
   })
 
   return { invite, respond }
+}
+
+/** Writes on a group's shared task list. */
+export function useGroupTaskMutations(groupId: string) {
+  const qc = useQueryClient()
+  const refresh = () => qc.invalidateQueries({ queryKey: ['group-tasks', groupId] })
+
+  const add = useMutation({
+    mutationFn: (title: string) => createGroupTask({ title, groupId }),
+    onSettled: refresh,
+  })
+
+  const setDone = useMutation({
+    mutationFn: (v: { taskId: string; done: boolean }) =>
+      setTaskStatus(v.taskId, v.done ? 'completed' : 'active'),
+    onSettled: refresh,
+  })
+
+  return { add, setDone }
 }

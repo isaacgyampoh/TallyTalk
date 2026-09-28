@@ -1,15 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ThemeContext, type ThemePref } from './themeState'
 import { initNative, syncStatusBar } from '@/lib/platform'
 
-export type ThemePref = 'system' | 'light' | 'dark'
-
-interface ThemeState {
-  theme: ThemePref
-  resolved: 'light' | 'dark'
-  setTheme: (t: ThemePref) => void
-}
-
-const ThemeContext = createContext<ThemeState | null>(null)
 const KEY = 'tt.theme'
 
 function systemDark() {
@@ -55,10 +47,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ theme, resolved, setTheme }), [theme, resolved])
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-}
-
-export function useTheme() {
-  const ctx = useContext(ThemeContext)
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider')
-  return ctx
 }

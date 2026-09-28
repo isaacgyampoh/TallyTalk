@@ -129,3 +129,29 @@ export async function poke(toUserId: string, taskId: string): Promise<void> {
     .insert({ from_user: me, to_user: toUserId, task_id: taskId })
   if (error) throw error
 }
+
+/**
+ * Add a task to a group.
+ *
+ * No assignee: a group task is owed by the group, and whoever picks it up ticks
+ * it. `tasks_insert_requester` (0003) already requires membership of the group
+ * being written to, so there is no client-side check to duplicate here.
+ */
+export async function createGroupTask(input: {
+  title: string
+  groupId: string
+  priority?: Priority
+}): Promise<void> {
+  const me = await myId()
+  const { error } = await db()
+    .from('tasks')
+    .insert({
+      title: input.title,
+      requester_id: me,
+      group_id: input.groupId,
+      priority: input.priority ?? 'normal',
+      // Group tasks are live immediately; there is nobody specific to accept.
+      status: 'active',
+    })
+  if (error) throw error
+}

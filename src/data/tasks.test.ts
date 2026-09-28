@@ -13,8 +13,15 @@ vi.mock('@/lib/supabase', () => ({
   isSupabaseConfigured: true,
 }))
 
-const { listContacts, listSpaceTasks, createTask, setTaskStatus, setTaskPriority, poke } =
-  await import('./tasks')
+const {
+  listContacts,
+  listSpaceTasks,
+  createTask,
+  createGroupTask,
+  setTaskStatus,
+  setTaskPriority,
+  poke,
+} = await import('./tasks')
 
 function taskRow(over: Record<string, unknown> = {}) {
   return {
@@ -251,5 +258,30 @@ describe('when nobody is signed in', () => {
   it('refuses rather than querying as an anonymous user', async () => {
     client = makeSupabaseMock({ userId: null })
     await expect(listContacts()).rejects.toThrow(/not signed in/i)
+  })
+})
+
+describe('createGroupTask', () => {
+  it('records me as requester and carries no assignee', async () => {
+    // A group task is owed by the group; whoever picks it up ticks it.
+    client = makeSupabaseMock({ results: { tasks: { error: null } } })
+    await createGroupTask({ title: 'Clear the site', groupId: 'g1' })
+    const row = client.argFor('tasks', 'insert') as Record<string, unknown>
+    expect(row).toMatchObject({ title: 'Clear the site', requester_id: ME, group_id: 'g1' })
+    expect(row.assignee_id).toBeUndefined()
+  })
+
+  it('starts active — there is nobody specific to accept it', async () => {
+    client = makeSupabaseMock({ results: { tasks: { error: null } } })
+    await createGroupTask({ title: 'x', groupId: 'g1' })
+    expect(client.argFor('tasks', 'insert')).toMatchObject({ status: 'active' })
+  })
+
+  it('throws when the insert is refused, which is how a non-member is stopped', async () => {
+    // tasks_insert_requester requires membership of the group being written to.
+    client = makeSupabaseMock({ results: { tasks: { error: { message: 'rls' } } } })
+    await expect(createGroupTask({ title: 'x', groupId: 'g1' })).rejects.toMatchObject({
+      message: 'rls',
+    })
   })
 })

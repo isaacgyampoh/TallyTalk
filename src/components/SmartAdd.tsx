@@ -5,7 +5,7 @@ import { addDemoTask } from '@/lib/demoStore'
 import { useContacts, useIsLive } from '@/data/hooks'
 import { createTask } from '@/data/tasks'
 
-import { useToast } from '@/components/Toast'
+import { useToast } from '@/components/toastContext'
 import { buzz } from '@/lib/haptics'
 import { WandIcon, CloseIcon } from '@/components/icons'
 import { Avatar } from '@/components/Avatar'

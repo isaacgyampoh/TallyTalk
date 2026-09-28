@@ -6,7 +6,14 @@ import { Avatar } from '@/components/Avatar'
 import { BackIcon, CheckIcon, PlusIcon } from '@/components/icons'
 import { SAMPLE_GROUPS, type GroupTask } from '@/lib/sampleData'
 import { getCustomGroup } from '@/lib/demoStore'
-import { useContacts, useGroupDetail, useGroups, useInvitations, useIsLive } from '@/data/hooks'
+import {
+  useContacts,
+  useGroupDetail,
+  useGroups,
+  useGroupTaskMutations,
+  useInvitations,
+  useIsLive,
+} from '@/data/hooks'
 
 export function GroupDetailScreen() {
   const nav = useNavigate()
@@ -16,6 +23,7 @@ export function GroupDetailScreen() {
   const { data: liveGroups } = useGroups()
   const detail = useGroupDetail(id)
   const { invite } = useInvitations(id)
+  const groupTasks = useGroupTaskMutations(id)
   const { data: myContacts } = useContacts()
   const [inviting, setInviting] = useState(false)
 
@@ -62,21 +70,27 @@ export function GroupDetailScreen() {
     [tasks],
   )
 
-  function toggle(id: string) {
-    // Group task writes land with PB-014/PB-023; preview toggles locally.
-    if (live) return
-    setPreviewTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))
+  function toggle(taskId: string) {
+    if (!live) {
+      setPreviewTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)))
+      return
+    }
+    const current = tasks.find((t) => t.id === taskId)
+    if (!current) return
+    groupTasks.setDone.mutate({ taskId, done: !current.done })
   }
   function add() {
     const t = draft.trim()
     if (!t) return
-    // Creating a group task against the database lands with PB-014.
-    if (live) return
-    setPreviewTasks((prev) => [
-      ...prev,
-      { id: `n-${Date.now()}`, title: t, assignee: 'You', done: false, priority: 'normal' },
-    ])
-    setDraft('')
+    if (!live) {
+      setPreviewTasks((prev) => [
+        ...prev,
+        { id: `n-${Date.now()}`, title: t, assignee: 'You', done: false, priority: 'normal' },
+      ])
+      setDraft('')
+      return
+    }
+    groupTasks.add.mutate(t, { onSuccess: () => setDraft('') })
   }
 
   const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done))

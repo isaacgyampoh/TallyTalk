@@ -89,6 +89,32 @@ export function PrivacySettings({
             />
           </div>
         </li>
+
+        <li className="border-t border-line">
+          <div className="px-4 py-3">
+            <label htmlFor="landing" className="block text-[15px] font-medium text-ink">
+              Open the app on
+            </label>
+            <p className="mb-2 text-[12.5px] text-ink-soft">
+              Which screen you land on when you open TaskTally.
+            </p>
+            <select
+              id="landing"
+              disabled={saving}
+              value={profile.default_landing_screen}
+              onChange={(e) =>
+                onChange({
+                  default_landing_screen: e.target.value as MyProfile['default_landing_screen'],
+                })
+              }
+              className="field h-11"
+            >
+              <option value="contacts">Contacts</option>
+              <option value="personal">Personal</option>
+              <option value="groups">Groups</option>
+            </select>
+          </div>
+        </li>
       </ul>
     </section>
   )

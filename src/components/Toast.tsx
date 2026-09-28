@@ -1,14 +1,12 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
+import { ToastContext, type ToastKind } from './toastContext'
 import { WandIcon, CheckIcon, CloseIcon } from './icons'
 
-type ToastKind = 'poke' | 'success' | 'info' | 'error'
 interface Toast {
   id: number
   message: string
   kind: ToastKind
 }
-
-const ToastContext = createContext<(message: string, kind?: ToastKind) => void>(() => {})
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -58,8 +56,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       </div>
     </ToastContext.Provider>
   )
-}
-
-export function useToast() {
-  return useContext(ToastContext)
 }

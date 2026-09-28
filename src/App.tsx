@@ -1,10 +1,12 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { AuthProvider } from '@/context/AuthContext'
+import { useAuth } from '@/context/authState'
 import { registerPush } from '@/lib/push'
 import { isAppMode } from '@/lib/platform'
 import { isOnboarded } from '@/lib/onboarding'
+import { useMyProfile } from '@/data/hooks'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
 import { AppViewport } from '@/components/AppViewport'
@@ -67,6 +69,11 @@ function Gate() {
   useEffect(() => {
     if (session) registerPush()
   }, [session])
+
+  // Where an unrecognised route lands. The profile column has been editable
+  // since PB-010 but nothing read it, so the setting did nothing.
+  const { data: profile } = useMyProfile()
+  const landing = profile?.default_landing_screen ? `/${profile.default_landing_screen}` : '/today'
 
   if (intro) {
     return (
@@ -132,7 +139,7 @@ function Gate() {
                 <Route path="/personal" element={<PersonalScreen />} />
                 <Route path="/groups" element={<GroupsScreen />} />
                 <Route path="/profile" element={<ProfileScreen />} />
-                <Route path="*" element={<Navigate to="/today" replace />} />
+                <Route path="*" element={<Navigate to={landing} replace />} />
               </Routes>
             </Shell>
           }

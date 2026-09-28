@@ -1,7 +1,7 @@
 import { AuroraBg } from '@/components/AuroraBg'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/authState'
 import { COUNTRIES } from '@/lib/config'
 import { BackIcon, PhoneIcon } from '@/components/icons'
 import { isAppMode } from '@/lib/platform'

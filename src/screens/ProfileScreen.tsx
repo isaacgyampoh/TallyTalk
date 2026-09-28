@@ -1,14 +1,14 @@
 import { APP_NAME, APP_VERSION, BUILD_ID } from '@/lib/config'
 import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
-import { useAuth } from '@/context/AuthContext'
-import { useTheme, type ThemePref } from '@/context/ThemeContext'
+import { useAuth } from '@/context/authState'
+import { useTheme, type ThemePref } from '@/context/themeState'
 import { SAMPLE_PROFILE } from '@/lib/sampleData'
 import { useIsLive, useMyProfile, useUpdateProfile } from '@/data/hooks'
 import { PrivacySettings } from '@/components/PrivacySettings'
 import { deleteMyAccount, exportMyData } from '@/data/account'
 import { useRef, useState } from 'react'
-import { useToast } from '@/components/Toast'
+import { useToast } from '@/components/toastContext'
 
 const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
   { value: 'system', label: 'System' },

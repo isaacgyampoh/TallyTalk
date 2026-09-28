@@ -1,23 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { AuthContext, type AuthMode, type AuthState } from './authState'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-
-type AuthMode = 'live' | 'preview'
-
-interface AuthState {
-  mode: AuthMode
-  ready: boolean
-  session: Session | null
-  /** true in preview mode after the user taps "Explore with sample data" */
-  previewSignedIn: boolean
-  signedIn: boolean
-  sendCode: (phone: string) => Promise<{ error?: string }>
-  verifyCode: (phone: string, code: string) => Promise<{ error?: string }>
-  enterPreview: () => void
-  signOut: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthState | null>(null)
 
 const PREVIEW_KEY = 'tallytalk.preview'
 
@@ -119,10 +103,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [mode, ready, session, previewSignedIn])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
 }

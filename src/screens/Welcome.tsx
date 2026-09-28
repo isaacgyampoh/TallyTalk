@@ -1,6 +1,6 @@
 import { AuroraBg } from '@/components/AuroraBg'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/authState'
 import { buzz } from '@/lib/haptics'
 import { WandIcon, CheckIcon } from '@/components/icons'
 import { APP_NAME } from '@/lib/config'

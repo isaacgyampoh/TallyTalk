@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/authState'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon, ContactsIcon, CheckIcon } from '@/components/icons'
 import shotToday from '@/assets/shot-today.png'
