@@ -6,6 +6,7 @@ import { BackIcon, CheckIcon, PhoneIcon, PlusIcon } from '@/components/icons'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
 import { SAMPLE_CHECKLIST_ITEMS, type ChecklistItem } from '@/lib/sampleData'
 import { getCustomList } from '@/lib/demoStore'
+import { useChecklistItems, useChecklistMutations, useChecklists, useIsLive } from '@/data/hooks'
 
 const listColor = (key: string) => {
   const i = PREDEFINED_CHECKLISTS.findIndex((l) => l.key === key)
@@ -16,14 +17,34 @@ export function ChecklistDetailScreen() {
   const nav = useNavigate()
   useSwipeBack()
   const { key = '' } = useParams()
+  const live = useIsLive()
+  const { data: lists } = useChecklists()
+  const liveList = live ? lists?.find((l) => l.id === key) : undefined
+  const itemsQuery = useChecklistItems(key)
+  const { toggle: toggleItem, add: addItem } = useChecklistMutations(key)
+
   const meta = PREDEFINED_CHECKLISTS.find((l) => l.key === key)
-  const custom = meta ? undefined : getCustomList(key)
-  const title = meta?.title ?? custom?.title ?? 'Checklist'
-  const behavior = meta?.behavior ?? 'normal'
+  const custom = meta || live ? undefined : getCustomList(key)
+  const title = liveList?.title ?? meta?.title ?? custom?.title ?? 'Checklist'
+  const behavior = liveList?.behavior ?? meta?.behavior ?? 'normal'
   const color = listColor(key)
 
-  const [items, setItems] = useState<ChecklistItem[]>(
+  // Preview keeps its rows in state; live reads them from the database and maps
+  // the row shape onto the one this screen already renders.
+  const [previewItems, setPreviewItems] = useState<ChecklistItem[]>(
     () => SAMPLE_CHECKLIST_ITEMS[key]?.map((i) => ({ ...i })) ?? [],
+  )
+  const items: ChecklistItem[] = useMemo(
+    () =>
+      live
+        ? (itemsQuery.data ?? []).map((r) => ({
+            id: r.id,
+            title: r.title,
+            done: r.is_completed,
+            phone: r.phone_number ?? undefined,
+          }))
+        : previewItems,
+    [live, itemsQuery.data, previewItems],
   )
   const [draft, setDraft] = useState('')
 
@@ -33,16 +54,35 @@ export function ChecklistDetailScreen() {
   )
 
   function toggle(id: string) {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i)))
+    const item = items.find((i) => i.id === id)
+    if (!item) return
+    if (!live) {
+      setPreviewItems((prev) => prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i)))
+      return
+    }
+    toggleItem.mutate({ itemId: id, isCompleted: !item.done })
   }
+
   function add() {
     const t = draft.trim()
     if (!t) return
-    setItems((prev) => [...prev, { id: `n-${Date.now()}`, title: t, done: false }])
-    setDraft('')
+    if (!live) {
+      setPreviewItems((prev) => [...prev, { id: `n-${Date.now()}`, title: t, done: false }])
+      setDraft('')
+      return
+    }
+    addItem.mutate(t, { onSuccess: () => setDraft('') })
   }
+
   function resetAll() {
-    setItems((prev) => prev.map((i) => ({ ...i, done: false })))
+    if (!live) {
+      setPreviewItems((prev) => prev.map((i) => ({ ...i, done: false })))
+      return
+    }
+    // Untick each completed item; the database has no bulk reset.
+    for (const i of items.filter((x) => x.done)) {
+      toggleItem.mutate({ itemId: i.id, isCompleted: false })
+    }
   }
 
   const sorted = [...items].sort((a, b) => Number(a.done) - Number(b.done))

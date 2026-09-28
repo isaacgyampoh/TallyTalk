@@ -6,11 +6,27 @@ import { NameSheet } from '@/components/NameSheet'
 import { PlusIcon } from '@/components/icons'
 import { SAMPLE_GROUPS } from '@/lib/sampleData'
 import { addCustomGroup, getCustomGroups } from '@/lib/demoStore'
+import { useCreateGroup, useGroups, useIsLive } from '@/data/hooks'
 
 export function GroupsScreen() {
   const nav = useNavigate()
   const [creating, setCreating] = useState(false)
-  const groups = [...getCustomGroups(), ...SAMPLE_GROUPS]
+  const live = useIsLive()
+  const { data: liveGroups, isPending, isError, refetch } = useGroups()
+  const createGroupMutation = useCreateGroup()
+
+  // Live groups carry no tallies yet — counting open tasks per group would be a
+  // query per row, so the counts stay a preview affordance for now.
+  const groups = live
+    ? (liveGroups ?? []).map((g) => ({
+        id: g.id,
+        name: g.name,
+        color: '#6600FF',
+        members: 0,
+        open: 0,
+        done: 0,
+      }))
+    : [...getCustomGroups(), ...SAMPLE_GROUPS]
 
   return (
     <div className="relative flex h-full flex-col">
@@ -18,6 +34,22 @@ export function GroupsScreen() {
       <p className="px-5 pb-3 text-[14px] text-ink-soft">Shared checklists your team works from.</p>
 
       <ul className="flex-1 overflow-y-auto px-3 pb-24">
+        {live && isPending && (
+          <li className="px-3 py-6 text-center text-[15px] text-ink-soft">Loading your groups…</li>
+        )}
+        {live && isError && (
+          <li className="px-3 py-6 text-center">
+            <p className="text-[15px] text-ink">We couldn&rsquo;t load your groups.</p>
+            <button onClick={() => refetch()} className="btn-ghost mt-3">
+              Try again
+            </button>
+          </li>
+        )}
+        {live && !isPending && !isError && groups.length === 0 && (
+          <li className="px-6 py-8 text-center text-[15px] text-ink-soft">
+            No groups yet. Create one to share a list with a team.
+          </li>
+        )}
         {groups.map((g) => (
           <li key={g.id}>
             <button
@@ -56,9 +88,18 @@ export function GroupsScreen() {
           cta="Create group"
           onClose={() => setCreating(false)}
           onCreate={(name) => {
-            const g = addCustomGroup(name)
-            setCreating(false)
-            nav(`/groups/${g.id}`)
+            if (!live) {
+              const g = addCustomGroup(name)
+              setCreating(false)
+              nav(`/groups/${g.id}`)
+              return
+            }
+            createGroupMutation.mutate(name, {
+              onSuccess: (id) => {
+                setCreating(false)
+                nav(`/groups/${id}`)
+              },
+            })
           }}
         />
       )}

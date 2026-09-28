@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { smartParse, type Parsed } from '@/lib/smartParse'
 import { addDemoTask } from '@/lib/demoStore'
-import { SAMPLE_CONTACTS } from '@/lib/sampleData'
+import { useContacts, useIsLive } from '@/data/hooks'
+import { createTask } from '@/data/tasks'
+
 import { useToast } from '@/components/Toast'
 import { buzz } from '@/lib/haptics'
 import { WandIcon, CloseIcon } from '@/components/icons'
@@ -19,8 +21,28 @@ export function SmartAdd() {
     setParsed(smartParse(text))
   }
 
+  const live = useIsLive()
+  const { data: contacts } = useContacts()
+  const pickable = contacts ?? []
+
   function create(contactId: string, contactName: string) {
     if (!parsed) return
+    if (live) {
+      // Live quick-add writes a real task; the demo store is preview-only.
+      createTask({
+        title: parsed.title,
+        assigneeId: contactId,
+        priority: parsed.priority,
+        expected: parsed.expected,
+      })
+        .then(() => {
+          buzz(12)
+          toast(`Sent to ${contactName.split(' ')[0]}`, 'success')
+          nav(`/contacts/${contactId}`)
+        })
+        .catch(() => toast('Could not send that', 'error'))
+      return
+    }
     addDemoTask(contactId, {
       id: `sa-${Date.now()}`,
       title: parsed.title,
@@ -115,7 +137,7 @@ export function SmartAdd() {
               <>
                 <p className="eyebrow mb-2 mt-5">Who is this for?</p>
                 <div className="flex flex-wrap gap-2">
-                  {SAMPLE_CONTACTS.slice(0, 6).map((c) => (
+                  {pickable.slice(0, 6).map((c) => (
                     <button
                       key={c.id}
                       onClick={() => create(c.id, c.name)}

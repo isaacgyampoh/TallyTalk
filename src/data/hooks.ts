@@ -2,9 +2,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
+import type { ChecklistItemRow } from './types'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
 import { addContact, findProfileByPhone, setContactFlags, type ContactFlags } from './contacts'
-import { listChecklists, listMyGroups } from './checklists'
+import {
+  addChecklistItem,
+  createChecklist,
+  listChecklistItems,
+  listChecklists,
+  createGroup,
+  getGroupMembers,
+  getGroupTasks,
+  listMyGroups,
+  removeChecklistItem,
+  seedPredefinedChecklists,
+  toggleChecklistItem,
+} from './checklists'
 
 /**
  * Live when there's a real Supabase session; preview (sample data) otherwise.
@@ -40,7 +53,68 @@ export function useChecklists() {
   return useQuery({
     queryKey: ['checklists', live],
     enabled: live,
-    queryFn: () => listChecklists(),
+    queryFn: async () => {
+      // Idempotent: unique (owner_id, predefined_key) means a repeat run is a
+      // no-op, so a new account opens Personal with its fourteen lists ready.
+      await seedPredefinedChecklists()
+      return listChecklists()
+    },
+  })
+}
+
+export const itemsKey = (checklistId: string) => ['checklist-items', checklistId] as const
+
+export function useChecklistItems(checklistId: string) {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: itemsKey(checklistId),
+    enabled: live && !!checklistId,
+    queryFn: () => listChecklistItems(checklistId),
+  })
+}
+
+/** Ticking, adding and removing items on one list. */
+export function useChecklistMutations(checklistId: string) {
+  const qc = useQueryClient()
+  const key = itemsKey(checklistId)
+  const settle = { onSettled: () => qc.invalidateQueries({ queryKey: key }) }
+
+  const toggle = useMutation({
+    mutationFn: (v: { itemId: string; isCompleted: boolean }) =>
+      toggleChecklistItem(v.itemId, v.isCompleted),
+    onMutate: async ({ itemId, isCompleted }) => {
+      await qc.cancelQueries({ queryKey: key })
+      const prev = qc.getQueryData<ChecklistItemRow[]>(key)
+      qc.setQueryData<ChecklistItemRow[]>(key, (old) =>
+        old?.map((i) => (i.id === itemId ? { ...i, is_completed: isCompleted } : i)),
+      )
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev)
+    },
+    ...settle,
+  })
+
+  const add = useMutation({
+    mutationFn: (title: string) => addChecklistItem(checklistId, title),
+    ...settle,
+  })
+
+  const remove = useMutation({
+    mutationFn: (itemId: string) => removeChecklistItem(itemId),
+    ...settle,
+  })
+
+  return { toggle, add, remove }
+}
+
+export function useCreateChecklist() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  return useMutation({
+    mutationFn: (title: string) => createChecklist(title),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklists', live] }),
   })
 }
 
@@ -125,5 +199,30 @@ export function useContactFlags() {
     mutationFn: (v: { contactId: string; patch: Partial<ContactFlags> }) =>
       setContactFlags(v.contactId, v.patch),
     onSettled: () => qc.invalidateQueries({ queryKey: ['contacts', live] }),
+  })
+}
+
+export function useGroupDetail(groupId: string) {
+  const live = useIsLive()
+  const members = useQuery({
+    queryKey: ['group-members', groupId],
+    enabled: live && !!groupId,
+    queryFn: () => getGroupMembers(groupId),
+  })
+  const tasks = useQuery({
+    queryKey: ['group-tasks', groupId],
+    enabled: live && !!groupId,
+    queryFn: () => getGroupTasks(groupId),
+  })
+  return { members, tasks }
+}
+
+export function useCreateGroup() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  return useMutation({
+    // The on_group_created trigger seats me as administrator; see PB-002.
+    mutationFn: (name: string) => createGroup(name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['groups', live] }),
   })
 }

@@ -6,16 +6,52 @@ import { Avatar } from '@/components/Avatar'
 import { BackIcon, CheckIcon, PlusIcon } from '@/components/icons'
 import { SAMPLE_GROUPS, type GroupTask } from '@/lib/sampleData'
 import { getCustomGroup } from '@/lib/demoStore'
+import { useGroupDetail, useGroups, useIsLive } from '@/data/hooks'
 
 export function GroupDetailScreen() {
   const nav = useNavigate()
   useSwipeBack()
-  const { id } = useParams()
-  const group =
-    SAMPLE_GROUPS.find((g) => g.id === id) ?? getCustomGroup(id ?? '') ?? SAMPLE_GROUPS[0]
+  const { id = '' } = useParams()
+  const live = useIsLive()
+  const { data: liveGroups } = useGroups()
+  const detail = useGroupDetail(id)
+
+  const sampleGroup =
+    SAMPLE_GROUPS.find((g) => g.id === id) ??
+    (live ? undefined : getCustomGroup(id)) ??
+    SAMPLE_GROUPS[0]
+  const liveGroup = live ? liveGroups?.find((g) => g.id === id) : undefined
+
+  // One shape for the header and both tabs, whichever source is behind it.
+  const group = live
+    ? {
+        id,
+        name: liveGroup?.name ?? 'Group',
+        description: liveGroup?.description ?? '',
+        color: '#6600FF',
+        members: (detail.members.data ?? []).length,
+        memberList: (detail.members.data ?? []).map((m) => ({
+          id: m.user_id,
+          name: m.member.display_name,
+          initials: m.member.display_name.slice(0, 2).toUpperCase(),
+          color: '#6600FF',
+          role: m.role,
+        })),
+        tasks: [] as GroupTask[],
+      }
+    : sampleGroup
 
   const [tab, setTab] = useState<'tasks' | 'members'>('tasks')
-  const [tasks, setTasks] = useState<GroupTask[]>(group.tasks)
+  const [previewTasks, setPreviewTasks] = useState<GroupTask[]>(sampleGroup.tasks)
+  const tasks: GroupTask[] = live
+    ? (detail.tasks.data ?? []).map((t) => ({
+        id: t.id,
+        title: t.title,
+        assignee: '',
+        done: t.status === 'completed',
+        priority: t.priority,
+      }))
+    : previewTasks
   const [draft, setDraft] = useState('')
 
   const { open, done } = useMemo(
@@ -24,12 +60,16 @@ export function GroupDetailScreen() {
   )
 
   function toggle(id: string) {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))
+    // Group task writes land with PB-014/PB-023; preview toggles locally.
+    if (live) return
+    setPreviewTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))
   }
   function add() {
     const t = draft.trim()
     if (!t) return
-    setTasks((prev) => [
+    // Creating a group task against the database lands with PB-014.
+    if (live) return
+    setPreviewTasks((prev) => [
       ...prev,
       { id: `n-${Date.now()}`, title: t, assignee: 'You', done: false, priority: 'normal' },
     ])

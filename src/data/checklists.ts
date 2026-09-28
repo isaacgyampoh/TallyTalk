@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { PREDEFINED_CHECKLISTS } from '@/lib/config'
 import type { ChecklistItemRow, ChecklistRow, GroupMemberRow, GroupRow, TaskRow } from './types'
 
 function db() {
@@ -116,4 +117,33 @@ export async function createGroup(name: string): Promise<string> {
     .single()
   if (error) throw error
   return (data as { id: string }).id
+}
+
+/**
+ * Give this user one of each predefined list, once.
+ *
+ * `checklists` has a unique (owner_id, predefined_key), so this upserts and is
+ * safe to call on every launch — a second run changes nothing. Titles and
+ * behaviours come from PREDEFINED_CHECKLISTS so the seed cannot drift from what
+ * the UI expects.
+ */
+export async function seedPredefinedChecklists(): Promise<void> {
+  const me = await myId()
+  const rows = PREDEFINED_CHECKLISTS.map((l) => ({
+    owner_id: me,
+    predefined_key: l.key,
+    title: l.title,
+    behavior: l.behavior,
+    kind: 'predefined' as const,
+  }))
+  const { error } = await db()
+    .from('checklists')
+    .upsert(rows, { onConflict: 'owner_id,predefined_key', ignoreDuplicates: true })
+  if (error) throw error
+}
+
+/** Rename or delete are not offered yet; removing an item is. */
+export async function removeChecklistItem(itemId: string): Promise<void> {
+  const { error } = await db().from('checklist_items').delete().eq('id', itemId)
+  if (error) throw error
 }
