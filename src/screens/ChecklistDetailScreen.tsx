@@ -6,6 +6,7 @@ import { BackIcon, CheckIcon, PhoneIcon, PlusIcon } from '@/components/icons'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
 import { SAMPLE_CHECKLIST_ITEMS, type ChecklistItem } from '@/lib/sampleData'
 import { getCustomList } from '@/lib/demoStore'
+import { OfflineBar } from '@/components/OfflineBar'
 import {
   needsDailyReset,
   useChecklistItems,
@@ -105,6 +106,7 @@ export function ChecklistDetailScreen() {
 
   return (
     <div className="app-frame">
+      <OfflineBar />
       <header
         className="flex items-center gap-3 border-b border-line px-4 pb-3"
         style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}

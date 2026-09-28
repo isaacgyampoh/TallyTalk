@@ -21,7 +21,7 @@ export function ProfileScreen() {
   const { theme, setTheme } = useTheme()
   const live = useIsLive()
   const toast = useToast()
-  const { data: profile } = useMyProfile()
+  const { data: profile, isError, refetch } = useMyProfile()
   const { save, changePhoto } = useUpdateProfile()
   const fileRef = useRef<HTMLInputElement>(null)
   const [editingName, setEditingName] = useState(false)
@@ -60,12 +60,14 @@ export function ProfileScreen() {
     }
   }
 
-  const phone =
-    profile?.phone ?? (session?.user?.phone ? `+${session.user.phone}` : SAMPLE_PROFILE.phone)
-  const name =
-    profile?.display_name ??
-    (session?.user?.user_metadata?.display_name as string) ??
-    SAMPLE_PROFILE.name
+  // A live session must never borrow the sample identity: while the profile
+  // query is in flight the fallback would show a fabricated name and number.
+  const phone = live
+    ? (profile?.phone ?? (session?.user?.phone ? `+${session.user.phone}` : ''))
+    : SAMPLE_PROFILE.phone
+  const name = live
+    ? (profile?.display_name ?? (session?.user?.user_metadata?.display_name as string) ?? '')
+    : SAMPLE_PROFILE.name
 
   function saveName() {
     const next = nameDraft.trim()
@@ -162,6 +164,18 @@ export function ProfileScreen() {
           </div>
         </div>
       </div>
+
+      {live && isError && (
+        <div className="mx-5 mt-3 rounded-card border border-line px-4 py-3">
+          <p className="text-[14px] text-ink">We couldn&rsquo;t load your profile.</p>
+          <button
+            onClick={() => refetch()}
+            className="press mt-1 text-[14px] font-semibold text-violet-ink"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-5 pb-8 pt-5">
         {/* Appearance — a real, working control */}

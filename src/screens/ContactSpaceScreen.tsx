@@ -19,6 +19,7 @@ import {
   useTaskSpaceMutations,
 } from '@/data/hooks'
 import { ContactActionsSheet } from '@/components/ContactActionsSheet'
+import { OfflineBar } from '@/components/OfflineBar'
 
 /**
  * The two-sided task space: what I owe them down the left in green, what they
@@ -222,6 +223,7 @@ export function ContactSpaceScreen() {
 
   return (
     <div className="app-frame">
+      <OfflineBar />
       <header
         className="flex items-center gap-3 bg-bar px-3 pb-2.5"
         style={{ paddingTop: 'calc(var(--safe-top) + 10px)' }}

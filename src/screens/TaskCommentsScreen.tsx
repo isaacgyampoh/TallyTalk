@@ -33,6 +33,7 @@ import {
 } from '@/data/hooks'
 import { RecorderUnavailable, recordingFileName, startRecording } from '@/lib/recorder'
 import type { ActiveRecording } from '@/lib/recorder'
+import { OfflineBar } from '@/components/OfflineBar'
 import {
   SAMPLE_CONTACTS,
   SAMPLE_TASK_COMMENTS,
@@ -239,6 +240,7 @@ export function TaskCommentsScreen() {
 
   return (
     <div className="app-frame">
+      <OfflineBar />
       <header
         className="flex items-center gap-3 bg-bar px-3 pb-2.5"
         style={{ paddingTop: 'calc(var(--safe-top) + 10px)' }}

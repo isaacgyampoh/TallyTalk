@@ -172,7 +172,7 @@ function Chip({
   return (
     <button
       onClick={onClick}
-      className="press flex shrink-0 items-center gap-2 rounded-full border border-line bg-paper/70 px-3.5 py-2 text-[13px] font-semibold text-ink shadow-card backdrop-blur-sm"
+      className="press flex shrink-0 items-center gap-2 rounded-full border border-line bg-paper px-3.5 py-2 text-[13px] font-semibold text-ink shadow-card"
     >
       <Icon width={16} height={16} className="text-violet-ink" />
       {label}

@@ -79,7 +79,7 @@ export function AddContactSheet({
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.dial}>
-                    {c.flag} {c.dial}
+                    {c.code} {c.dial}
                   </option>
                 ))}
               </select>

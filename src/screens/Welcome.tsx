@@ -1,4 +1,3 @@
-import { AuroraBg } from '@/components/AuroraBg'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/authState'
 import { buzz } from '@/lib/haptics'
@@ -23,7 +22,6 @@ export function Welcome() {
   return (
     <div className="app-frame relative overflow-hidden">
       {/* branded backdrop */}
-      <AuroraBg />
 
       <div
         className="relative flex flex-1 flex-col px-7"
@@ -104,7 +102,7 @@ export function Welcome() {
           </button>
           <button
             onClick={demo}
-            className="press h-14 w-full rounded-full border border-line bg-paper/70 text-[16px] font-semibold text-ink backdrop-blur-sm"
+            className="press h-14 w-full rounded-full border border-line bg-paper text-[16px] font-semibold text-ink"
           >
             Explore with sample data
           </button>

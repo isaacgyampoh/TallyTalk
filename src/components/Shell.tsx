@@ -1,3 +1,4 @@
+import { OfflineBar } from './OfflineBar'
 import type { ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { TodayIcon, ContactsIcon, PersonalIcon, GroupsIcon, ProfileIcon } from './icons'
@@ -14,6 +15,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const loc = useLocation()
   return (
     <div className="app-frame">
+      <OfflineBar />
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div key={loc.pathname} className="h-full animate-page-in">
           {children}
@@ -21,7 +23,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </main>
 
       <nav
-        className="border-t border-line bg-paper/95 backdrop-blur"
+        className="border-t border-line bg-paper"
         style={{ paddingBottom: 'var(--safe-bottom)' }}
         aria-label="Primary"
       >
@@ -60,7 +62,7 @@ export function Shell({ children }: { children: ReactNode }) {
 export function ScreenHeader({ title, right }: { title: string; right?: ReactNode }) {
   return (
     <header
-      className="sticky top-0 z-10 flex items-center justify-between bg-paper/95 px-5 pb-3 backdrop-blur"
+      className="sticky top-0 z-10 flex items-center justify-between bg-paper px-5 pb-3"
       style={{ paddingTop: 'calc(var(--safe-top) + 14px)' }}
     >
       <h1 className="font-display text-[26px] font-bold tracking-tight">{title}</h1>

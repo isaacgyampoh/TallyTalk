@@ -116,6 +116,8 @@
 
 @layer components {
   /* Soft, dreamy violet wash (inspired by calm assistant UIs) — works light + dark. */
+  /* Screens sit on a plain surface. Kept as a class so screens can opt into
+     a backdrop later without touching every file. */
   .aura-bg {
     background: rgb(var(--c-paper));
   }
@@ -145,9 +147,7 @@
       place-items: center;
       min-height: 100dvh;
       padding: 28px;
-      background:
-        radial-gradient(70% 55% at 50% -8%, rgb(var(--c-violet-tint) / 0.9), transparent 60%),
-        rgb(var(--c-wash));
+      background: rgb(var(--c-wash));
     }
 
     html:not(.native) .app-device {

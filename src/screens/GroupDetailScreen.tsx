@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar'
 import { BackIcon, CheckIcon, PlusIcon } from '@/components/icons'
 import { SAMPLE_GROUPS, type GroupTask } from '@/lib/sampleData'
 import { getCustomGroup } from '@/lib/demoStore'
+import { OfflineBar } from '@/components/OfflineBar'
 import {
   useContacts,
   useGroupDetail,
@@ -27,11 +28,13 @@ export function GroupDetailScreen() {
   const { data: myContacts } = useContacts()
   const [inviting, setInviting] = useState(false)
 
-  const sampleGroup =
-    SAMPLE_GROUPS.find((g) => g.id === id) ??
-    (live ? undefined : getCustomGroup(id)) ??
-    SAMPLE_GROUPS[0]
+  // Preview may fall back to a sample group; a live session never may. Showing
+  // SAMPLE_GROUPS[0] for an unknown id would present a fabricated group as real.
+  const sampleGroup = live
+    ? undefined
+    : (SAMPLE_GROUPS.find((g) => g.id === id) ?? getCustomGroup(id) ?? SAMPLE_GROUPS[0])
   const liveGroup = live ? liveGroups?.find((g) => g.id === id) : undefined
+  const missing = live && !detail.members.isPending && !liveGroup
 
   // One shape for the header and both tabs, whichever source is behind it.
   const group = live
@@ -50,10 +53,10 @@ export function GroupDetailScreen() {
         })),
         tasks: [] as GroupTask[],
       }
-    : sampleGroup
+    : sampleGroup!
 
   const [tab, setTab] = useState<'tasks' | 'members'>('tasks')
-  const [previewTasks, setPreviewTasks] = useState<GroupTask[]>(sampleGroup.tasks)
+  const [previewTasks, setPreviewTasks] = useState<GroupTask[]>(sampleGroup?.tasks ?? [])
   const tasks: GroupTask[] = live
     ? (detail.tasks.data ?? []).map((t) => ({
         id: t.id,
@@ -95,8 +98,51 @@ export function GroupDetailScreen() {
 
   const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done))
 
+  if (live && detail.members.isPending) {
+    return (
+      <div className="app-frame items-center justify-center">
+        <p className="text-[15px] text-ink-soft">Loading this group…</p>
+      </div>
+    )
+  }
+
+  if (live && detail.members.isError) {
+    return (
+      <div className="app-frame items-center justify-center px-8 text-center">
+        <div>
+          <p className="font-display text-[17px] font-semibold text-ink">
+            We couldn&rsquo;t load this group
+          </p>
+          <p className="mt-2 text-[14px] text-ink-soft">Check your connection and try again.</p>
+          <button onClick={() => detail.members.refetch()} className="btn-ghost mt-5">
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (missing) {
+    return (
+      <div className="app-frame items-center justify-center px-8 text-center">
+        <div>
+          <p className="font-display text-[17px] font-semibold text-ink">
+            We can&rsquo;t find that group
+          </p>
+          <p className="mt-2 text-[14px] text-ink-soft">
+            You may have left it, or it may have been deleted.
+          </p>
+          <button onClick={() => nav('/groups')} className="btn-ghost mt-5">
+            Back to Groups
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="app-frame">
+      <OfflineBar />
       <header
         className="flex items-center gap-3 border-b border-line px-4 pb-3"
         style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}

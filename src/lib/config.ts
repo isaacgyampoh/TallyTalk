@@ -6,18 +6,17 @@ export interface Country {
   code: string
   name: string
   dial: string
-  flag: string
 }
 
 // A small starter set; Ghana first since that's the launch market.
 export const COUNTRIES: Country[] = [
-  { code: 'GH', name: 'Ghana', dial: '+233', flag: '🇬🇭' },
-  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '🇳🇬' },
-  { code: 'KE', name: 'Kenya', dial: '+254', flag: '🇰🇪' },
-  { code: 'ZA', name: 'South Africa', dial: '+27', flag: '🇿🇦' },
-  { code: 'TZ', name: 'Tanzania', dial: '+255', flag: '🇹🇿' },
-  { code: 'GB', name: 'United Kingdom', dial: '+44', flag: '🇬🇧' },
-  { code: 'US', name: 'United States', dial: '+1', flag: '🇺🇸' },
+  { code: 'GH', name: 'Ghana', dial: '+233' },
+  { code: 'NG', name: 'Nigeria', dial: '+234' },
+  { code: 'KE', name: 'Kenya', dial: '+254' },
+  { code: 'ZA', name: 'South Africa', dial: '+27' },
+  { code: 'TZ', name: 'Tanzania', dial: '+255' },
+  { code: 'GB', name: 'United Kingdom', dial: '+44' },
+  { code: 'US', name: 'United States', dial: '+1' },
 ] as const
 
 export type Priority = 'urgent' | 'high' | 'normal' | 'low'

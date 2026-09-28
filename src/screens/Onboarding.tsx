@@ -1,4 +1,3 @@
-import { AuroraBg } from '@/components/AuroraBg'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/authState'
@@ -37,8 +36,6 @@ export function Onboarding() {
 
   return (
     <div className="app-frame relative overflow-hidden">
-      <AuroraBg />
-
       <div
         className="relative flex items-center justify-end px-5"
         style={{ paddingTop: 'calc(var(--safe-top) + 14px)' }}

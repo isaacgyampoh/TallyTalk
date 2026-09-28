@@ -1,4 +1,3 @@
-import { AuroraBg } from '@/components/AuroraBg'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/authState'
@@ -47,7 +46,6 @@ export function AuthFlow() {
 
   return (
     <div className="app-frame relative overflow-hidden">
-      <AuroraBg />
       <div
         className="relative flex flex-1 flex-col px-6"
         style={{ paddingTop: 'calc(var(--safe-top) + 20px)' }}
@@ -83,7 +81,7 @@ export function AuthFlow() {
                     >
                       {COUNTRIES.map((c) => (
                         <option key={c.code} value={c.code}>
-                          {c.flag} {c.dial}
+                          {c.code} {c.dial}
                         </option>
                       ))}
                     </select>
