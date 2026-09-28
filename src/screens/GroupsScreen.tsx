@@ -6,7 +6,13 @@ import { NameSheet } from '@/components/NameSheet'
 import { PlusIcon } from '@/components/icons'
 import { SAMPLE_GROUPS } from '@/lib/sampleData'
 import { addCustomGroup, getCustomGroups } from '@/lib/demoStore'
-import { useCreateGroup, useGroups, useIsLive } from '@/data/hooks'
+import {
+  useCreateGroup,
+  useGroups,
+  useInvitations,
+  useIsLive,
+  useMyInvitations,
+} from '@/data/hooks'
 
 export function GroupsScreen() {
   const nav = useNavigate()
@@ -14,6 +20,8 @@ export function GroupsScreen() {
   const live = useIsLive()
   const { data: liveGroups, isPending, isError, refetch } = useGroups()
   const createGroupMutation = useCreateGroup()
+  const { data: invitations } = useMyInvitations()
+  const { respond } = useInvitations()
 
   // Live groups carry no tallies yet — counting open tasks per group would be a
   // query per row, so the counts stay a preview affordance for now.
@@ -32,6 +40,38 @@ export function GroupsScreen() {
     <div className="relative flex h-full flex-col">
       <ScreenHeader title="Groups" />
       <p className="px-5 pb-3 text-[14px] text-ink-soft">Shared checklists your team works from.</p>
+
+      {live && !!invitations?.length && (
+        <section className="px-3 pb-2">
+          <h2 className="eyebrow mb-2 px-1">Invitations</h2>
+          <ul className="overflow-hidden rounded-card border border-line">
+            {invitations.map((inv, i) => (
+              <li key={inv.id} className={i > 0 ? 'border-t border-line' : ''}>
+                <div className="flex items-center gap-3 px-3 py-3">
+                  <p className="min-w-0 flex-1 text-[15px] text-ink">
+                    You were invited to{' '}
+                    <span className="font-semibold">{inv.group?.name ?? 'a group'}</span>
+                  </p>
+                  <button
+                    onClick={() => respond.mutate({ invitationId: inv.id, status: 'declined' })}
+                    disabled={respond.isPending}
+                    className="press rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-soft"
+                  >
+                    Decline
+                  </button>
+                  <button
+                    onClick={() => respond.mutate({ invitationId: inv.id, status: 'accepted' })}
+                    disabled={respond.isPending}
+                    className="press rounded-full bg-violet px-3.5 py-1.5 text-[13px] font-semibold text-white"
+                  >
+                    Join
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <ul className="flex-1 overflow-y-auto px-3 pb-24">
         {live && isPending && (

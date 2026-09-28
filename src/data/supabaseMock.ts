@@ -21,7 +21,13 @@ export interface TableResult {
 }
 
 export interface MockClient {
-  auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> }
+  auth: {
+    getUser: () => Promise<{ data: { user: { id: string } | null } }>
+    getSession: () => Promise<{ data: { session: { access_token: string } | null } }>
+  }
+  functions: {
+    invoke: (name: string, opts?: unknown) => Promise<{ data: unknown; error: unknown }>
+  }
   from: (table: string) => unknown
   rpc: (fn: string, args?: Record<string, unknown>) => Promise<TableResult>
   storage: {
@@ -40,6 +46,8 @@ export interface MockClient {
   rpcCalls: Array<{ fn: string; args?: Record<string, unknown> }>
   /** Storage uploads, in order. */
   uploads: Array<{ bucket: string; path: string; opts?: unknown }>
+  /** Edge function invocations, in order. */
+  invocations: Array<{ name: string; opts?: unknown }>
   /** Convenience: the argument a given method was called with. */
   argFor: (table: string, method: string) => unknown
 }
@@ -52,11 +60,20 @@ export function makeSupabaseMock(options: {
   rpcResults?: Record<string, TableResult>
   /** Error to return from a storage upload, if any. */
   uploadError?: { message: string } | null
+  /** Error to return from an edge function invocation, if any. */
+  invokeError?: { message: string } | null
 }): MockClient {
-  const { userId = 'me-uuid', results = {}, rpcResults = {}, uploadError = null } = options
+  const {
+    userId = 'me-uuid',
+    results = {},
+    rpcResults = {},
+    uploadError = null,
+    invokeError = null,
+  } = options
   const calls: Record<string, Recorded[]> = {}
   const rpcCalls: Array<{ fn: string; args?: Record<string, unknown> }> = []
   const uploads: Array<{ bucket: string; path: string; opts?: unknown }> = []
+  const invocations: Array<{ name: string; opts?: unknown }> = []
 
   function chainFor(table: string) {
     const recorded = (calls[table] ||= [])
@@ -83,6 +100,15 @@ export function makeSupabaseMock(options: {
   const client: MockClient = {
     auth: {
       getUser: async () => ({ data: { user: userId ? { id: userId } : null } }),
+      getSession: async () => ({
+        data: { session: userId ? { access_token: `token-for-${userId}` } : null },
+      }),
+    },
+    functions: {
+      invoke: async (name: string, opts?: unknown) => {
+        invocations.push({ name, opts })
+        return { data: invokeError ? null : { ok: true }, error: invokeError }
+      },
     },
     from: (table: string) => {
       proxyRef = chainFor(table)
@@ -113,6 +139,7 @@ export function makeSupabaseMock(options: {
     calls,
     rpcCalls,
     uploads,
+    invocations,
     argFor(table, method) {
       return (calls[table] ?? []).find((c) => c.method === method)?.args[0]
     },

@@ -6,6 +6,7 @@ import { useTheme, type ThemePref } from '@/context/ThemeContext'
 import { SAMPLE_PROFILE } from '@/lib/sampleData'
 import { useIsLive, useMyProfile, useUpdateProfile } from '@/data/hooks'
 import { PrivacySettings } from '@/components/PrivacySettings'
+import { deleteMyAccount, exportMyData } from '@/data/account'
 import { useRef, useState } from 'react'
 import { useToast } from '@/components/Toast'
 
@@ -25,6 +26,39 @@ export function ProfileScreen() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [busy, setBusy] = useState<'export' | 'delete' | null>(null)
+
+  async function doExport() {
+    setBusy('export')
+    try {
+      const data = await exportMyData()
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+      )
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `tasktally-export-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast('Could not export your data', 'error')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function doDelete() {
+    setBusy('delete')
+    try {
+      await deleteMyAccount()
+      await signOut()
+    } catch {
+      toast('Could not delete your account', 'error')
+      setBusy(null)
+      setConfirmingDelete(false)
+    }
+  }
 
   const phone =
     profile?.phone ?? (session?.user?.phone ? `+${session.user.phone}` : SAMPLE_PROFILE.phone)
@@ -174,6 +208,58 @@ export function ProfileScreen() {
               save.mutate(patch, { onError: () => toast('Could not save that setting', 'error') })
             }
           />
+        )}
+
+        {live && (
+          <section className="mb-5">
+            <h2 className="eyebrow mb-2">Data &amp; account</h2>
+            <ul className="overflow-hidden rounded-card border border-line">
+              <li>
+                <button
+                  onClick={doExport}
+                  disabled={busy !== null}
+                  className="press flex w-full items-center justify-between px-4 py-3 text-left text-[15px] text-ink hover:bg-wash disabled:opacity-50"
+                >
+                  {busy === 'export' ? 'Preparing…' : 'Export my data'}
+                  <span className="text-ink-faint">↓</span>
+                </button>
+              </li>
+              <li className="border-t border-line">
+                {confirmingDelete ? (
+                  <div className="px-4 py-3">
+                    <p className="text-[15px] font-semibold text-ink">Delete your account?</p>
+                    <p className="mt-1 text-[13px] text-ink-soft">
+                      Your profile, contacts, tasks and checklists go with it. This cannot be undone
+                      — export first if you want a copy.
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => setConfirmingDelete(false)}
+                        className="btn-ghost h-11 flex-1"
+                      >
+                        Keep it
+                      </button>
+                      <button
+                        onClick={doDelete}
+                        disabled={busy !== null}
+                        className="press h-11 flex-1 rounded-full bg-overdue text-[15px] font-semibold text-white disabled:opacity-50"
+                      >
+                        {busy === 'delete' ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingDelete(true)}
+                    className="press flex w-full items-center justify-between px-4 py-3 text-left text-[15px] text-overdue-ink hover:bg-wash"
+                  >
+                    Delete account
+                    <span className="text-ink-faint">›</span>
+                  </button>
+                )}
+              </li>
+            </ul>
+          </section>
         )}
 
         <button className="btn-ghost w-full" onClick={signOut}>

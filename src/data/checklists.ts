@@ -178,3 +178,67 @@ export async function resetChecklist(checklistId: string): Promise<void> {
     .eq('id', checklistId)
   if (error) throw error
 }
+
+// --- group invitations ---
+
+export interface InvitationRow {
+  id: string
+  group_id: string
+  invited_user: string
+  invited_by: string | null
+  status: 'pending' | 'accepted' | 'declined'
+  created_at: string
+  group?: { id: string; name: string }
+}
+
+/** Invitations waiting on me. */
+export async function listMyInvitations(): Promise<InvitationRow[]> {
+  const me = await myId()
+  const { data, error } = await db()
+    .from('group_invitations')
+    .select('*, group:groups(id,name)')
+    .eq('invited_user', me)
+    .eq('status', 'pending')
+  if (error) throw error
+  return (data ?? []) as InvitationRow[]
+}
+
+/**
+ * Invite someone to a group.
+ *
+ * Only administrators may do this — `group_invitations_admin_create` enforces
+ * it, so there is no client-side role check to duplicate here and get wrong.
+ * Re-inviting is not an error: unique (group_id, invited_user) means the upsert
+ * simply leaves the existing invitation alone.
+ */
+export async function inviteToGroup(groupId: string, userId: string): Promise<void> {
+  const me = await myId()
+  const { error } = await db()
+    .from('group_invitations')
+    .upsert(
+      { group_id: groupId, invited_user: userId, invited_by: me },
+      { onConflict: 'group_id,invited_user', ignoreDuplicates: true },
+    )
+  if (error) throw error
+}
+
+/**
+ * Answer an invitation addressed to me.
+ *
+ * Accepting does not add the membership row — the `on_invitation_accepted`
+ * trigger from 0003 does that, and it has to, because group_members only
+ * admits existing admins. Writing it here as well would be PB-002 all over
+ * again.
+ */
+export async function respondToInvitation(
+  invitationId: string,
+  status: 'accepted' | 'declined',
+): Promise<void> {
+  const me = await myId()
+  const { error } = await db()
+    .from('group_invitations')
+    .update({ status })
+    .eq('id', invitationId)
+    .eq('invited_user', me)
+  if (error) throw error
+}

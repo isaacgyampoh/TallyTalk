@@ -20,7 +20,10 @@ import {
   getGroupTasks,
   listMyGroups,
   removeChecklistItem,
+  inviteToGroup,
+  listMyInvitations,
   needsDailyReset,
+  respondToInvitation,
   resetChecklist,
   seedPredefinedChecklists,
   toggleChecklistItem,
@@ -389,4 +392,37 @@ export function useSpaceRealtime(contactId: string) {
       supabase?.removeChannel(channel)
     }
   }, [live, contactId, qc])
+}
+
+export function useMyInvitations() {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: ['invitations', live],
+    enabled: live,
+    queryFn: () => listMyInvitations(),
+  })
+}
+
+export function useInvitations(groupId?: string) {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['invitations', live] })
+    qc.invalidateQueries({ queryKey: ['groups', live] })
+    if (groupId) qc.invalidateQueries({ queryKey: ['group-members', groupId] })
+  }
+
+  const invite = useMutation({
+    mutationFn: (v: { groupId: string; userId: string }) => inviteToGroup(v.groupId, v.userId),
+    onSettled: refresh,
+  })
+
+  const respond = useMutation({
+    // The on_invitation_accepted trigger adds the membership; see PB-002.
+    mutationFn: (v: { invitationId: string; status: 'accepted' | 'declined' }) =>
+      respondToInvitation(v.invitationId, v.status),
+    onSettled: refresh,
+  })
+
+  return { invite, respond }
 }

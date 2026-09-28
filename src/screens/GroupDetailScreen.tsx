@@ -6,7 +6,7 @@ import { Avatar } from '@/components/Avatar'
 import { BackIcon, CheckIcon, PlusIcon } from '@/components/icons'
 import { SAMPLE_GROUPS, type GroupTask } from '@/lib/sampleData'
 import { getCustomGroup } from '@/lib/demoStore'
-import { useGroupDetail, useGroups, useIsLive } from '@/data/hooks'
+import { useContacts, useGroupDetail, useGroups, useInvitations, useIsLive } from '@/data/hooks'
 
 export function GroupDetailScreen() {
   const nav = useNavigate()
@@ -15,6 +15,9 @@ export function GroupDetailScreen() {
   const live = useIsLive()
   const { data: liveGroups } = useGroups()
   const detail = useGroupDetail(id)
+  const { invite } = useInvitations(id)
+  const { data: myContacts } = useContacts()
+  const [inviting, setInviting] = useState(false)
 
   const sampleGroup =
     SAMPLE_GROUPS.find((g) => g.id === id) ??
@@ -172,6 +175,46 @@ export function GroupDetailScreen() {
               </div>
             ))}
       </div>
+
+      {tab === 'members' && live && (
+        <div className="px-3 pb-4">
+          <button
+            onClick={() => setInviting((v) => !v)}
+            className="press w-full rounded-2xl border border-dashed border-line px-3 py-3 text-[15px] font-semibold text-violet-ink"
+          >
+            {inviting ? 'Close' : 'Invite someone'}
+          </button>
+          {inviting && (
+            <ul className="mt-2 overflow-hidden rounded-2xl border border-line">
+              {(myContacts ?? []).length === 0 && (
+                <li className="px-3 py-3 text-[14px] text-ink-soft">
+                  Add a contact first, then you can invite them.
+                </li>
+              )}
+              {(myContacts ?? []).map((c) => (
+                <li key={c.id} className="border-b border-line last:border-0">
+                  <button
+                    onClick={() =>
+                      invite.mutate(
+                        { groupId: id, userId: c.id },
+                        { onSuccess: () => setInviting(false) },
+                      )
+                    }
+                    disabled={invite.isPending}
+                    className="press flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-wash"
+                  >
+                    <Avatar initials={c.initials} color={c.color} size={34} />
+                    <span className="font-medium text-ink">{c.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 px-1 text-[12.5px] text-ink-soft">
+            Only administrators can invite. The invitation appears on their Groups screen.
+          </p>
+        </div>
+      )}
 
       {tab === 'tasks' && (
         <div

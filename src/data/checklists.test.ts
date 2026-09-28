@@ -25,6 +25,9 @@ const {
   getGroupTasks,
   needsDailyReset,
   resetChecklist,
+  listMyInvitations,
+  inviteToGroup,
+  respondToInvitation,
 } = await import('./checklists')
 
 beforeEach(() => {
@@ -218,5 +221,59 @@ describe('resetChecklist', () => {
     })
     await expect(resetChecklist('list-1')).rejects.toMatchObject({ message: 'rls' })
     expect(client.calls.checklists).toBeUndefined()
+  })
+})
+
+describe('group invitations', () => {
+  it('lists only pending invitations addressed to me', async () => {
+    client = makeSupabaseMock({ results: { group_invitations: { data: [], error: null } } })
+    await listMyInvitations()
+    const eqs = client.calls.group_invitations.filter((c) => c.method === 'eq').map((c) => c.args)
+    expect(eqs).toContainEqual(['invited_user', ME])
+    expect(eqs).toContainEqual(['status', 'pending'])
+  })
+
+  it('records who sent the invitation', async () => {
+    client = makeSupabaseMock({ results: { group_invitations: { error: null } } })
+    await inviteToGroup('g1', 'them-uuid')
+    expect(client.argFor('group_invitations', 'upsert')).toEqual({
+      group_id: 'g1',
+      invited_user: 'them-uuid',
+      invited_by: ME,
+    })
+  })
+
+  it('treats a repeat invitation as a no-op rather than an error', async () => {
+    client = makeSupabaseMock({ results: { group_invitations: { error: null } } })
+    await inviteToGroup('g1', 'them-uuid')
+    expect(client.calls.group_invitations.find((c) => c.method === 'upsert')?.args[1]).toEqual({
+      onConflict: 'group_id,invited_user',
+      ignoreDuplicates: true,
+    })
+  })
+
+  it('answers only invitations addressed to me', async () => {
+    // Without the invited_user filter, the id alone would be enough to answer
+    // somebody else's invitation.
+    client = makeSupabaseMock({ results: { group_invitations: { error: null } } })
+    await respondToInvitation('inv-1', 'accepted')
+    const eqs = client.calls.group_invitations.filter((c) => c.method === 'eq').map((c) => c.args)
+    expect(eqs).toContainEqual(['id', 'inv-1'])
+    expect(eqs).toContainEqual(['invited_user', ME])
+  })
+
+  it('changes only the status, leaving the trigger to add the membership', async () => {
+    // on_invitation_accepted (0003) inserts group_members. Doing it here too
+    // would repeat the PB-002 mistake.
+    client = makeSupabaseMock({ results: { group_invitations: { error: null } } })
+    await respondToInvitation('inv-1', 'accepted')
+    expect(client.argFor('group_invitations', 'update')).toEqual({ status: 'accepted' })
+    expect(client.calls.group_members).toBeUndefined()
+  })
+
+  it('can decline as well as accept', async () => {
+    client = makeSupabaseMock({ results: { group_invitations: { error: null } } })
+    await respondToInvitation('inv-1', 'declined')
+    expect(client.argFor('group_invitations', 'update')).toEqual({ status: 'declined' })
   })
 })
