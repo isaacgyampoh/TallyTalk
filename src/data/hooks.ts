@@ -5,6 +5,7 @@ import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
 import type { ChecklistItemRow } from './types'
 import { addTaskComment, eventsKey, listTaskEvents, recordTaskEvent } from './events'
 import { poke } from './tasks'
+import { getMyProfile, updateMyProfile, uploadAvatar, type ProfilePatch } from './profile'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
 import { addContact, findProfileByPhone, setContactFlags, type ContactFlags } from './contacts'
 import {
@@ -281,3 +282,37 @@ export function useResetChecklist(checklistId: string) {
 }
 
 export { needsDailyReset }
+
+export function useMyProfile() {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: ['my-profile', live],
+    enabled: live,
+    queryFn: () => getMyProfile(),
+  })
+}
+
+export function useUpdateProfile() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['my-profile', live] })
+    qc.invalidateQueries({ queryKey: ['contacts', live] })
+  }
+
+  const save = useMutation({
+    mutationFn: (patch: ProfilePatch) => updateMyProfile(patch),
+    onSettled: invalidate,
+  })
+
+  const changePhoto = useMutation({
+    mutationFn: async (file: File) => {
+      const url = await uploadAvatar(file)
+      await updateMyProfile({ photo_url: url })
+      return url
+    },
+    onSettled: invalidate,
+  })
+
+  return { save, changePhoto }
+}

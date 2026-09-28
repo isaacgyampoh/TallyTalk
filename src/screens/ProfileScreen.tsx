@@ -4,22 +4,10 @@ import { Avatar } from '@/components/Avatar'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme, type ThemePref } from '@/context/ThemeContext'
 import { SAMPLE_PROFILE } from '@/lib/sampleData'
-
-const SETTINGS: { group: string; items: string[] }[] = [
-  { group: 'Account', items: ['Display name', 'Profile photo', 'Phone number', 'Active devices'] },
-  {
-    group: 'Privacy',
-    items: [
-      'Who can send task requests',
-      'Who can add me to groups',
-      'Blocked contacts',
-      'Archived contacts',
-    ],
-  },
-  { group: 'Security', items: ['Two-step verification', 'Active sessions'] },
-  { group: 'Data & account', items: ['Export my data', 'Delete account'] },
-  { group: 'Help & legal', items: ['Help & support', 'Terms of service', 'Privacy policy'] },
-]
+import { useIsLive, useMyProfile, useUpdateProfile } from '@/data/hooks'
+import { PrivacySettings } from '@/components/PrivacySettings'
+import { useRef, useState } from 'react'
+import { useToast } from '@/components/Toast'
 
 const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
   { value: 'system', label: 'System' },
@@ -30,8 +18,32 @@ const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
 export function ProfileScreen() {
   const { session, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
-  const phone = session?.user?.phone ? `+${session.user.phone}` : SAMPLE_PROFILE.phone
-  const name = (session?.user?.user_metadata?.display_name as string) || SAMPLE_PROFILE.name
+  const live = useIsLive()
+  const toast = useToast()
+  const { data: profile } = useMyProfile()
+  const { save, changePhoto } = useUpdateProfile()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+
+  const phone =
+    profile?.phone ?? (session?.user?.phone ? `+${session.user.phone}` : SAMPLE_PROFILE.phone)
+  const name =
+    profile?.display_name ??
+    (session?.user?.user_metadata?.display_name as string) ??
+    SAMPLE_PROFILE.name
+
+  function saveName() {
+    const next = nameDraft.trim()
+    if (!next || next === name) return setEditingName(false)
+    save.mutate(
+      { display_name: next },
+      {
+        onSuccess: () => setEditingName(false),
+        onError: () => toast('Could not save your name', 'error'),
+      },
+    )
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -39,10 +51,77 @@ export function ProfileScreen() {
 
       <div className="px-5">
         <div className="flex items-center gap-4 rounded-card border border-line p-4">
-          <Avatar initials={name.slice(0, 2).toUpperCase()} color="#6600FF" size={60} />
-          <div className="min-w-0">
-            <p className="truncate font-display text-[20px] font-bold">{name}</p>
+          <button
+            onClick={() => live && fileRef.current?.click()}
+            disabled={!live || changePhoto.isPending}
+            aria-label={live ? 'Change your photo' : undefined}
+            className={live ? 'press relative shrink-0 rounded-full' : 'shrink-0'}
+          >
+            {profile?.photo_url ? (
+              <img
+                src={profile.photo_url}
+                alt=""
+                className="h-[60px] w-[60px] rounded-full object-cover"
+              />
+            ) : (
+              <Avatar initials={name.slice(0, 2).toUpperCase()} color="#6600FF" size={60} />
+            )}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (!f) return
+              changePhoto.mutate(f, {
+                onError: () => toast('Could not upload that photo', 'error'),
+              })
+              e.target.value = ''
+            }}
+          />
+          <div className="min-w-0 flex-1">
+            {editingName ? (
+              <div className="flex gap-2">
+                <input
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && saveName()}
+                  aria-label="Your name"
+                  className="field h-10 flex-1"
+                  autoFocus
+                />
+                <button
+                  onClick={saveName}
+                  disabled={save.isPending}
+                  className="btn-primary h-10 px-4"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <p className="flex items-center gap-2 truncate font-display text-[20px] font-bold">
+                {name}
+                {live && (
+                  <button
+                    onClick={() => {
+                      setNameDraft(name)
+                      setEditingName(true)
+                    }}
+                    className="press text-[13px] font-semibold text-violet-ink"
+                  >
+                    Edit
+                  </button>
+                )}
+              </p>
+            )}
             <p className="nums text-[14px] text-ink-soft">{phone}</p>
+            {live && (
+              <p className="text-[11.5px] text-ink-faint">
+                Your number comes from sign-in and cannot be changed.
+              </p>
+            )}
             <span className="mt-1 inline-block rounded-full bg-wash px-2 py-0.5 text-[11px] font-semibold text-ink-faint">
               {session ? 'Connected to Supabase' : 'Preview · sample data'}
             </span>
@@ -87,25 +166,15 @@ export function ProfileScreen() {
           </ul>
         </section>
 
-        {SETTINGS.map((s) => (
-          <section key={s.group} className="mb-5">
-            <h2 className="eyebrow mb-2">{s.group}</h2>
-            <ul className="overflow-hidden rounded-card border border-line">
-              {s.items.map((item, i) => (
-                <li key={item}>
-                  <button
-                    className={`press flex w-full items-center justify-between px-4 py-3 text-left text-[15px] hover:bg-wash ${
-                      i > 0 ? 'border-t border-line' : ''
-                    } ${item === 'Delete account' ? 'text-overdue' : 'text-ink'}`}
-                  >
-                    {item}
-                    <span className="text-ink-faint">›</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        {live && profile && (
+          <PrivacySettings
+            profile={profile}
+            saving={save.isPending}
+            onChange={(patch) =>
+              save.mutate(patch, { onError: () => toast('Could not save that setting', 'error') })
+            }
+          />
+        )}
 
         <button className="btn-ghost w-full" onClick={signOut}>
           Sign out

@@ -24,10 +24,18 @@ export interface MockClient {
   auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> }
   from: (table: string) => unknown
   rpc: (fn: string, args?: Record<string, unknown>) => Promise<TableResult>
+  storage: {
+    from: (bucket: string) => {
+      upload: (path: string, file: unknown, opts?: unknown) => Promise<{ error: unknown }>
+      getPublicUrl: (path: string) => { data: { publicUrl: string } }
+    }
+  }
   /** Every chained call, per table, in order. */
   calls: Record<string, Recorded[]>
   /** RPC invocations, in order. */
   rpcCalls: Array<{ fn: string; args?: Record<string, unknown> }>
+  /** Storage uploads, in order. */
+  uploads: Array<{ bucket: string; path: string; opts?: unknown }>
   /** Convenience: the argument a given method was called with. */
   argFor: (table: string, method: string) => unknown
 }
@@ -38,10 +46,13 @@ export function makeSupabaseMock(options: {
   results?: Record<string, TableResult | ((calls: Recorded[]) => TableResult)>
   /** Result per RPC function name. */
   rpcResults?: Record<string, TableResult>
+  /** Error to return from a storage upload, if any. */
+  uploadError?: { message: string } | null
 }): MockClient {
-  const { userId = 'me-uuid', results = {}, rpcResults = {} } = options
+  const { userId = 'me-uuid', results = {}, rpcResults = {}, uploadError = null } = options
   const calls: Record<string, Recorded[]> = {}
   const rpcCalls: Array<{ fn: string; args?: Record<string, unknown> }> = []
+  const uploads: Array<{ bucket: string; path: string; opts?: unknown }> = []
 
   function chainFor(table: string) {
     const recorded = (calls[table] ||= [])
@@ -77,8 +88,20 @@ export function makeSupabaseMock(options: {
       rpcCalls.push({ fn, args })
       return rpcResults[fn] ?? { data: [], error: null }
     },
+    storage: {
+      from: (bucket: string) => ({
+        upload: async (path: string, _file: unknown, opts?: unknown) => {
+          uploads.push({ bucket, path, opts })
+          return { error: uploadError }
+        },
+        getPublicUrl: (path: string) => ({
+          data: { publicUrl: `https://example.test/storage/${bucket}/${path}` },
+        }),
+      }),
+    },
     calls,
     rpcCalls,
+    uploads,
     argFor(table, method) {
       return (calls[table] ?? []).find((c) => c.method === method)?.args[0]
     },
