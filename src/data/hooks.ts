@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
+import { addContact, findProfileByPhone, setContactFlags, type ContactFlags } from './contacts'
 import { listChecklists, listMyGroups } from './checklists'
 
 /**
@@ -94,4 +95,35 @@ export function useTaskSpaceMutations(contactId: string) {
   })
 
   return { setStatus, create }
+}
+
+/**
+ * Finding someone by number and adding them. Kept separate from the contacts
+ * query so a failed lookup never disturbs the list already on screen.
+ */
+export function useAddContact() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+
+  const find = useMutation({
+    mutationFn: (phone: string) => findProfileByPhone(phone),
+  })
+
+  const add = useMutation({
+    mutationFn: (profileId: string) => addContact(profileId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['contacts', live] }),
+  })
+
+  return { find, add }
+}
+
+/** Work / favourite / archive / block, applied to my own side of the pair. */
+export function useContactFlags() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  return useMutation({
+    mutationFn: (v: { contactId: string; patch: Partial<ContactFlags> }) =>
+      setContactFlags(v.contactId, v.patch),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['contacts', live] }),
+  })
 }

@@ -23,8 +23,11 @@ export interface TableResult {
 export interface MockClient {
   auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> }
   from: (table: string) => unknown
+  rpc: (fn: string, args?: Record<string, unknown>) => Promise<TableResult>
   /** Every chained call, per table, in order. */
   calls: Record<string, Recorded[]>
+  /** RPC invocations, in order. */
+  rpcCalls: Array<{ fn: string; args?: Record<string, unknown> }>
   /** Convenience: the argument a given method was called with. */
   argFor: (table: string, method: string) => unknown
 }
@@ -33,9 +36,12 @@ export function makeSupabaseMock(options: {
   userId?: string | null
   /** Result per table. A function receives the calls made so far. */
   results?: Record<string, TableResult | ((calls: Recorded[]) => TableResult)>
+  /** Result per RPC function name. */
+  rpcResults?: Record<string, TableResult>
 }): MockClient {
-  const { userId = 'me-uuid', results = {} } = options
+  const { userId = 'me-uuid', results = {}, rpcResults = {} } = options
   const calls: Record<string, Recorded[]> = {}
+  const rpcCalls: Array<{ fn: string; args?: Record<string, unknown> }> = []
 
   function chainFor(table: string) {
     const recorded = (calls[table] ||= [])
@@ -67,7 +73,12 @@ export function makeSupabaseMock(options: {
       proxyRef = chainFor(table)
       return proxyRef
     },
+    rpc: async (fn: string, args?: Record<string, unknown>) => {
+      rpcCalls.push({ fn, args })
+      return rpcResults[fn] ?? { data: [], error: null }
+    },
     calls,
+    rpcCalls,
     argFor(table, method) {
       return (calls[table] ?? []).find((c) => c.method === method)?.args[0]
     },

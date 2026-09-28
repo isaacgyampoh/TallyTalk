@@ -12,6 +12,7 @@ import { TASK_TITLE_MAX } from '@/lib/config'
 import { type SampleTask } from '@/lib/sampleData'
 import { getDemoTasks } from '@/lib/demoStore'
 import { useContacts, useIsLive, useSpaceTasks, useTaskSpaceMutations } from '@/data/hooks'
+import { ContactActionsSheet } from '@/components/ContactActionsSheet'
 
 /**
  * The two-sided task space: what I owe them down the left in green, what they
@@ -46,6 +47,7 @@ export function ContactSpaceScreen() {
   )
 
   const [draft, setDraft] = useState('')
+  const [managing, setManaging] = useState(false)
   const [showDone, setShowDone] = useState<Record<Side, boolean>>({ owe: true, owed: true })
 
   const { owe, owed } = useMemo(
@@ -233,7 +235,26 @@ export function ContactSpaceScreen() {
             Tasks
           </p>
         </div>
+        {live && (
+          <button
+            onClick={() => setManaging(true)}
+            className="press grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink"
+            aria-label={`Manage ${firstName}`}
+          >
+            <span className="text-[20px] leading-none tracking-[0.1em]">
+              &middot;&middot;&middot;
+            </span>
+          </button>
+        )}
       </header>
+
+      {managing && (
+        <ContactActionsSheet
+          contact={person}
+          onClose={() => setManaging(false)}
+          onError={(m) => toast(m, 'error')}
+        />
+      )}
 
       <div ref={scrollRef} className="thread-surface min-h-0 flex-1 overflow-y-auto">
         <TaskWallpaper />

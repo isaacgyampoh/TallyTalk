@@ -4,7 +4,8 @@ import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
 import { SearchIcon, PlusIcon, CloseIcon } from '@/components/icons'
 import { type SampleContact } from '@/lib/sampleData'
-import { useContacts } from '@/data/hooks'
+import { useContacts, useIsLive } from '@/data/hooks'
+import { AddContactSheet } from '@/components/AddContactSheet'
 
 const FILTERS = ['All', 'Unread', 'Work', 'Favorites', 'Urgent', 'Overdue', 'Newest'] as const
 type Filter = (typeof FILTERS)[number]
@@ -44,6 +45,7 @@ export function ContactsScreen() {
   const [showSearch, setShowSearch] = useState(false)
   const [picking, setPicking] = useState(false)
 
+  const live = useIsLive()
   const { data: contacts, isPending, isError, refetch } = useContacts()
   const all = useMemo(() => contacts ?? [], [contacts])
   const rows = useMemo(() => applyFilter(all, filter, q), [all, filter, q])
@@ -160,7 +162,17 @@ export function ContactsScreen() {
         <PlusIcon width={26} height={26} />
       </button>
 
-      {picking && (
+      {picking && live && (
+        <AddContactSheet
+          onClose={() => setPicking(false)}
+          onAdded={(contactId) => {
+            setPicking(false)
+            nav(`/contacts/${contactId}`)
+          }}
+        />
+      )}
+
+      {picking && !live && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
           onClick={() => setPicking(false)}
