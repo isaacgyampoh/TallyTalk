@@ -194,6 +194,29 @@
     background: rgb(var(--c-thread));
   }
 
+  /* The artwork tiles at its natural size. `fixed` keeps it still while the
+     thread scrolls over it, the way a chat wallpaper behaves, and avoids
+     repainting the pattern on every scroll frame. */
+  .task-wallpaper {
+    background-repeat: repeat;
+    background-size: 319px auto; /* half of the 638px source: denser, and crisp on 2x screens */
+    background-attachment: fixed;
+    opacity: 0.85;
+  }
+
+  /* The source is warm paper with grey ink. Inverting gives dark paper with
+     light ink — the dark palette — without shipping a second asset. */
+  .dark .task-wallpaper {
+    filter: invert(1) brightness(0.92);
+    opacity: 0.5;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .task-wallpaper {
+      background-attachment: scroll;
+    }
+  }
+
   /* One task, one comment, one attachment — all share the bubble shape. */
   .bubble {
     @apply relative rounded-[10px] px-2.5 py-2 text-left;
