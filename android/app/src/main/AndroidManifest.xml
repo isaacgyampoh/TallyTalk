@@ -32,4 +32,13 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Required from Android 13 (API 33). Without this the runtime permission
+         request is a no-op and every notification is silently dropped. The app
+         targets API 36, so it is mandatory. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Lets a notification channel vibrate; the user still controls it from
+         the channel's own system settings. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

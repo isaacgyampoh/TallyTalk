@@ -5,7 +5,7 @@ for setup and [ARCHITECTURE.md](./ARCHITECTURE.md) for how the pieces fit.
 
 ## Trello workflow
 
-Work on this project is tracked on the Trello board **Tally Task App**, which
+Work on this project is tracked on the Trello board **Task Tally App**, which
 has four lists: Product Backlog, In Progress (Current Sprint), Testing, Done.
 
 ### Credentials

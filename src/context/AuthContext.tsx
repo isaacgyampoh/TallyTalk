@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AuthContext, type AuthMode, type AuthState } from './authState'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { unregisterPush } from '@/lib/push'
 
 const PREVIEW_KEY = 'tallytalk.preview'
 
@@ -95,6 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
 
       async signOut() {
+        // Detach the device before the session goes: the delete needs it, and
+        // leaving the token behind sends this account's notifications to
+        // whoever uses the device next.
+        await unregisterPush()
         if (supabase) await supabase.auth.signOut().catch(() => {})
         writePreviewFlag(false)
         setPreviewSignedIn(false)

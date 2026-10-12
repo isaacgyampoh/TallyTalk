@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       return json({ error: 'Unauthorized' }, 401)
     }
 
-    const { userId, title, body, data } = await req.json()
+    const { userId, title, body, data, category } = await req.json()
     if (!userId || !title) return json({ error: 'userId and title are required' }, 400)
     // userId lands in a PostgREST query string below; only ever accept a uuid.
     if (typeof userId !== 'string' || !UUID.test(userId)) {
@@ -59,12 +59,19 @@ Deno.serve(async (req) => {
     const account = JSON.parse(Deno.env.get('FCM_SERVICE_ACCOUNT') ?? '{}') as ServiceAccount
     if (!account.private_key) return json({ error: 'FCM_SERVICE_ACCOUNT not configured' }, 500)
 
+    // A muted category is not an error: the send simply does not happen.
+    if (category && !(await categoryWanted(userId, category))) {
+      return json({ sent: 0, note: `User has muted "${category}"` }, 200)
+    }
+
     const tokens = await getTokens(userId)
     if (tokens.length === 0) return json({ sent: 0, note: 'No devices registered' }, 200)
 
     const accessToken = await getAccessToken(account)
     const results = await Promise.all(
-      tokens.map((t) => sendToToken(account.project_id, accessToken, t, title, body ?? '', data)),
+      tokens.map((t) =>
+        sendToToken(account.project_id, accessToken, t, title, body ?? '', data, category),
+      ),
     )
     const sent = results.filter(Boolean).length
     return json({ sent, total: tokens.length }, 200)
@@ -84,6 +91,18 @@ async function getTokens(userId: string): Promise<string[]> {
   return rows.map((r) => r.token)
 }
 
+/** Does this user still want this category? Absent prefs means yes. */
+async function categoryWanted(userId: string, category: string): Promise<boolean> {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=notification_prefs`,
+    { headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` } },
+  )
+  if (!res.ok) return true // never swallow a notification because a lookup failed
+  const rows = (await res.json()) as { notification_prefs: Record<string, boolean> | null }[]
+  const prefs = rows[0]?.notification_prefs
+  return !prefs || prefs[category] !== false
+}
+
 async function sendToToken(
   projectId: string,
   accessToken: string,
@@ -91,12 +110,25 @@ async function sendToToken(
   title: string,
   body: string,
   data?: Record<string, string>,
+  category?: string,
 ): Promise<boolean> {
+  // The data payload carries ids only — never content. It is what the app reads
+  // to open the right screen, and notification payloads are not a safe place
+  // for anything protected.
+  const payload = { ...(data ?? {}), ...(category ? { category } : {}) }
+
   const res = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      message: { token, notification: { title, body }, data: data ?? {} },
+      message: {
+        token,
+        notification: { title, body },
+        data: payload,
+        // The channel must match one created by the client, or Android 8+
+        // drops the notification silently.
+        android: category ? { notification: { channel_id: category } } : undefined,
+      },
     }),
   })
   if (!res.ok) console.error('FCM send failed', res.status, await res.text())

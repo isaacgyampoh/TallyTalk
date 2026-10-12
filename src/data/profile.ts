@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { NotificationPrefs } from '@/lib/notifications'
 
 /**
  * Your own profile: who you are, and who can reach you.
@@ -35,6 +36,7 @@ export interface MyProfile {
   photo_visibility: PrivacyScope
   searchable_by_number: boolean
   default_landing_screen: 'personal' | 'contacts' | 'groups'
+  notification_prefs: NotificationPrefs | null
 }
 
 /** Everything a user may change about themselves. Note the absence of `phone`. */
@@ -49,6 +51,7 @@ export type ProfilePatch = Partial<
     | 'photo_visibility'
     | 'searchable_by_number'
     | 'default_landing_screen'
+    | 'notification_prefs'
   >
 >
 

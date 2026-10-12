@@ -6,6 +6,7 @@ import { useTheme, type ThemePref } from '@/context/themeState'
 import { SAMPLE_PROFILE } from '@/lib/sampleData'
 import { useIsLive, useMyProfile, useUpdateProfile } from '@/data/hooks'
 import { PrivacySettings } from '@/components/PrivacySettings'
+import { NotificationSettings } from '@/components/NotificationSettings'
 import { deleteMyAccount, exportMyData } from '@/data/account'
 import { useRef, useState } from 'react'
 import { useToast } from '@/components/toastContext'
@@ -213,6 +214,16 @@ export function ProfileScreen() {
             ))}
           </ul>
         </section>
+
+        {live && profile && (
+          <NotificationSettings
+            profile={profile}
+            saving={save.isPending}
+            onChange={(patch) =>
+              save.mutate(patch, { onError: () => toast('Could not save that setting', 'error') })
+            }
+          />
+        )}
 
         {live && profile && (
           <PrivacySettings

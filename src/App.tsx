@@ -1,14 +1,15 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/context/AuthContext'
 import { useAuth } from '@/context/authState'
-import { registerPush } from '@/lib/push'
+import { registerPush, setNotificationRouter, clearNotificationRouter } from '@/lib/push'
 import { isAppMode } from '@/lib/platform'
 import { isOnboarded } from '@/lib/onboarding'
 import { useMyProfile } from '@/data/hooks'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
+import { useToast } from '@/components/toastContext'
 import { AppViewport } from '@/components/AppViewport'
 import { Shell } from '@/components/Shell'
 import { IntroSplash } from '@/screens/IntroSplash'
@@ -66,9 +67,16 @@ function Gate() {
   const [intro, setIntro] = useState(isAppMode && !introPlayed)
   useAndroidBack()
 
+  const nav = useNavigate()
+  const toast = useToast()
+
   useEffect(() => {
-    if (session) registerPush()
-  }, [session])
+    if (!session) return
+    // Foreground arrivals are not drawn by the OS, so surface them in-app.
+    void registerPush((title, body) => toast(body ? `${title} — ${body}` : title, 'info'))
+    setNotificationRouter((path) => nav(path))
+    return () => clearNotificationRouter()
+  }, [session, nav, toast])
 
   // Where an unrecognised route lands. The profile column has been editable
   // since PB-010 but nothing read it, so the setting did nothing.
