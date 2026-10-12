@@ -40,3 +40,9 @@ supabase/.temp
 !.env.production
 android/app/google-services.json
 .vercel
+
+# playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache

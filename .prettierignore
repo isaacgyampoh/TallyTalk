@@ -3,3 +3,5 @@ android
 ios
 node_modules
 *.md
+playwright-report
+test-results
