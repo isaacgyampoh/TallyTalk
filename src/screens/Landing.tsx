@@ -2,8 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/authState'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon, ContactsIcon, CheckIcon } from '@/components/icons'
-import shotToday from '@/assets/shot-today.png'
-import shotChat from '@/assets/shot-chat.png'
+import shotContacts from '@/assets/shot-contacts.webp'
+import shotSpace from '@/assets/shot-space.webp'
 
 const APK_URL = '/download'
 
@@ -93,7 +93,7 @@ export function Landing() {
 
           {/* phone mockup */}
           <div className="order-1 flex justify-center md:order-2">
-            <Phone src={shotToday} />
+            <Phone src={shotContacts} />
           </div>
         </section>
 
@@ -113,7 +113,7 @@ export function Landing() {
         {/* showcase 2 */}
         <section className="grid items-center gap-10 py-12 md:grid-cols-2">
           <div className="flex justify-center">
-            <Phone src={shotChat} />
+            <Phone src={shotSpace} />
           </div>
           <div>
             <h2 className="font-display text-[32px] font-extrabold leading-tight tracking-tight">

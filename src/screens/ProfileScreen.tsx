@@ -70,6 +70,12 @@ export function ProfileScreen() {
     ? (profile?.display_name ?? (session?.user?.user_metadata?.display_name as string) ?? '')
     : SAMPLE_PROFILE.name
 
+  const avatarNode = profile?.photo_url ? (
+    <img src={profile.photo_url} alt="" className="h-[60px] w-[60px] rounded-full object-cover" />
+  ) : (
+    <Avatar initials={name.slice(0, 2).toUpperCase()} color="#6600FF" size={60} />
+  )
+
   function saveName() {
     const next = nameDraft.trim()
     if (!next || next === name) return setEditingName(false)
@@ -88,22 +94,20 @@ export function ProfileScreen() {
 
       <div className="px-5">
         <div className="flex items-center gap-4 rounded-card border border-line p-4">
-          <button
-            onClick={() => live && fileRef.current?.click()}
-            disabled={!live || changePhoto.isPending}
-            aria-label={live ? 'Change your photo' : undefined}
-            className={live ? 'press relative shrink-0 rounded-full' : 'shrink-0'}
-          >
-            {profile?.photo_url ? (
-              <img
-                src={profile.photo_url}
-                alt=""
-                className="h-[60px] w-[60px] rounded-full object-cover"
-              />
-            ) : (
-              <Avatar initials={name.slice(0, 2).toUpperCase()} color="#6600FF" size={60} />
-            )}
-          </button>
+          {/* Only a control when it does something. A disabled button with no
+              label is both the wrong element and an unnamed control. */}
+          {live ? (
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={changePhoto.isPending}
+              aria-label="Change your photo"
+              className="press relative shrink-0 rounded-full"
+            >
+              {avatarNode}
+            </button>
+          ) : (
+            <div className="shrink-0">{avatarNode}</div>
+          )}
           <input
             ref={fileRef}
             type="file"
