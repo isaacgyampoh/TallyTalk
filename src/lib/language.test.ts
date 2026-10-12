@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { LANGUAGES, getLanguage, hasChosenLanguage, setLanguage } from './language'
 
 beforeEach(() => {
-  try { localStorage.clear() } catch { /* ignore */ }
+  try {
+    localStorage.clear()
+  } catch {
+    /* ignore */
+  }
 })
 
 describe('LANGUAGES', () => {

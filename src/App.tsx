@@ -30,6 +30,9 @@ const AuthFlow = screen('AuthFlow', () => import('@/screens/AuthFlow'))
 const Welcome = screen('Welcome', () => import('@/screens/Welcome'))
 const Onboarding = screen('Onboarding', () => import('@/screens/Onboarding'))
 // `screen` is typed for prop-less screens; this one takes a callback.
+const LegalScreen = screen('LegalScreen', () => import('@/screens/LegalScreen'))
+
+// `screen` is typed for prop-less screens; this one takes a callback.
 const LanguageStep = lazy(() =>
   import('@/screens/LanguageStep').then((m) => ({ default: m.LanguageStep })),
 )
@@ -122,6 +125,14 @@ function Gate() {
           }
         />
         <Route
+          path="/legal/:doc"
+          element={
+            <AppViewport>
+              <LegalScreen />
+            </AppViewport>
+          }
+        />
+        <Route
           path="*"
           element={
             isAppMode ? (
@@ -149,6 +160,7 @@ function Gate() {
         {/* Full-screen detail views (no bottom nav), like a chat thread. */}
         <Route path="/contacts/:id" element={<ContactSpaceScreen />} />
         <Route path="/contacts/:id/t/:taskId" element={<TaskCommentsScreen />} />
+        <Route path="/legal/:doc" element={<LegalScreen />} />
         <Route path="/personal/:key" element={<ChecklistDetailScreen />} />
         <Route path="/groups/:id" element={<GroupDetailScreen />} />
 

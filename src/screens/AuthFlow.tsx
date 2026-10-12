@@ -202,7 +202,21 @@ export function AuthFlow() {
           className="pb-6 pt-4 text-center text-[12px] text-ink-faint"
           style={{ paddingBottom: 'calc(var(--safe-bottom) + 20px)' }}
         >
-          By continuing you agree to the Terms and Privacy Policy.
+          By continuing you agree to the{' '}
+          <button
+            onClick={() => nav('/legal/terms')}
+            className="font-semibold text-violet-ink underline-offset-2 hover:underline"
+          >
+            Terms
+          </button>{' '}
+          and{' '}
+          <button
+            onClick={() => nav('/legal/privacy')}
+            className="font-semibold text-violet-ink underline-offset-2 hover:underline"
+          >
+            Privacy Policy
+          </button>
+          .
         </p>
       </div>
     </div>
