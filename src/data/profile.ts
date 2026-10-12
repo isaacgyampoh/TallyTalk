@@ -37,6 +37,7 @@ export interface MyProfile {
   searchable_by_number: boolean
   default_landing_screen: 'personal' | 'contacts' | 'groups'
   notification_prefs: NotificationPrefs | null
+  preferred_language: string
 }
 
 /** Everything a user may change about themselves. Note the absence of `phone`. */
@@ -52,6 +53,7 @@ export type ProfilePatch = Partial<
     | 'searchable_by_number'
     | 'default_landing_screen'
     | 'notification_prefs'
+    | 'preferred_language'
   >
 >
 

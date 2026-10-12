@@ -97,8 +97,11 @@ export function Welcome() {
 
         {/* actions */}
         <div className="relative mt-6 space-y-3">
+          <p className="text-center text-[12.5px] leading-relaxed text-ink-soft">
+            Tap &ldquo;Agree and continue&rdquo; to accept the Terms of Service and Privacy Policy.
+          </p>
           <button onClick={() => nav('/signin')} className="btn-primary h-14 w-full text-[16px]">
-            Get started
+            Agree and continue
           </button>
           <button
             onClick={demo}

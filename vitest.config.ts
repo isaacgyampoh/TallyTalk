@@ -13,7 +13,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify('test'),
   },
   test: {
-    environment: 'node',
+    environment: 'jsdom',
     include: ['src/**/*.test.ts'],
   },
 })

@@ -6,6 +6,7 @@ import type { ChecklistItemRow } from './types'
 import { addTaskComment, eventsKey, listTaskEvents, recordTaskEvent } from './events'
 import { createGroupTask, poke } from './tasks'
 import { getMyProfile, updateMyProfile, uploadAvatar, type ProfilePatch } from './profile'
+import { getLanguage } from '@/lib/language'
 import { attachmentsKey, listTaskAttachments, uploadTaskAttachment } from './attachments'
 import { useEffect } from 'react'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
@@ -293,7 +294,17 @@ export function useMyProfile() {
   return useQuery({
     queryKey: ['my-profile', live],
     enabled: live,
-    queryFn: () => getMyProfile(),
+    queryFn: async () => {
+      const profile = await getMyProfile()
+      // The language was chosen before an account existed, so it lives in
+      // localStorage until there is a row to put it on. Carry it over once.
+      const chosen = getLanguage()
+      if (chosen && profile.preferred_language !== chosen) {
+        await updateMyProfile({ preferred_language: chosen }).catch(() => {})
+        return { ...profile, preferred_language: chosen }
+      }
+      return profile
+    },
   })
 }
 

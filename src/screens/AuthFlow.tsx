@@ -16,16 +16,23 @@ export function AuthFlow() {
   const [local, setLocal] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const phone = `${country.dial}${local.replace(/\D/g, '').replace(/^0+/, '')}`
 
-  async function onSendCode() {
+  function onNext() {
     setError(null)
     if (local.replace(/\D/g, '').length < 6) {
       setError('Enter a valid mobile number.')
       return
     }
+    setConfirming(true)
+  }
+
+  async function onSendCode() {
+    setConfirming(false)
+    setError(null)
     setBusy(true)
     const { error } = await sendCode(phone)
     setBusy(false)
@@ -45,9 +52,47 @@ export function AuthFlow() {
     if (error) setError(error)
   }
 
+  const confirmDialog = confirming ? (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/50 px-8"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-number"
+      onClick={() => setConfirming(false)}
+    >
+      <div
+        className="animate-rise-in w-full max-w-[380px] rounded-[20px] bg-paper p-5 shadow-card"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p id="confirm-number" className="text-[15px] text-ink-soft">
+          You entered the phone number:
+        </p>
+        <p className="nums mt-1.5 text-[20px] font-semibold text-ink">{phone}</p>
+        <p className="mt-3 text-[14.5px] text-ink-soft">
+          Is this correct, or would you like to edit the number?
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={() => setConfirming(false)}
+            className="press rounded-full px-5 py-2.5 text-[15px] font-semibold text-violet-ink"
+          >
+            Edit
+          </button>
+          <button
+            onClick={onSendCode}
+            className="press rounded-full bg-violet px-6 py-2.5 text-[15px] font-semibold text-white"
+          >
+            Yes, send code
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null
+
   return (
     <div className="app-frame relative overflow-hidden">
       <OfflineBar />
+      {confirmDialog}
       <div
         className="relative flex flex-1 flex-col px-6"
         style={{ paddingTop: 'calc(var(--safe-top) + 20px)' }}
@@ -93,14 +138,14 @@ export function AuthFlow() {
                     autoFocus
                     value={local}
                     onChange={(e) => setLocal(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && onSendCode()}
+                    onKeyDown={(e) => e.key === 'Enter' && onNext()}
                     placeholder="24 000 0000"
                     className="field nums flex-1"
                     aria-label="Phone number"
                   />
                 </div>
                 {error && <p className="text-[13px] font-medium text-overdue">{error}</p>}
-                <button className="btn-primary mt-2 w-full" onClick={onSendCode} disabled={busy}>
+                <button className="btn-primary mt-2 w-full" onClick={onNext} disabled={busy}>
                   <PhoneIcon width={18} height={18} />
                   {busy ? 'Sending code…' : 'Send code'}
                 </button>

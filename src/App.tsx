@@ -6,6 +6,7 @@ import { useAuth } from '@/context/authState'
 import { registerPush, setNotificationRouter, clearNotificationRouter } from '@/lib/push'
 import { isAppMode } from '@/lib/platform'
 import { isOnboarded } from '@/lib/onboarding'
+import { hasChosenLanguage } from '@/lib/language'
 import { useMyProfile } from '@/data/hooks'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
@@ -28,6 +29,10 @@ const Landing = screen('Landing', () => import('@/screens/Landing'))
 const AuthFlow = screen('AuthFlow', () => import('@/screens/AuthFlow'))
 const Welcome = screen('Welcome', () => import('@/screens/Welcome'))
 const Onboarding = screen('Onboarding', () => import('@/screens/Onboarding'))
+// `screen` is typed for prop-less screens; this one takes a callback.
+const LanguageStep = lazy(() =>
+  import('@/screens/LanguageStep').then((m) => ({ default: m.LanguageStep })),
+)
 const ContactsScreen = screen('ContactsScreen', () => import('@/screens/ContactsScreen'))
 const ContactSpaceScreen = screen(
   'ContactSpaceScreen',
@@ -64,6 +69,7 @@ let introPlayed = false
 function Gate() {
   const { ready, signedIn, session } = useAuth()
   const [intro, setIntro] = useState(isAppMode && !introPlayed)
+  const [languageChosen, setLanguageChosen] = useState(hasChosenLanguage)
   useAndroidBack()
 
   const nav = useNavigate()
@@ -119,7 +125,15 @@ function Gate() {
           path="*"
           element={
             isAppMode ? (
-              <AppViewport>{isOnboarded() ? <Welcome /> : <Onboarding />}</AppViewport>
+              <AppViewport>
+                {!languageChosen ? (
+                  <LanguageStep onDone={() => setLanguageChosen(true)} />
+                ) : isOnboarded() ? (
+                  <Welcome />
+                ) : (
+                  <Onboarding />
+                )}
+              </AppViewport>
             ) : (
               <Landing />
             )
