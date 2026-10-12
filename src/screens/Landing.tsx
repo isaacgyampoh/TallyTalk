@@ -13,7 +13,7 @@ export function Landing() {
 
   function demo() {
     enterPreview()
-    nav('/today')
+    nav('/contacts')
   }
   function getApk() {
     window.location.href = APK_URL

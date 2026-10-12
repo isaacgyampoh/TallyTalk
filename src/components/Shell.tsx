@@ -1,12 +1,11 @@
 import { OfflineBar } from './OfflineBar'
 import type { ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { TodayIcon, ContactsIcon, PersonalIcon, GroupsIcon, ProfileIcon } from './icons'
+import { ContactsIcon, PersonalIcon, GroupsIcon, ProfileIcon } from './icons'
 
 const TABS = [
-  { to: '/today', label: 'Today', Icon: TodayIcon },
-  { to: '/contacts', label: 'Contacts', Icon: ContactsIcon },
   { to: '/personal', label: 'Personal', Icon: PersonalIcon },
+  { to: '/contacts', label: 'Contacts', Icon: ContactsIcon },
   { to: '/groups', label: 'Groups', Icon: GroupsIcon },
   { to: '/profile', label: 'Profile', Icon: ProfileIcon },
 ] as const

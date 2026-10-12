@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "TallyTalk \u2014 a task-first, WhatsApp-familiar accountability app. Web PWA.",
+  "description": "TallyTalk — a task-first, WhatsApp-familiar accountability app. Web PWA.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -31,8 +31,6 @@
     "@capacitor/push-notifications": "^8.1.2",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.3",
-    "@fontsource-variable/bricolage-grotesque": "^5.1.0",
-    "@fontsource-variable/plus-jakarta-sans": "^5.1.0",
     "@supabase/supabase-js": "^2.45.4",
     "@tanstack/react-query": "^5.101.4",
     "react": "^18.3.1",

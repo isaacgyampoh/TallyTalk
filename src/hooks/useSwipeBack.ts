@@ -39,7 +39,7 @@ export function useSwipeBack() {
   }, [nav])
 }
 
-const TABS = ['/today', '/contacts', '/personal', '/groups', '/profile']
+const TABS = ['/personal', '/contacts', '/groups', '/profile']
 
 /** Wire the Android hardware/gesture back button to the app's history. */
 export function useAndroidBack() {
@@ -51,8 +51,8 @@ export function useAndroidBack() {
         const path = window.location.pathname
         if (!TABS.includes(path) && window.history.length > 1) {
           window.history.back()
-        } else if (path !== '/today') {
-          window.location.assign('/today')
+        } else if (path !== '/contacts') {
+          window.location.assign('/contacts')
         } else {
           App.exitApp()
         }

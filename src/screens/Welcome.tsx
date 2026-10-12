@@ -16,7 +16,7 @@ export function Welcome() {
   function demo() {
     buzz(10)
     enterPreview()
-    nav('/today')
+    nav('/contacts')
   }
 
   return (

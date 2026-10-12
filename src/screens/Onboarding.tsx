@@ -31,7 +31,7 @@ export function Onboarding() {
     markOnboarded()
     buzz(10)
     enterPreview()
-    nav('/today')
+    nav('/contacts')
   }
 
   return (

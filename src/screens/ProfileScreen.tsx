@@ -199,22 +199,6 @@ export function ProfileScreen() {
           </div>
         </section>
 
-        <section className="mb-5">
-          <h2 className="eyebrow mb-2">App</h2>
-          <ul className="overflow-hidden rounded-card border border-line">
-            {['Default landing screen', 'Notification preferences'].map((item, i) => (
-              <li key={item}>
-                <button
-                  className={`press flex w-full items-center justify-between px-4 py-3 text-left text-[15px] text-ink hover:bg-wash ${i > 0 ? 'border-t border-line' : ''}`}
-                >
-                  {item}
-                  <span className="text-ink-faint">›</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-
         {live && profile && (
           <NotificationSettings
             profile={profile}

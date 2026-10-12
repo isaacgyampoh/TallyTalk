@@ -52,9 +52,29 @@ export default {
         flag: 'rgb(var(--c-flag) / <alpha-value>)',
         tick: 'rgb(var(--c-tick) / <alpha-value>)',
       },
+      // The reference screenshot is WhatsApp, which ships no font of its own —
+      // it uses whatever the platform provides. Matching that means the system
+      // stack: San Francisco on iOS, Roboto on Android, Segoe on Windows. It
+      // also removes 800 KB of bundled webfonts and the flash before they load.
       fontFamily: {
-        display: ['"Bricolage Grotesque Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        sans: ['"Plus Jakarta Sans Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
       },
       borderRadius: {
         card: '24px',

@@ -45,7 +45,6 @@ const ChecklistDetailScreen = screen(
 const GroupsScreen = screen('GroupsScreen', () => import('@/screens/GroupsScreen'))
 const GroupDetailScreen = screen('GroupDetailScreen', () => import('@/screens/GroupDetailScreen'))
 const ProfileScreen = screen('ProfileScreen', () => import('@/screens/ProfileScreen'))
-const TodayScreen = screen('TodayScreen', () => import('@/screens/TodayScreen'))
 
 function Splash() {
   return (
@@ -81,7 +80,9 @@ function Gate() {
   // Where an unrecognised route lands. The profile column has been editable
   // since PB-010 but nothing read it, so the setting did nothing.
   const { data: profile } = useMyProfile()
-  const landing = profile?.default_landing_screen ? `/${profile.default_landing_screen}` : '/today'
+  const landing = profile?.default_landing_screen
+    ? `/${profile.default_landing_screen}`
+    : '/contacts'
 
   if (intro) {
     return (
@@ -142,7 +143,6 @@ function Gate() {
           element={
             <Shell>
               <Routes>
-                <Route path="/today" element={<TodayScreen />} />
                 <Route path="/contacts" element={<ContactsScreen />} />
                 <Route path="/personal" element={<PersonalScreen />} />
                 <Route path="/groups" element={<GroupsScreen />} />
