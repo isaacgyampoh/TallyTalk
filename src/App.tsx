@@ -3,7 +3,12 @@ import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-route
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/context/AuthContext'
 import { useAuth } from '@/context/authState'
-import { registerPush, setNotificationRouter, clearNotificationRouter } from '@/lib/push'
+import {
+  listenForDeepLinks,
+  registerPush,
+  setNotificationRouter,
+  clearNotificationRouter,
+} from '@/lib/push'
 import { isAppMode } from '@/lib/platform'
 import { isOnboarded } from '@/lib/onboarding'
 import { hasChosenLanguage } from '@/lib/language'
@@ -83,7 +88,18 @@ function Gate() {
     // Foreground arrivals are not drawn by the OS, so surface them in-app.
     void registerPush((title, body) => toast(body ? `${title} — ${body}` : title, 'info'))
     setNotificationRouter((path) => nav(path))
-    return () => clearNotificationRouter()
+
+    // Links can arrive signed out too, but routing one before there is a
+    // session would show a protected screen; the router handles that.
+    let stop: (() => void) | undefined
+    void listenForDeepLinks().then((off) => {
+      stop = off
+    })
+
+    return () => {
+      clearNotificationRouter()
+      stop?.()
+    }
   }, [session, nav, toast])
 
   // Where an unrecognised route lands. The profile column has been editable

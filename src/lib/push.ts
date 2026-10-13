@@ -1,6 +1,7 @@
 import { isNative, platform } from './platform'
 import { supabase } from './supabase'
 import { CHANNELS, routeForNotification, type NotificationData } from './notifications'
+import { routeForUrl } from './deeplinks'
 
 /**
  * Device push: registration, channels, and what happens when one arrives.
@@ -150,5 +151,25 @@ export async function unregisterPush(): Promise<void> {
   } finally {
     registered = false
     pendingRoute = null
+  }
+}
+
+/**
+ * Links that open the app: a custom scheme, or an App Link on our own host.
+ *
+ * Shares the pending-route mechanism with notifications, because a cold start
+ * has the same problem — the OS hands over the URL before React has mounted.
+ * Returns a teardown so the listener does not outlive the session.
+ */
+export async function listenForDeepLinks(): Promise<() => void> {
+  if (!isNative) return () => {}
+  try {
+    const { App } = await import('@capacitor/app')
+    const handle = await App.addListener('appUrlOpen', (event) => {
+      go(routeForUrl(event.url))
+    })
+    return () => void handle.remove()
+  } catch {
+    return () => {}
   }
 }

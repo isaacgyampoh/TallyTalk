@@ -18,6 +18,25 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Custom scheme: works immediately, no server verification.
+                 Used by anything the app itself emits. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tasktally" />
+            </intent-filter>
+
+            <!-- App Links: a tally-talk.vercel.app link opens the app rather
+                 than the browser. autoVerify requires assetlinks.json served
+                 at /.well-known/ on that host, which is why the file exists. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tally-talk.vercel.app" />
+            </intent-filter>
         </activity>
 
         <provider
@@ -41,4 +60,14 @@
     <!-- Lets a notification channel vibrate; the user still controls it from
          the channel's own system settings. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Voice notes record through getUserMedia in the WebView. Without this
+         the request is refused and recording fails on device, while working
+         fine in a desktop browser. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- A microphone is not required to use TaskTally; without this the Play
+         Store would hide the app from devices that lack one. -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>
