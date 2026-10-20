@@ -37,9 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!supabase) return {}
         try {
           const { error } = await supabase.auth.signInWithOtp({ phone })
-          return error ? { error: readableAuthError(error) } : {}
+          return error ? { error: readableAuthError(error, 'send') } : {}
         } catch (err) {
-          return { error: readableAuthError(err) }
+          return { error: readableAuthError(err, 'send') }
         }
       },
 
@@ -47,9 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!supabase) return {}
         try {
           const { error } = await supabase.auth.verifyOtp({ phone, token: code, type: 'sms' })
-          return error ? { error: readableAuthError(error) } : {}
+          return error ? { error: readableAuthError(error, 'verify') } : {}
         } catch (err) {
-          return { error: readableAuthError(err) }
+          return { error: readableAuthError(err, 'verify') }
         }
       },
 
