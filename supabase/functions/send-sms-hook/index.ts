@@ -148,6 +148,12 @@ Deno.serve(async (req) => {
       return json({ error: { message: 'SMS provider rejected the request' } }, 502)
     }
 
+    // Accepted is not the same as sent. An unapproved sender ID is taken with
+    // a cheerful 200 and then held at "PENDING APPROVAL" forever — which is
+    // exactly how a real sign-in failed silently while every check we had
+    // said success. Follow it up in the background.
+    confirmItActuallyWent(detail)
+
     return json({}, 200)
   } catch (err) {
     // Only the message. The error object can carry the request payload, and
@@ -156,6 +162,47 @@ Deno.serve(async (req) => {
     return json({ error: { message: 'Hook failed to process request' } }, 500)
   }
 })
+
+/** Statuses that mean the message is on its way, or has arrived. */
+const IN_FLIGHT = new Set(['DELIVERED', 'SENT', 'PENDING', 'QUEUED', 'SUBMITTED'])
+
+/**
+ * Ask Arkesel what became of the message it just accepted.
+ *
+ * Runs after the response has gone back, so it costs the sign-in nothing. The
+ * case worth catching is "PENDING APPROVAL": the sender ID has not been
+ * approved on the account, so messages are accepted and never delivered. From
+ * the outside that is indistinguishable from success.
+ */
+function confirmItActuallyWent(sendResponse: string): void {
+  const check = (async () => {
+    try {
+      const id = (JSON.parse(sendResponse) as { data?: { id?: string }[] }).data?.[0]?.id
+      if (!id) return
+      // Give the provider a moment to move it out of its initial state.
+      await new Promise((resolve) => setTimeout(resolve, 5000))
+      const res = await fetch(`https://sms.arkesel.com/api/v2/sms/${id}`, {
+        headers: { 'api-key': ARKESEL_API_KEY },
+      })
+      if (!res.ok) return
+      const status = (await res.json())?.data?.status as string | undefined
+      if (status && !IN_FLIGHT.has(status.toUpperCase())) {
+        console.error('Arkesel accepted but did not send:', status)
+        recordFailure(
+          `arkesel accepted the message but its status is "${status}" — ` +
+            `with sender "${ARKESEL_SENDER_ID}". PENDING APPROVAL means that ` +
+            `sender ID is not approved on the account, so nothing is delivered.`,
+        )
+      }
+    } catch {
+      /* a follow-up check must never affect sign-in */
+    }
+  })()
+
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+    .EdgeRuntime
+  runtime?.waitUntil?.(check)
+}
 
 function json(body: unknown, status: number) {
   return new Response(JSON.stringify(body), {

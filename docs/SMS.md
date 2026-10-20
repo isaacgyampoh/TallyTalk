@@ -50,7 +50,7 @@ worth raising deliberately once real traffic justifies it.
 | `ARKESEL_API_KEY` | Set, and **verified against Arkesel** with a read-only balance call: HTTP 200, account "Emmanuel Dzotsi", Ghana |
 | `SEND_SMS_HOOK_SECRET` | Generated and set on both sides |
 | Auth hook | `hook_send_sms_enabled = true`, pointed at `send-sms-hook` |
-| `ARKESEL_SENDER_ID` | Set to `tasktally` |
+| `ARKESEL_SENDER_ID` | Set to `Cambridge` — see "which sender ID actually delivers" |
 | Phone provider | **On** |
 
 Both gates were then checked against the deployed function, without sending
@@ -118,6 +118,54 @@ The write happens **after** the response goes back, through
 `EdgeRuntime.waitUntil`. Awaiting it on the request path cost enough time that
 GoTrue gave up with `hook_timeout` instead of receiving our 502 — which told
 the user and the owner nothing at all.
+
+## Which sender ID actually delivers
+
+Arkesel accepts a message for almost any sender ID with HTTP 200 and
+`status: "success"`, then holds it at **PENDING APPROVAL** if that sender is
+not approved on the account. Nothing is delivered, and nothing in the send
+response says so. This cost a real sign-in: the app reached "Enter the code",
+and no code existed.
+
+The message-status endpoint is the only thing that tells the truth:
+
+```bash
+curl -s "https://sms.arkesel.com/api/v2/sms/<message id>" -H "api-key: $ARKESEL_API_KEY"
+```
+
+Checked on this account, 20 October 2026:
+
+| Sender | Status |
+| --- | --- |
+| `tasktally` | PENDING APPROVAL |
+| `TaskTally` | PENDING APPROVAL |
+| `CambridgeC` | PENDING APPROVAL |
+| `Emmanuel` | PENDING APPROVAL |
+| **`Cambridge`** | **DELIVERED** |
+| `Arkesel` | refused outright — "You are not allowed to use this Sender ID" |
+
+So `Cambridge` is the one approved sender, and it is what the hook uses. Codes
+arrive from "Cambridge"; the message body names TaskTally. To change that,
+apply for `TaskTally` in the Arkesel dashboard and switch it in one command
+once its status stops being PENDING APPROVAL:
+
+```bash
+supabase secrets set ARKESEL_SENDER_ID='TaskTally'
+```
+
+The hook now catches this failure mode by itself. After a successful send it
+asks Arkesel — in the background, after the response has gone back — what
+became of the message, and records anything that is not on its way:
+
+```
+arkesel accepted the message but its status is "PENDING APPROVAL" — with
+sender "tasktally". PENDING APPROVAL means that sender ID is not approved on
+the account, so nothing is delivered.
+```
+
+That is a row in `client_errors`, one query away, with no phone number and no
+code in it. Verified by putting the unapproved sender back for a single send
+and watching the row appear.
 
 ## One thing to check on the account
 
