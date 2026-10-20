@@ -94,6 +94,31 @@ If the code arrives, phone sign-in is done. If it does not, the failure is now
 legible: the hook logs Arkesel's exact refusal, and the user-facing message
 stays honest either way.
 
+## Diagnosing a failed send without dashboard access
+
+Edge function logs need the dashboard, and on the free plan they are not
+reachable through the Management API at all — several documented log endpoints
+have been retired. So the hook records a provider refusal where it can be read
+with one query:
+
+```sql
+select created_at, message from public.client_errors
+where build_id = 'send-sms-hook' order by created_at desc;
+```
+
+It records the provider's verdict and nothing else — no phone number, which is
+a personal identifier, and no code, which is a credential. A real refusal looks
+like:
+
+```
+arkesel 402: {"message":"Insufficient balance or invalid coverage!","status":"error"}
+```
+
+The write happens **after** the response goes back, through
+`EdgeRuntime.waitUntil`. Awaiting it on the request path cost enough time that
+GoTrue gave up with `hook_timeout` instead of receiving our 502 — which told
+the user and the owner nothing at all.
+
 ## One thing to check on the account
 
 The balance call answers:
@@ -107,12 +132,17 @@ endpoint agrees (`"balance":0`). Their public documentation does not explain
 how the two relate, and third-party clients suggest the account can hold
 separate balances for SMS and for OTP sends.
 
-I have not guessed which applies here, because the only way to find out is a
-real send. If the first attempt comes back refused for insufficient balance,
-the fix is in the dashboard — buy SMS units with the money already there — and
-not in this code. The hook already treats that case correctly: Arkesel answers
-HTTP 200 with the refusal in the body, and the hook returns 502 so a failed
-delivery is never reported as a sent code.
+Observed behaviour, 20 October 2026: a send was refused once with
+`402 Insufficient balance or invalid coverage!`, and an identical send to the
+same number minutes later was **accepted** with a message id. So sends do work,
+and the refusal was transient rather than a settled account state. The main
+balance falls by roughly GHS 0.035 per send, so sends are charged against the
+wallet even though `sms_balance` stays at 0.
+
+Treat an intermittent 402 as a real possibility in production. It is recorded
+(above), the user is told something honest, and no code is ever reported as
+sent when it was not. If it becomes frequent, the question for Arkesel is
+whether this account needs SMS units bought separately from the wallet.
 
 Until phone sign-in is switched on, the app answers "We can't send codes by
 text right now. This is on our side, not yours" — deliberately, because a

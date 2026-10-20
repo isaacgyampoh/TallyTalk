@@ -22,6 +22,52 @@ const ARKESEL_SENDER_ID = Deno.env.get('ARKESEL_SENDER_ID') ?? ''
 const HOOK_SECRET = (Deno.env.get('SEND_SMS_HOOK_SECRET') ?? '').replace('v1,whsec_', '')
 const ARKESEL_SMS_URL = 'https://sms.arkesel.com/api/v2/sms/send'
 const APP_NAME = 'TaskTally'
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
+const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+/**
+ * Record why a code could not be sent, where it can actually be read.
+ *
+ * Edge function logs need dashboard access, and on the free plan they are not
+ * reachable through the Management API at all — so a failed sign-in was
+ * invisible unless someone was watching the screen. This puts the provider's
+ * own words in `client_errors`, which is one SQL query away:
+ *
+ *   select created_at, message from public.client_errors
+ *   where build_id = 'send-sms-hook' order by created_at desc;
+ *
+ * Deliberately no phone number and no code: the recipient is a personal
+ * identifier and the OTP is a credential. Only the provider's verdict.
+ *
+ * Never awaited on the request path. GoTrue gives a hook a few seconds before
+ * it gives up with `hook_timeout`, and this function has already spent some of
+ * that talking to Arkesel — awaiting one more round trip turned an honest 502
+ * into a timeout, which tells the user and the owner nothing.
+ */
+function recordFailure(detail: string): void {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return
+  const write = fetch(`${SUPABASE_URL}/rest/v1/client_errors`, {
+    method: 'POST',
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      build_id: 'send-sms-hook',
+      kind: 'edge',
+      platform: 'web',
+      message: detail.slice(0, 500),
+    }),
+  }).catch(() => {
+    /* a failure to record a failure must not become a third failure */
+  })
+
+  // Keep the write alive after the response has gone back.
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+    .EdgeRuntime
+  runtime?.waitUntil?.(write)
+}
 
 /**
  * Arkesel rejects a sender ID longer than 11 characters, and refuses one that
@@ -48,6 +94,7 @@ Deno.serve(async (req) => {
     const problem = senderIdProblem()
     if (problem) {
       console.error('send-sms-hook is not configured:', problem)
+      recordFailure(`not configured: ${problem}`)
       return json({ error: { message: 'SMS is not configured' } }, 500)
     }
 
@@ -96,6 +143,7 @@ Deno.serve(async (req) => {
 
     if (!accepted) {
       console.error('Arkesel send failed', res.status, detail)
+      recordFailure(`arkesel ${res.status}: ${detail}`)
       // Returning a non-2xx tells Supabase the OTP could not be delivered.
       return json({ error: { message: 'SMS provider rejected the request' } }, 502)
     }
