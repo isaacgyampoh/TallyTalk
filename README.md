@@ -73,9 +73,8 @@ What is still off, and needs an account only you hold:
 
 | Blocked | Why | Where |
 | --- | --- | --- |
-| Phone sign-in | `phone_provider_disabled` — phone auth is off, and turning it on before the SMS key exists only changes the error | PB-007 |
+| Phone sign-in | `phone_provider_disabled` — phone auth is off, and turning it on before the SMS key exists only changes the error. [docs/SMS.md](docs/SMS.md) has what is needed and the test plan | PB-007 |
 | SMS delivery | `ARKESEL_API_KEY` and `ARKESEL_SENDER_ID` are not set on `send-sms-hook` | PB-008 |
-| Push delivery | `FCM_SERVICE_ACCOUNT` is not set on `send-push` | PB-021 |
 | The website | Vercel returns 402 `DEPLOYMENT_DISABLED` | PB-029 |
 | Staying awake | A free project pauses when idle; this is the second restore. [docs/AVAILABILITY.md](docs/AVAILABILITY.md) has the limits, what a pause looks like from the app, and how to recover one | PB-036 |
 

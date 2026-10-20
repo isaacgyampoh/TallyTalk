@@ -18,9 +18,25 @@
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 
 const ARKESEL_API_KEY = Deno.env.get('ARKESEL_API_KEY') ?? ''
-const ARKESEL_SENDER_ID = Deno.env.get('ARKESEL_SENDER_ID') ?? 'TallyTalk'
+const ARKESEL_SENDER_ID = Deno.env.get('ARKESEL_SENDER_ID') ?? ''
 const HOOK_SECRET = (Deno.env.get('SEND_SMS_HOOK_SECRET') ?? '').replace('v1,whsec_', '')
 const ARKESEL_SMS_URL = 'https://sms.arkesel.com/api/v2/sms/send'
+const APP_NAME = 'TaskTally'
+
+/**
+ * Arkesel rejects a sender ID longer than 11 characters, and refuses one that
+ * has not been approved for the account. Both fail the same way — a 200 with
+ * a failure in the body — so catching it here turns a silent undelivered code
+ * into a clear log line.
+ */
+function senderIdProblem(): string | null {
+  if (!ARKESEL_API_KEY) return 'ARKESEL_API_KEY is not set'
+  if (!ARKESEL_SENDER_ID) return 'ARKESEL_SENDER_ID is not set'
+  if (ARKESEL_SENDER_ID.length > 11) {
+    return `ARKESEL_SENDER_ID is ${ARKESEL_SENDER_ID.length} characters; Arkesel allows at most 11`
+  }
+  return null
+}
 
 interface HookPayload {
   user: { phone?: string }
@@ -29,6 +45,12 @@ interface HookPayload {
 
 Deno.serve(async (req) => {
   try {
+    const problem = senderIdProblem()
+    if (problem) {
+      console.error('send-sms-hook is not configured:', problem)
+      return json({ error: { message: 'SMS is not configured' } }, 500)
+    }
+
     const raw = await req.text()
 
     // Verify the request really came from Supabase Auth (signed webhook).
@@ -41,7 +63,9 @@ Deno.serve(async (req) => {
       return json({ error: { message: 'No phone number on user' } }, 400)
     }
 
-    const message = `Your ${ARKESEL_SENDER_ID} code is ${sms.otp}. It expires in a few minutes. Do not share it.`
+    // The app's name, not the sender ID: a sender ID may be a short code or
+    // something Arkesel approved that reads nothing like the product.
+    const message = `Your ${APP_NAME} code is ${sms.otp}. It expires in 10 minutes. Do not share it.`
 
     const res = await fetch(ARKESEL_SMS_URL, {
       method: 'POST',
@@ -78,7 +102,9 @@ Deno.serve(async (req) => {
 
     return json({}, 200)
   } catch (err) {
-    console.error('send-sms-hook error', err)
+    // Only the message. The error object can carry the request payload, and
+    // that payload contains the one-time code.
+    console.error('send-sms-hook error:', err instanceof Error ? err.message : 'unknown')
     return json({ error: { message: 'Hook failed to process request' } }, 500)
   }
 })
