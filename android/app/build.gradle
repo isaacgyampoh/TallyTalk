@@ -1,5 +1,29 @@
 apply plugin: 'com.android.application'
 
+/**
+ * Release signing.
+ *
+ * The upload key never enters the repository. Gradle reads it from
+ * `android/keystore.properties` on a developer machine, or from TT_* environment
+ * variables in CI, and a release build without it fails rather than quietly
+ * producing an artifact Play will reject. See MOBILE.md for how to create the
+ * key and where to keep it.
+ *
+ * The debug key below is deliberately public: it signs throwaway test builds
+ * only, and a shared one keeps those installable over each other.
+ */
+def keystoreProps = new Properties()
+def keystorePropsFile = rootProject.file('keystore.properties')
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+def uploadKey = { String name, String env ->
+    def value = keystoreProps.getProperty(name) ?: System.getenv(env)
+    return value?.trim() ?: null
+}
+def uploadStorePath = uploadKey('storeFile', 'TT_KEYSTORE_FILE')
+def hasUploadKey = uploadStorePath != null
+
 android {
     namespace = "com.tasktally.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -23,6 +47,14 @@ android {
             keyAlias 'tallytalk'
             keyPassword 'tallytalk'
         }
+        if (hasUploadKey) {
+            release {
+                storeFile rootProject.file(uploadStorePath)
+                storePassword uploadKey('storePassword', 'TT_KEYSTORE_PASSWORD')
+                keyAlias uploadKey('keyAlias', 'TT_KEY_ALIAS')
+                keyPassword uploadKey('keyPassword', 'TT_KEY_PASSWORD')
+            }
+        }
     }
     buildTypes {
         debug {
@@ -31,6 +63,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasUploadKey) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
@@ -51,6 +86,22 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+}
+
+// A release artifact signed with the debug key is worse than no artifact: Play
+// refuses it, and a tester who installed it cannot upgrade to the real one,
+// because the signatures differ. Stop the build and say what is missing.
+tasks.configureEach { task ->
+    if (!hasUploadKey && (task.name ==~ /^(assemble|bundle)Release.*/)) {
+        task.doFirst {
+            throw new GradleException(
+                "No upload key configured, so this release build would be unsigned.\n" +
+                "Create android/keystore.properties from keystore.properties.example, or set\n" +
+                "TT_KEYSTORE_FILE, TT_KEYSTORE_PASSWORD, TT_KEY_ALIAS and TT_KEY_PASSWORD.\n" +
+                "MOBILE.md has the keytool command and the CI secret names."
+            )
+        }
+    }
 }
 
 apply from: 'capacitor.build.gradle'

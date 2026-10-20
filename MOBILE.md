@@ -19,12 +19,14 @@ APK in the cloud for you — this is verified working.
    **Run workflow** (it also runs automatically on every push to `main`).
 2. Wait for the **Android APK** job to finish (~3–4 minutes).
 3. Open the finished run → scroll to **Artifacts** → download
-   **`tallytalk-android-debug`** (a zip containing `app-debug.apk`, ~5–6 MB).
+   **`tallytalk-android`** (a zip containing the APK, ~5–6 MB — plus the `.aab`
+   once release signing is configured).
 4. Transfer the APK to your Android phone and open it. Allow "install from
    unknown sources" if prompted. Done — the app is on your phone.
 
-This is a **debug** build (auto-signed, for testing/sharing). For the Play Store
-you'll later produce a signed release bundle (below).
+Until the upload key is configured, that is a **debug** build — signed with the
+shared debug key, fine for testing and useless to the Play Store. Set up signing
+(next section) and the same workflow produces a signed APK and `.aab` instead.
 
 **iOS:** the workflow runs an iOS compile check, but it's non-blocking — a
 *runnable* iOS app requires Apple signing (your Apple Developer account), which
@@ -119,12 +121,82 @@ add those).
 Note: the Edge Function hasn't been run against a live FCM project here — test it
 on a real device once your credentials are in.
 
+## Signing a release build
+
+Google Play will not accept an unsigned or debug-signed build, and Android
+refuses to upgrade an installed app whose signature changed. So the upload key
+is created once, kept forever, and never committed.
+
+### 1. Create the key (once)
+
+```bash
+keytool -genkeypair -v \
+  -keystore upload.jks -alias upload \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -dname "CN=Your Name, O=TaskTally, C=GH"
+```
+
+It asks for two passwords (store and key); they may be the same. **Back the file
+and the passwords up somewhere you will still have in five years** — a password
+manager, not this repo. Losing it means never being able to update the app on
+Play under the same listing.
+
+### 2. Build locally
+
+Put the key outside the repo (or at `android/keystore/upload.jks`, which is
+git-ignored) and create `android/keystore.properties` from
+`android/keystore.properties.example`:
+
+```properties
+storeFile=keystore/upload.jks
+storePassword=…
+keyAlias=upload
+keyPassword=…
+```
+
+`storeFile` is relative to `android/`. Then:
+
+```bash
+npm run build && npx cap sync android
+cd android && ./gradlew assembleRelease bundleRelease -Pvcode=1 -Pvname=1.0.0
+```
+
+The APK lands in `android/app/build/outputs/apk/release/` and the Play bundle in
+`android/app/build/outputs/bundle/release/`. Confirm which key signed it:
+
+```bash
+"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs \
+  android/app/build/outputs/apk/release/app-release.apk
+```
+
+The certificate DN must be yours, not `CN=Android Debug`. Without any key
+configured, a release build stops with a message telling you what is missing
+rather than producing something unusable.
+
+### 3. Build in CI
+
+Add four repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret                       | Value                                     |
+| ---------------------------- | ----------------------------------------- |
+| `ANDROID_KEYSTORE_BASE64`    | `base64 -i upload.jks` (one line)         |
+| `ANDROID_KEYSTORE_PASSWORD`  | the store password                        |
+| `ANDROID_KEY_ALIAS`          | `upload`                                  |
+| `ANDROID_KEY_PASSWORD`       | the key password                          |
+
+With them present, **Build mobile apps** builds a signed APK and `.aab`, prints
+the signing certificate in the log, and fails if a debug key somehow signed the
+release. Without them it falls back to a debug APK and labels it as one. The
+decoded keystore is deleted from the runner at the end of the job.
+
 ## Store submission (overview)
 
-- **Google Play** — generate a signed **App Bundle** (`.aab`), create a Play
-  Console listing, upload, fill store details, submit for review.
+- **Google Play** — upload the signed `.aab` from the step above, create the
+  Play Console listing, fill in store details, submit for review. Consider Play
+  App Signing, which keeps a copy of the app signing key with Google so a lost
+  upload key can be reset.
 - **App Store** — Archive in Xcode, upload via the Organizer to App Store
-  Connect, complete the listing, submit for review.
+  Connect, complete the listing, submit for review (PB-031).
 
 ## Relationship to the backend
 

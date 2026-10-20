@@ -52,30 +52,90 @@ jobs:
         id: ver
         run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Build debug APK
+      # The upload key lives in repository secrets, never in the tree. With it,
+      # CI produces the artifacts Play accepts; without it, it builds a debug
+      # APK and says so, rather than passing one off as a release.
+      - name: Decode the upload keystore
+        id: key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            mkdir -p android/keystore
+            echo "$KEYSTORE_B64" | base64 -d > android/keystore/upload.jks
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "Upload keystore written ($(wc -c < android/keystore/upload.jks) bytes)"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "No ANDROID_KEYSTORE_BASE64 secret — falling back to a debug build."
+          fi
+
+      - name: Build signed release APK + bundle
+        if: steps.key.outputs.signed == 'true'
+        env:
+          TT_KEYSTORE_FILE: keystore/upload.jks
+          TT_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TT_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          TT_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace \
+            -Pvcode=${{ github.run_number }} -Pvname=${{ steps.ver.outputs.v }}
+
+      # Proof, in the log, of which key signed the artifact — the whole point of
+      # this job. A debug-signed "release" is what PB-030 existed to stop.
+      - name: Verify the signature
+        if: steps.key.outputs.signed == 'true'
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          "$APKSIGNER" verify --print-certs --verbose "$APK"
+          if "$APKSIGNER" verify --print-certs "$APK" | grep -qi "CN=Android Debug"; then
+            echo "::error::The release APK is signed with a debug key."
+            exit 1
+          fi
+
+      - name: Build debug APK (no upload key configured)
+        if: steps.key.outputs.signed != 'true'
         run: |
           cd android
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace \
             -Pvcode=${{ github.run_number }} -Pvname=${{ steps.ver.outputs.v }}
 
-      - name: Upload APK (build artifact)
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tallytalk-android-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: tallytalk-android
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      - name: Publish APK to a shareable release
+      - name: Remove the keystore from the runner
+        if: always()
+        run: rm -f android/keystore/upload.jks
+
+      - name: Publish the APK to a shareable release
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
+          SIGNED: ${{ steps.key.outputs.signed }}
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk TaskTally.apk
+          if [ "$SIGNED" = "true" ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk TaskTally.apk
+            NOTES="Signed with the upload key. If you installed an earlier debug build, uninstall it first — the signatures differ, so Android will refuse the upgrade."
+          else
+            cp android/app/build/outputs/apk/debug/app-debug.apk TaskTally.apk
+            NOTES="Debug build, signed with the shared debug key — for testing only, not a store release. On Android: open the file and allow install from unknown sources."
+          fi
           gh release create android-latest \
-            --title "TallyTalk — latest Android build" \
-            --notes "Debug build for testing. On Android: open the file and allow install from unknown sources." \
+            --title "TaskTally — latest Android build" \
+            --notes "$NOTES" \
             --prerelease 2>/dev/null || true
+          gh release edit android-latest --notes "$NOTES"
           gh release delete-asset android-latest TallyTalk.apk -y 2>/dev/null || true
           gh release delete-asset android-latest tallytalk.apk -y 2>/dev/null || true
           gh release upload android-latest TaskTally.apk --clobber
