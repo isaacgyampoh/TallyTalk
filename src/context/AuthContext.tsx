@@ -3,16 +3,7 @@ import { AuthContext, type AuthState } from './authState'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { unregisterPush } from '@/lib/push'
-
-const UNREACHABLE = "We can't reach the server right now. Check your connection and try again."
-
-/** supabase-js reports a dead host or no network as a bare fetch failure. */
-function readableAuthError(err: unknown): string {
-  const message = err instanceof Error ? err.message : String(err)
-  return /failed to fetch|networkerror|network request failed|load failed/i.test(message)
-    ? UNREACHABLE
-    : message
-}
+import { readableAuthError } from './authErrors'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
