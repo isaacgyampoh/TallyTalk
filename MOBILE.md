@@ -139,9 +139,13 @@ those.
                         $$select public.notify_overdue_tasks()$$);
    ```
 
-**Not yet verified:** no notification has reached a real handset, because that
-needs the FCM credentials above. The database half is tested; the delivery half
-is PB-021.
+**Verified on the live project (20 October 2026):** a task created by a real
+signed-in user fired the trigger, pg_net reached the deployed `send-push`
+function, the function accepted the shared secret and found the registered
+device, and stopped at `{"error":"FCM_SERVICE_ACCOUNT not configured"}`. So the
+whole chain works and exactly one credential is missing — step 2 above, the
+service-account JSON. `SEND_PUSH_SECRET` is already set on the function and
+mirrored into the database vault, so step 3 is done.
 
 ## Signing a release build
 

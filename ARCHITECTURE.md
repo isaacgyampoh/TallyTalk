@@ -127,9 +127,16 @@ Two layers, deliberately separate:
   and being added by someone did not let you see their name. The mocks had
   agreed with the code all along.
 
-Not covered by either: PostgREST, GoTrue, Storage, Realtime and the Edge
-Functions as deployed. A green run says the schema is right, not that the
-hosted project is configured right.
+A third layer, run by hand against the live project rather than in CI, because
+it creates and deletes real users: three accounts through GoTrue, signed in for
+real, asserting the same things through PostgREST with the JWTs GoTrue issued.
+Last run 20 October 2026 — 24 assertions, all passing, including both halves of
+the `0004` fix. The accounts were removed afterwards and the database left
+empty. Worth repeating after any change to a policy, because that run is the
+only one that exercises PostgREST's role switching and a real token.
+
+Not covered by any of them: Realtime authorisation, and the Storage API's own
+path handling.
 
 ## Language
 

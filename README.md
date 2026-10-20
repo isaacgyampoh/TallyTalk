@@ -27,6 +27,33 @@ shows real data or nothing.
 
 ---
 
+## Where the backend stands (20 October 2026)
+
+The Supabase project `apbdqgussaylxilqjowa` is restored and holds migrations
+0001–0006. It is empty: no users, no tasks. What works, checked against it with
+real signed-in clients rather than mocks:
+
+- Row-Level Security on every table — 24 assertions through PostgREST.
+- The triggers: a profile on sign-up, the creator seated as a group's first
+  admin, an invitation that actually joins you, the phone number locked to the
+  verified sign-in.
+- Account deletion, end to end, through the `delete-account` function — which
+  was in this repo but had never been deployed, so until today that path would
+  have failed for every user.
+- The push chain, as far as it can go without an FCM service account: a new
+  task reaches the deployed `send-push` function, which authenticates and finds
+  the device before stopping at the missing credential.
+
+What is still off, and needs an account only you hold:
+
+| Blocked | Why | Where |
+| --- | --- | --- |
+| Phone sign-in | `phone_provider_disabled` — phone auth is off, and turning it on before the SMS key exists only changes the error | PB-007 |
+| SMS delivery | `ARKESEL_API_KEY` and `ARKESEL_SENDER_ID` are not set on `send-sms-hook` | PB-008 |
+| Push delivery | `FCM_SERVICE_ACCOUNT` is not set on `send-push` | PB-021 |
+| The website | Vercel returns 402 `DEPLOYMENT_DISABLED` | PB-029 |
+| Staying awake | A free project pauses when idle; this is the second restore | PB-036 |
+
 ## Everything below is click-only — no terminal needed
 
 ### 1. Create the Supabase project (browser)
