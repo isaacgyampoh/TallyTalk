@@ -99,6 +99,50 @@ begin
 end
 $$;
 
+-- ---------------------------------------------------------------------------
+-- pg_net, which 0005 uses to call the send-push function. The real extension
+-- queues an HTTP request on a background worker; this records the call instead,
+-- so a test can assert exactly who would have been notified and with what.
+-- Nothing here sends anything anywhere.
+-- ---------------------------------------------------------------------------
+create schema if not exists net;
+
+create table if not exists net.captured (
+  id      bigserial primary key,
+  url     text not null,
+  headers jsonb,
+  body    jsonb,
+  at      timestamptz not null default now()
+);
+
+create or replace function net.http_post(
+  url text,
+  body jsonb default '{}'::jsonb,
+  params jsonb default '{}'::jsonb,
+  headers jsonb default '{"Content-Type": "application/json"}'::jsonb,
+  timeout_milliseconds integer default 5000
+) returns bigint language plpgsql as $$
+declare
+  request_id bigint;
+begin
+  insert into net.captured (url, headers, body)
+  values (url, headers, body)
+  returning id into request_id;
+  return request_id;
+end
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Supabase Vault, where 0005 keeps the function URL and the shared secret.
+-- The real one encrypts at rest; this only has to answer the same query.
+-- ---------------------------------------------------------------------------
+create schema if not exists vault;
+create table if not exists vault.decrypted_secrets (
+  id               uuid primary key default gen_random_uuid(),
+  name             text unique,
+  decrypted_secret text
+);
+
 -- Realtime publishes through this; the migrations add tables to it.
 do $$
 begin

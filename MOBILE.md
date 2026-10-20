@@ -5,7 +5,7 @@ separate mobile code to maintain. Capacitor packages the built web app (`dist/`)
 into a native shell and exposes native APIs (haptics, status bar, splash, push
 notifications).
 
-- App id: `com.tallytalk.app`
+- App id: `com.tasktally.app` (Android `applicationId` and iOS bundle id)
 - Native projects: `android/` and `ios/` (committed — they are your real
   Xcode / Android Studio projects)
 - Config: `capacitor.config.ts`
@@ -91,35 +91,57 @@ npx cap sync
 
 ## Push notifications
 
-The plumbing is in place; what's left is the provider credentials (only you can
-add those).
+Everything but the provider credentials is built and tested. Only you can add
+those.
 
 **Already built**
-- App-side registration (`src/lib/push.ts`) — on a real (non-demo) login inside
-  the native app it asks permission, registers with APNs/FCM, and stores the
-  device token in Supabase.
-- `push_tokens` table + RLS — migration `supabase/migrations/0002_push_tokens.sql`.
-- `send-push` Edge Function (`supabase/functions/send-push/index.ts`) — looks up
-  a user's device tokens and sends via FCM HTTP v1. Call it after a Poke or when
-  a task goes overdue.
+
+- Registration (`src/lib/push.ts`) — on sign-in inside the native app it asks
+  permission, registers with APNs/FCM, stores the device token in Supabase, and
+  removes it again on sign-out. Taps route through `routeForNotification`, with
+  a cold start replaying the pending route once the router exists.
+- Channels, one per category (assignments, updates, comments, nudges), created
+  on Android so the system settings screen can control sound and vibration.
+- `push_tokens` + RLS — `0002_push_tokens.sql`.
+- `send-push` Edge Function — looks up a user's devices, honours a muted
+  category, sends via FCM HTTP v1, and forgets tokens FCM reports as dead so
+  they stop costing a request.
+- **The caller** — `0005_notifications_have_a_caller.sql`. Triggers notify the
+  assignee of a new task, the recipient of a poke, and the other side of a
+  comment or a status change; `notify_overdue_tasks()` sweeps tasks whose due
+  date has passed. All of it goes through pg_net, so a slow function cannot
+  delay or roll back the write that caused it. Covered by 31 assertions in
+  `supabase/tests/12_push.test.sql`, which capture the exact request the
+  database would make.
 
 **Remaining setup (your accounts)**
-1. Run migration `0002_push_tokens.sql` in Supabase.
-2. **Firebase** — create a project, add the Android app (`com.tallytalk.app`),
-   download `google-services.json` into `android/app/`, and add the Google
-   Services Gradle plugin. For iOS, upload an **APNs key** to Firebase and add
-   the iOS app + `GoogleService-Info.plist`.
-3. Deploy the function and set its secrets:
+
+1. **Firebase** — create a project, add the Android app (`com.tasktally.app`),
+   put `google-services.json` in `android/app/` (or the
+   `GOOGLE_SERVICES_JSON` CI secret, base64-encoded). For iOS, upload an APNs
+   key to Firebase and add the iOS app plus `GoogleService-Info.plist`.
+2. Deploy the function and set its secrets:
    ```bash
    supabase functions deploy send-push --no-verify-jwt
    supabase secrets set SEND_PUSH_SECRET='<random>' \
      FCM_SERVICE_ACCOUNT='<service-account JSON>'
    ```
-4. From your backend/app, call `send-push` with `{ userId, title, body, data }`
-   when something notify-worthy happens.
+3. Tell the database where to find it, using the same secret:
+   ```sql
+   select vault.create_secret('https://<project>.supabase.co', 'project_url');
+   select vault.create_secret('<SEND_PUSH_SECRET>', 'send_push_secret');
+   ```
+   Until both secrets exist every trigger is a no-op: nothing is sent, nothing
+   fails, and no write is blocked.
+4. Schedule the overdue sweep (needs pg_cron enabled on the project):
+   ```sql
+   select cron.schedule('overdue-sweep', '0 7 * * *',
+                        $$select public.notify_overdue_tasks()$$);
+   ```
 
-Note: the Edge Function hasn't been run against a live FCM project here — test it
-on a real device once your credentials are in.
+**Not yet verified:** no notification has reached a real handset, because that
+needs the FCM credentials above. The database half is tested; the delivery half
+is PB-021.
 
 ## Signing a release build
 

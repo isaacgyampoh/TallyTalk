@@ -73,8 +73,16 @@ Deno.serve(async (req) => {
         sendToToken(account.project_id, accessToken, t, title, body ?? '', data, category),
       ),
     )
-    const sent = results.filter(Boolean).length
-    return json({ sent, total: tokens.length }, 200)
+    const sent = results.filter((r) => r.ok).length
+
+    // A device that has been wiped, or had the app removed, keeps its row
+    // forever otherwise — and every later send pays for it. FCM tells us which
+    // tokens are dead; drop exactly those, and never a token that failed for
+    // some other reason.
+    const dead = results.filter((r) => r.stale).map((r) => r.token)
+    if (dead.length > 0) await forgetTokens(userId, dead)
+
+    return json({ sent, total: tokens.length, forgotten: dead.length }, 200)
   } catch (err) {
     console.error('send-push error', err)
     return json({ error: 'Failed to send' }, 500)
@@ -103,6 +111,13 @@ async function categoryWanted(userId: string, category: string): Promise<boolean
   return !prefs || prefs[category] !== false
 }
 
+interface SendResult {
+  token: string
+  ok: boolean
+  /** The token is gone for good — the app was uninstalled, or the device wiped. */
+  stale: boolean
+}
+
 async function sendToToken(
   projectId: string,
   accessToken: string,
@@ -111,7 +126,7 @@ async function sendToToken(
   body: string,
   data?: Record<string, string>,
   category?: string,
-): Promise<boolean> {
+): Promise<SendResult> {
   // The data payload carries ids only — never content. It is what the app reads
   // to open the right screen, and notification payloads are not a safe place
   // for anything protected.
@@ -131,8 +146,40 @@ async function sendToToken(
       },
     }),
   })
-  if (!res.ok) console.error('FCM send failed', res.status, await res.text())
-  return res.ok
+  if (res.ok) return { token, ok: true, stale: false }
+
+  const detail = await res.text()
+  console.error('FCM send failed', res.status, detail)
+  return { token, ok: false, stale: isGone(res.status, detail) }
+}
+
+/**
+ * Is this failure the token's fault, permanently?
+ *
+ * Only UNREGISTERED (404) and an explicitly invalid registration token count.
+ * A 400 for a malformed message, a 401 for a bad service account or a 503 from
+ * FCM are our problems, and deleting a live token over one would silence a user
+ * until they reinstalled the app.
+ */
+function isGone(status: number, detail: string): boolean {
+  if (status === 404) return true
+  if (status !== 400) return false
+  return /UNREGISTERED|not a valid FCM registration token|registration-token-not-registered/i.test(
+    detail,
+  )
+}
+
+async function forgetTokens(userId: string, tokens: string[]): Promise<void> {
+  const list = tokens.map((t) => `"${t.replace(/"/g, '\\"')}"`).join(',')
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/push_tokens?user_id=eq.${encodeURIComponent(userId)}` +
+      `&token=in.(${encodeURIComponent(list)})`,
+    {
+      method: 'DELETE',
+      headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` },
+    },
+  )
+  if (!res.ok) console.error('Could not forget stale tokens', res.status, await res.text())
 }
 
 // --- Google service-account OAuth (RS256 JWT -> access token) ---
