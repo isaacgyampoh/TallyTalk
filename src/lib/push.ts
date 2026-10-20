@@ -1,13 +1,21 @@
-import { isNative, platform } from './platform'
+import { isNative } from './platform'
 import { supabase } from './supabase'
-import { CHANNELS, routeForNotification, type NotificationData } from './notifications'
 import { routeForUrl } from './deeplinks'
+import { disablePush, pushState, registerWorker, syncSubscription } from './webpush'
 
 /**
- * Device push: registration, channels, and what happens when one arrives.
+ * Notifications arriving at this device, and where a tap sends you.
  *
- * Everything here is native-only and no-ops on the web build, so screens can
- * call it unconditionally.
+ * Delivery is standards-based Web Push: the browser's own push service, a
+ * VAPID signature, and a service worker that does nothing but receive. No
+ * Firebase, and no third-party push account.
+ *
+ * The Capacitor build is an Android WebView, which implements neither service
+ * workers nor the Push API, so the native app receives nothing in the
+ * background. That is a real limitation, not an oversight — docs/NOTIFICATIONS.md
+ * sets out why and what the alternatives cost. What the native app has instead
+ * is the inbox: every notification is a durable row, so nothing is lost; it is
+ * read when the app is opened rather than announced while it is closed.
  */
 
 let registered = false
@@ -45,12 +53,24 @@ export function pendingNotificationRoute(): string | null {
   return pendingRoute
 }
 
+/** A tap reaching an already-open window arrives as a message from the worker. */
+function onWorkerMessage(event: MessageEvent) {
+  const data = event.data as { type?: string; route?: string } | undefined
+  if (data?.type === 'notification-route' && data.route) go(data.route)
+}
+
 export type PushSetupResult = 'registered' | 'denied' | 'unsupported' | 'no-session'
 
-export async function registerPush(
-  onForeground?: (title: string, body: string, data: NotificationData) => void,
-): Promise<PushSetupResult> {
-  if (!isNative) return 'unsupported'
+/**
+ * Called once there is a session.
+ *
+ * It does not ask for permission: that belongs to a button the person pressed,
+ * in Settings, and iOS will refuse a request that is not tied to a gesture.
+ * This only makes sure the worker is running, that the server still knows
+ * about a subscription the browser may have rotated, and that a tap can find
+ * its way into the router.
+ */
+export async function registerPush(): Promise<PushSetupResult> {
   if (!supabase) return 'no-session'
   const {
     data: { user },
@@ -58,94 +78,35 @@ export async function registerPush(
   if (!user) return 'no-session'
   if (registered) return 'registered'
 
+  const state = await pushState()
+  // The WebView case, and a build with no VAPID key. Neither is an error.
+  if (state === 'unsupported' || state === 'unconfigured') return 'unsupported'
+
   try {
-    const { PushNotifications } = await import('@capacitor/push-notifications')
-
-    // Channels must exist before the first notification, or Android drops it.
-    if (platform === 'android') {
-      for (const c of CHANNELS) {
-        await PushNotifications.createChannel({
-          id: c.id,
-          name: c.name,
-          description: c.description,
-          importance: c.importance,
-          visibility: 1,
-          vibration: c.vibration,
-        }).catch(() => {
-          /* a channel the user already customised cannot be rewritten */
-        })
-      }
-    }
-
-    let perm = await PushNotifications.checkPermissions()
-    if (perm.receive === 'prompt' || perm.receive === 'prompt-with-rationale') {
-      perm = await PushNotifications.requestPermissions()
-    }
-    if (perm.receive !== 'granted') return 'denied'
-
+    await registerWorker()
+    await syncSubscription()
+    navigator.serviceWorker.addEventListener('message', onWorkerMessage)
     registered = true
-    await PushNotifications.register()
-
-    await PushNotifications.addListener('registration', (token) => {
-      // Fires again whenever FCM rotates the token.
-      void saveToken(token.value)
-    })
-
-    await PushNotifications.addListener('registrationError', (err) => {
-      registered = false
-      console.error('Push registration error', err)
-    })
-
-    // Arrived while the app is open: the OS does not draw it, so we must.
-    await PushNotifications.addListener('pushNotificationReceived', (n) => {
-      onForeground?.(n.title ?? 'TaskTally', n.body ?? '', (n.data ?? {}) as NotificationData)
-    })
-
-    // The user tapped one.
-    await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-      const data = (action.notification.data ?? {}) as NotificationData
-      go(routeForNotification(data))
-    })
-
-    return 'registered'
+    return state === 'denied' ? 'denied' : 'registered'
   } catch (err) {
     console.error('Push setup failed', err)
     return 'unsupported'
   }
 }
 
-async function saveToken(token: string) {
-  if (!supabase) return
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return
-  await supabase
-    .from('push_tokens')
-    .upsert(
-      { user_id: user.id, token, platform, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,token' },
-    )
-}
-
 /**
  * Detach this device on sign-out.
  *
- * Without it the token stays attached to the account, and whoever uses the
- * device next receives the previous user's notifications. Runs before the
- * session is torn down, because the delete needs it.
+ * Without it the subscription stays attached to the account, and whoever uses
+ * the browser next receives the previous person's notifications. Runs before
+ * the session is torn down, because the delete needs it.
  */
 export async function unregisterPush(): Promise<void> {
-  if (!isNative || !supabase) return
   try {
-    const { PushNotifications } = await import('@capacitor/push-notifications')
-    await PushNotifications.removeAllListeners()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('push_tokens').delete().eq('user_id', user.id).eq('platform', platform)
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.removeEventListener('message', onWorkerMessage)
     }
+    await disablePush()
   } catch {
     /* signing out must succeed even if cleanup does not */
   } finally {

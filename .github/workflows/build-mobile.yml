@@ -35,17 +35,6 @@ jobs:
           npm run build
           npx cap sync android
 
-      - name: Add Firebase config
-        env:
-          GS: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          if [ -n "$GS" ]; then
-            echo "$GS" | base64 -d > android/app/google-services.json
-            echo "google-services.json written ($(wc -c < android/app/google-services.json) bytes)"
-          else
-            echo "No GOOGLE_SERVICES_JSON secret set — building without Firebase."
-          fi
-
       # package.json is the single source of the version number (see
       # vite.config.ts, which injects the same value into the web app).
       - name: Read app version

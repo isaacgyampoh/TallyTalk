@@ -8,6 +8,12 @@ import { createGroupTask, poke } from './tasks'
 import { getMyProfile, updateMyProfile, uploadAvatar, type ProfilePatch } from './profile'
 import { getLanguage, hasChosenLanguage, setLanguage } from '@/lib/language'
 import { attachmentsKey, listTaskAttachments, uploadTaskAttachment } from './attachments'
+import {
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationsRead,
+  notificationsKey,
+} from './notifications'
 import { useEffect } from 'react'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
 import { addContact, findProfileByPhone, setContactFlags, type ContactFlags } from './contacts'
@@ -289,6 +295,33 @@ export function useResetChecklist(checklistId: string) {
 }
 
 export { needsDailyReset }
+
+/**
+ * The notification inbox. Unlike a push, this is the record — it is what the
+ * app shows after being offline, and it works with no push provider at all.
+ */
+export function useNotifications() {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: [...notificationsKey, live],
+    enabled: live,
+    queryFn: () => listNotifications(),
+    // A notification that arrives while the inbox is open should not wait for
+    // a navigation to show up.
+    refetchInterval: live ? 60_000 : false,
+  })
+}
+
+export function useMarkNotificationsRead() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  const invalidate = () => qc.invalidateQueries({ queryKey: [...notificationsKey, live] })
+
+  return {
+    some: useMutation({ mutationFn: markNotificationsRead, onSettled: invalidate }),
+    all: useMutation({ mutationFn: markAllNotificationsRead, onSettled: invalidate }),
+  }
+}
 
 export function useMyProfile() {
   const live = useIsLive()

@@ -63,6 +63,10 @@ const ChecklistDetailScreen = screen(
 const GroupsScreen = screen('GroupsScreen', () => import('@/screens/GroupsScreen'))
 const GroupDetailScreen = screen('GroupDetailScreen', () => import('@/screens/GroupDetailScreen'))
 const ProfileScreen = screen('ProfileScreen', () => import('@/screens/ProfileScreen'))
+const NotificationsScreen = screen(
+  'NotificationsScreen',
+  () => import('@/screens/NotificationsScreen'),
+)
 
 function Splash() {
   // A screen that is still arriving looks identical to one that cannot arrive.
@@ -99,8 +103,9 @@ function Gate() {
 
   useEffect(() => {
     if (!session) return
-    // Foreground arrivals are not drawn by the OS, so surface them in-app.
-    void registerPush((title, body) => toast(body ? `${title} — ${body}` : title, 'info'))
+    // Makes sure the push worker is running and the server still has this
+    // browser's subscription. Permission is asked for in Settings, never here.
+    void registerPush()
     setNotificationRouter((path) => nav(path))
 
     // Links can arrive signed out too, but routing one before there is a
@@ -191,6 +196,7 @@ function Gate() {
         <Route path="/contacts/:id" element={<ContactSpaceScreen />} />
         <Route path="/contacts/:id/t/:taskId" element={<TaskCommentsScreen />} />
         <Route path="/legal/:doc" element={<LegalScreen />} />
+        <Route path="/notifications" element={<NotificationsScreen />} />
         <Route path="/personal/:key" element={<ChecklistDetailScreen />} />
         <Route path="/groups/:id" element={<GroupDetailScreen />} />
 

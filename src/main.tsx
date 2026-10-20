@@ -10,12 +10,19 @@ import { installCrashHandlers } from '@/lib/telemetry'
 // could not get out.
 installCrashHandlers()
 
-// This app no longer uses a service worker (web or native). Proactively remove
-// any worker + caches left over from the previous PWA so old installs recover.
+// The only worker this app wants is /sw.js, which receives Web Push and
+// caches nothing. Anything else is left over from the old PWA and is what used
+// to serve stale builds, so it is removed on sight — as are the caches, which
+// our worker never writes to.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker
     .getRegistrations()
-    .then((regs) => regs.forEach((r) => r.unregister()))
+    .then((regs) =>
+      regs.forEach((r) => {
+        const script = r.active?.scriptURL ?? r.installing?.scriptURL ?? r.waiting?.scriptURL ?? ''
+        if (!script.endsWith('/sw.js')) void r.unregister()
+      }),
+    )
     .catch(() => {})
 }
 if ('caches' in window) {

@@ -214,3 +214,10 @@ export const DownloadIcon = (p: P) => (
     <path d="M4.5 19.5h15" />
   </svg>
 )
+
+export const BellIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5" />
+    <path d="M10.3 19a2 2 0 0 0 3.4 0" />
+  </svg>
+)

@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
-import { SearchIcon, PlusIcon } from '@/components/icons'
+import { SearchIcon, PlusIcon, BellIcon } from '@/components/icons'
 import { type Contact } from '@/data/viewTypes'
-import { useContacts } from '@/data/hooks'
+import { useContacts, useNotifications } from '@/data/hooks'
 import { AddContactSheet } from '@/components/AddContactSheet'
 
 const FILTERS = ['All', 'Unread', 'Work', 'Favorites', 'Urgent', 'Overdue', 'Newest'] as const
@@ -46,6 +46,8 @@ export function ContactsScreen() {
   const [picking, setPicking] = useState(false)
 
   const { data: contacts, isPending, isError, refetch } = useContacts()
+  const { data: notifications } = useNotifications()
+  const unread = (notifications ?? []).filter((n) => !n.read_at).length
   const all = useMemo(() => contacts ?? [], [contacts])
   const rows = useMemo(() => applyFilter(all, filter, q), [all, filter, q])
 
@@ -54,13 +56,27 @@ export function ContactsScreen() {
       <ScreenHeader
         title="Contacts"
         right={
-          <button
-            className="press grid h-10 w-10 place-items-center rounded-full text-ink-soft"
-            aria-label="Search"
-            onClick={() => setShowSearch((s) => !s)}
-          >
-            <SearchIcon width={22} height={22} />
-          </button>
+          <div className="flex items-center gap-0.5">
+            <button
+              className="press relative grid h-10 w-10 place-items-center rounded-full text-ink-soft"
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+              onClick={() => nav('/notifications')}
+            >
+              <BellIcon width={21} height={21} />
+              {unread > 0 && (
+                <span className="nums absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-violet px-1 text-[10px] font-bold text-white">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </button>
+            <button
+              className="press grid h-10 w-10 place-items-center rounded-full text-ink-soft"
+              aria-label="Search"
+              onClick={() => setShowSearch((s) => !s)}
+            >
+              <SearchIcon width={22} height={22} />
+            </button>
+          </div>
         }
       />
 

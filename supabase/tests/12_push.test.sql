@@ -1,39 +1,37 @@
 -- ============================================================================
--- Who gets notified, and who does not (0005).
+-- Notifications after Firebase (0007): what is recorded, and what is sent.
 --
--- net.http_post is captured rather than sent (see 00_shim.sql), so each
--- assertion below is about the exact request the database would have made to
--- the send-push function. Delivery itself needs FCM credentials and a handset;
--- that is PB-021 and cannot be faked here.
+-- The two are deliberately separate. A notification is a row in the inbox
+-- whether or not anything is delivered; delivery is a Web Push request, which
+-- can be muted, unsubscribed or unconfigured. net.http_post is captured rather
+-- than sent (00_shim.sql), so each delivery assertion is about the exact
+-- request the database would make.
 -- ============================================================================
 \set QUIET on
 \pset pager off
 set client_min_messages = notice;
 
--- The configuration the triggers look for. Without it every trigger is a
--- no-op, which is itself asserted at the end.
 insert into vault.decrypted_secrets (name, decrypted_secret)
 values ('project_url', 'https://project.supabase.test'),
        ('send_push_secret', 'test-secret');
 
-select test.signup('+233260000001', 'Afia')  as afia \gset afia_
-select test.signup('+233260000002', 'Mensah') as men \gset men_
-select test.signup('+233260000003', 'Nana')  as nana \gset nana_
-\set afia  :afia_afia
+select test.signup('+233260000001', 'Afia')   as afia \gset afia_
+select test.signup('+233260000002', 'Mensah') as men  \gset men_
+select test.signup('+233260000003', 'Nana')   as nana \gset nana_
+\set afia   :afia_afia
 \set mensah :men_men
-\set nana  :nana_nana
+\set nana   :nana_nana
 
 insert into public.contacts (owner_id, contact_id) values (:'afia', :'mensah');
 insert into public.contacts (owner_id, contact_id) values (:'mensah', :'afia');
 
--- Every recipient needs a registered device, or there is nothing to send to.
-insert into public.push_tokens (user_id, token, platform) values
-  (:'afia', 'device-afia', 'android'),
-  (:'mensah', 'device-mensah', 'android'),
-  (:'nana', 'device-nana', 'ios');
+-- A browser subscription, which is what Web Push delivers to.
+insert into public.push_subscriptions (user_id, endpoint, p256dh, auth) values
+  (:'mensah', 'https://push.example.test/sub/mensah', 'p256dh-mensah', 'auth-mensah'),
+  (:'nana',   'https://push.example.test/sub/nana',   'p256dh-nana',   'auth-nana');
 
 -- ===========================================================================
--- A new task notifies its assignee — and nobody else.
+-- A new task: recorded for the assignee, and delivered.
 -- ===========================================================================
 begin;
 set local role authenticated;
@@ -42,42 +40,49 @@ insert into public.tasks (id, title, requester_id, assignee_id)
 values ('11111111-1111-1111-1111-111111111111', 'Send the Ecobank document', :'afia', :'mensah');
 commit;
 
-select test.sees('select 1 from net.captured', 1,
-  'a new task sends exactly one notification');
+select test.sees(format('select 1 from public.notifications where user_id = %L', :'mensah'), 1,
+  'a new task is recorded in the assignee''s inbox');
+select test.sees(format('select 1 from public.notifications where user_id = %L', :'afia'), 0,
+  'and not in the requester''s');
 select test.ok(
-  (select body ->> 'userId' from net.captured order by id desc limit 1) = :'mensah',
-  'it goes to the assignee, not the requester');
+  (select title from public.notifications order by created_at desc limit 1) = 'Afia sent you a task',
+  'the record names who asked');
 select test.ok(
-  (select body ->> 'title' from net.captured order by id desc limit 1) = 'Afia sent you a task',
-  'the title names who asked');
+  (select body from public.notifications order by created_at desc limit 1) = 'Send the Ecobank document',
+  'and what was asked for');
 select test.ok(
-  (select body ->> 'body' from net.captured order by id desc limit 1) = 'Send the Ecobank document',
-  'the body is the task itself');
+  (select category from public.notifications order by created_at desc limit 1) = 'assignments',
+  'under the assignments category');
 select test.ok(
-  (select body -> 'data' ->> 'contactId' from net.captured order by id desc limit 1) = :'afia',
-  'contactId is the other party, so the tap opens the right task space');
-select test.ok(
-  (select body -> 'data' ->> 'taskId' from net.captured order by id desc limit 1)
+  (select task_id from public.notifications order by created_at desc limit 1)
     = '11111111-1111-1111-1111-111111111111',
-  'and taskId opens the task itself');
+  'carrying the task to open');
 select test.ok(
-  (select body ->> 'category' from net.captured order by id desc limit 1) = 'assignments',
-  'it is sent on the assignments channel');
+  (select read_at from public.notifications order by created_at desc limit 1) is null,
+  'and starts unread');
+
+select test.sees('select 1 from net.captured', 1, 'one delivery is attempted');
 select test.ok(
   (select url from net.captured order by id desc limit 1)
-    = 'https://project.supabase.test/functions/v1/send-push',
-  'it is addressed to the send-push function');
+    = 'https://project.supabase.test/functions/v1/send-notification',
+  'addressed to the Web Push function, not to anything of Google''s');
 select test.ok(
-  (select headers ->> 'Authorization' from net.captured order by id desc limit 1)
-    = 'Bearer test-secret',
-  'and carries the shared secret, which is what the function checks');
+  (select headers ->> 'Authorization' from net.captured order by id desc limit 1) = 'Bearer test-secret',
+  'carrying the shared secret the function checks');
+select test.ok(
+  (select body ->> 'notificationId' from net.captured order by id desc limit 1)
+    = (select id::text from public.notifications order by created_at desc limit 1),
+  'and naming only the notification id — the function reads the row itself');
+select test.ok(
+  (select count(*) from jsonb_object_keys((select body from net.captured order by id desc limit 1)) k) = 1,
+  'nothing else travels in the request body');
 
 -- ===========================================================================
--- Muting works, and so does having no device.
+-- Muting silences the interruption, not the record.
 -- ===========================================================================
 truncate net.captured;
-update public.profiles set notification_prefs = '{"assignments": false}'::jsonb
-where id = :'mensah';
+delete from public.notifications;
+update public.profiles set notification_prefs = '{"assignments": false}'::jsonb where id = :'mensah';
 
 begin;
 set local role authenticated;
@@ -85,76 +90,72 @@ select set_config('request.jwt.claims', json_build_object('sub', :'afia')::text,
 insert into public.tasks (title, requester_id, assignee_id)
 values ('A muted task', :'afia', :'mensah');
 commit;
-select test.sees('select 1 from net.captured', 0,
-  'someone who muted assignments gets nothing');
 
-update public.profiles set notification_prefs = '{"pokes": false}'::jsonb where id = :'mensah';
-begin;
-set local role authenticated;
-select set_config('request.jwt.claims', json_build_object('sub', :'afia')::text, true);
-insert into public.tasks (title, requester_id, assignee_id)
-values ('An unmuted task', :'afia', :'mensah');
-commit;
-select test.sees('select 1 from net.captured', 1,
-  'muting one category leaves the others alone');
-
-truncate net.captured;
+select test.sees('select 1 from net.captured', 0, 'a muted category is not delivered');
+select test.sees(format('select 1 from public.notifications where user_id = %L', :'mensah'), 1,
+  'but it is still recorded, so it can be found later');
 update public.profiles set notification_prefs = '{}'::jsonb where id = :'mensah';
-delete from public.push_tokens where user_id = :'mensah';
+
+-- ===========================================================================
+-- No subscription is not an error, and still leaves a record.
+-- ===========================================================================
+truncate net.captured;
+delete from public.notifications;
+delete from public.push_subscriptions where user_id = :'mensah';
+
 begin;
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'afia')::text, true);
 insert into public.tasks (title, requester_id, assignee_id)
-values ('No device', :'afia', :'mensah');
+values ('Nothing subscribed', :'afia', :'mensah');
 commit;
-select test.sees('select 1 from net.captured', 0,
-  'nothing is sent to someone with no registered device');
-insert into public.push_tokens (user_id, token, platform) values (:'mensah', 'device-mensah', 'android');
+
+select test.sees('select 1 from net.captured', 0, 'nothing is sent to someone with no subscription');
+select test.sees(format('select 1 from public.notifications where user_id = %L', :'mensah'), 1,
+  'and the inbox still has it — the app works with no push at all');
+insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
+values (:'mensah', 'https://push.example.test/sub/mensah', 'p256dh-mensah', 'auth-mensah');
 
 -- ===========================================================================
--- A poke, which is the whole point of the wand.
+-- The same event twice interrupts once.
 -- ===========================================================================
 truncate net.captured;
-begin;
-set local role authenticated;
-select set_config('request.jwt.claims', json_build_object('sub', :'afia')::text, true);
-insert into public.pokes (from_user, to_user, task_id)
-values (:'afia', :'mensah', '11111111-1111-1111-1111-111111111111');
-commit;
+delete from public.notifications;
 select test.ok(
-  (select body ->> 'title' from net.captured order by id desc limit 1) = 'Afia poked you',
-  'a poke notifies the person being poked');
+  public.notify(:'mensah', 'updates', 'Something happened', 'once', '{}'::jsonb, 'dedupe-me') is not null,
+  'the first notification is recorded');
 select test.ok(
-  (select body ->> 'category' from net.captured order by id desc limit 1) = 'pokes',
-  'on the pokes channel');
-select test.ok(
-  (select body ->> 'body' from net.captured order by id desc limit 1) = 'Send the Ecobank document',
-  'naming the task it is about');
+  public.notify(:'mensah', 'updates', 'Something happened', 'once', '{}'::jsonb, 'dedupe-me') is null,
+  'the second with the same key is not');
+select test.sees(format('select 1 from public.notifications where user_id = %L', :'mensah'), 1,
+  'one record, not two');
+select test.sees('select 1 from net.captured', 1, 'and one delivery, not two');
 
 -- ===========================================================================
--- Comments and status changes reach the other side, not the person acting.
+-- Comments and status changes reach the other side.
 -- ===========================================================================
 truncate net.captured;
+delete from public.notifications;
+insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
+values (:'afia', 'https://push.example.test/sub/afia', 'p256dh-afia', 'auth-afia');
+
 begin;
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'mensah')::text, true);
 insert into public.task_events (task_id, actor_id, event_type, metadata)
-values ('11111111-1111-1111-1111-111111111111', :'mensah', 'comment',
-        '{"body": "On it this afternoon"}'::jsonb);
+values ('11111111-1111-1111-1111-111111111111', :'mensah', 'comment', '{"body": "On it"}'::jsonb);
 commit;
-select test.sees('select 1 from net.captured', 1,
-  'a comment notifies the other participant');
+
+select test.sees(format('select 1 from public.notifications where user_id = %L and category = ''comments''', :'afia'),
+  1, 'a comment is recorded for the other participant');
 select test.ok(
-  (select body ->> 'userId' from net.captured order by id desc limit 1) = :'afia',
-  'the person who commented is not told about their own comment');
-select test.ok(
-  (select body ->> 'category' from net.captured order by id desc limit 1) = 'comments',
-  'on the comments channel');
-select test.ok(
-  (select body ->> 'body' from net.captured order by id desc limit 1) = 'Send the Ecobank document',
-  'the comment text is never put in the payload — only the task it belongs to');
+  (select body from public.notifications order by created_at desc limit 1) = 'Send the Ecobank document',
+  'and the comment''s text never leaves the task it belongs to');
+select test.sees(format('select 1 from public.notifications where user_id = %L', :'mensah'), 0,
+  'the person who commented hears nothing about their own comment');
 
 truncate net.captured;
+delete from public.notifications;
 begin;
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'mensah')::text, true);
@@ -162,26 +163,14 @@ insert into public.task_events (task_id, actor_id, event_type)
 values ('11111111-1111-1111-1111-111111111111', :'mensah', 'completed');
 commit;
 select test.ok(
-  (select body ->> 'title' from net.captured order by id desc limit 1) = 'Mensah completed a task',
-  'completing a task tells the person who asked for it');
-select test.ok(
-  (select body ->> 'category' from net.captured order by id desc limit 1) = 'updates',
-  'on the updates channel');
-
-truncate net.captured;
-begin;
-set local role authenticated;
-select set_config('request.jwt.claims', json_build_object('sub', :'afia')::text, true);
-insert into public.task_events (task_id, actor_id, event_type)
-values ('11111111-1111-1111-1111-111111111111', :'afia', 'created');
-commit;
-select test.sees('select 1 from net.captured', 0,
-  'a "created" event sends nothing — the task insert already did');
+  (select title from public.notifications order by created_at desc limit 1) = 'Mensah completed a task',
+  'completing a task is recorded for the person who asked');
 
 -- ===========================================================================
 -- Group tasks reach every other member.
 -- ===========================================================================
 truncate net.captured;
+delete from public.notifications;
 insert into public.groups (id, name, created_by)
 values ('22222222-2222-2222-2222-222222222222', 'Wedding Committee', :'afia');
 insert into public.group_members (group_id, user_id, role) values
@@ -195,49 +184,78 @@ insert into public.tasks (id, title, requester_id, group_id)
 values ('33333333-3333-3333-3333-333333333333', 'Book the canopies', :'afia',
         '22222222-2222-2222-2222-222222222222');
 commit;
-select test.sees('select 1 from net.captured', 2,
-  'a group task notifies the other two members');
-select test.sees(format('select 1 from net.captured where body ->> ''userId'' = %L', :'afia'), 0,
-  'and not the member who created it');
-select test.ok(
-  (select body -> 'data' ->> 'groupId' from net.captured limit 1)
-    = '22222222-2222-2222-2222-222222222222',
-  'the payload carries the group, so the tap opens the group');
+select test.sees('select 1 from public.notifications', 2, 'a group task is recorded for the other two members');
+select test.sees(format('select 1 from public.notifications where user_id = %L', :'afia'), 0,
+  'and not for the member who created it');
 
 -- ===========================================================================
--- Overdue tasks, which no row arrives to announce.
+-- Overdue: once per task, however often the sweep runs.
 -- ===========================================================================
 truncate net.captured;
+delete from public.notifications;
 update public.tasks set due_date = now() - interval '2 days', status = 'active'
 where id = '11111111-1111-1111-1111-111111111111';
 
-select test.ok(public.notify_overdue_tasks() = 1, 'the overdue sweep notifies one task');
-select test.ok(
-  (select body ->> 'title' from net.captured order by id desc limit 1)
-    = 'Overdue: Afia is still waiting',
-  'it tells the assignee who is waiting');
-select test.ok(public.notify_overdue_tasks() = 0,
-  'and does not notify the same task again the next morning');
+select test.ok(public.notify_overdue_tasks() = 1, 'the sweep finds one overdue task');
+select test.sees('select 1 from public.notifications', 1, 'and records it once');
+select test.ok(public.notify_overdue_tasks() = 0, 'a second run finds nothing');
 
-truncate net.captured;
-update public.tasks set status = 'completed', overdue_notified_at = null
-where id = '11111111-1111-1111-1111-111111111111';
-select test.ok(public.notify_overdue_tasks() = 0,
-  'a completed task is never overdue');
+-- Even with the stamp cleared, the dedupe key stops a repeat.
+update public.tasks set overdue_notified_at = null where id = '11111111-1111-1111-1111-111111111111';
+select test.ok(public.notify_overdue_tasks() = 1, 'the sweep runs again after the stamp is lost');
+select test.sees('select 1 from public.notifications', 1,
+  'but the same task is still only announced once (dedupe_key)');
 
 -- ===========================================================================
--- With no configuration, every trigger is a no-op rather than an error.
+-- The inbox belongs to its owner, and is a record rather than a notepad.
 -- ===========================================================================
-truncate net.captured;
-delete from vault.decrypted_secrets;
+begin;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', :'mensah')::text, true);
+select test.sees('select 1 from public.notifications', 1, 'I see my own notifications');
+select test.allows(
+  'update public.notifications set read_at = now() where read_at is null',
+  'and can mark them read');
+select test.refuses(
+  'update public.notifications set title = ''Rewritten''',
+  'but cannot rewrite what one says');
+select test.refuses(
+  format('insert into public.notifications (user_id, category, title) values (%L, ''pokes'', ''Fake'')', :'mensah'),
+  'nor invent one for myself');
+select test.refuses(
+  format('insert into public.notifications (user_id, category, title) values (%L, ''pokes'', ''Fake'')', :'afia'),
+  'nor for anybody else');
+rollback;
 
 begin;
 set local role authenticated;
-select set_config('request.jwt.claims', json_build_object('sub', :'afia')::text, true);
+select set_config('request.jwt.claims', json_build_object('sub', :'nana')::text, true);
+select test.sees('select 1 from public.notifications', 0, 'an unrelated user sees none of mine');
+rollback;
+
+-- ===========================================================================
+-- Subscriptions are private, and cannot be pointed at someone else's events.
+-- ===========================================================================
+begin;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', :'nana')::text, true);
+select test.sees('select 1 from public.push_subscriptions', 1, 'I see only my own subscription');
+select test.refuses(
+  format('insert into public.push_subscriptions (user_id, endpoint, p256dh, auth) values (%L, ''https://push.example.test/steal'', ''k'', ''a'')', :'afia'),
+  'I cannot subscribe a browser to someone else''s notifications');
 select test.allows(
-  format('insert into public.tasks (title, requester_id, assignee_id) values (%L, %L, %L)',
-         'Unconfigured', :'afia', :'mensah'),
-  'a task can still be created on a database with no push secrets');
-commit;
-select test.sees('select 1 from net.captured', 0,
-  'and nothing is sent');
+  'delete from public.push_subscriptions',
+  'and I can revoke my own');
+rollback;
+
+-- ===========================================================================
+-- With nothing configured, the record is still kept.
+-- ===========================================================================
+truncate net.captured;
+delete from public.notifications;
+delete from vault.decrypted_secrets;
+
+select test.ok(
+  public.notify(:'mensah', 'pokes', 'Unconfigured', 'still recorded') is not null,
+  'a notification is recorded on a database with no push secrets');
+select test.sees('select 1 from net.captured', 0, 'and nothing is sent');

@@ -10,7 +10,8 @@
       "showSpinner": false,
       "androidScaleType": "CENTER_CROP"
     },
-    "Keyboard": { "resize": "native" },
-    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+    "Keyboard": {
+      "resize": "native"
+    }
   }
 }
