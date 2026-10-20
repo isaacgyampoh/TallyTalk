@@ -107,11 +107,24 @@ hardening triggers in `0003` own the writes a client must not make (seating a
 group's first admin, accepting an invitation), the client queries Postgres
 directly with the anon key — there is no bespoke API tier.
 
-> Verification status: the data layer is covered by unit tests against a mock
-> client, which pin the queries and the mapping but not the database's own
-> behaviour. The migrations have been applied to an empty project and the
-> triggers checked by hand; no part of the app has yet been exercised against a
-> database holding real user data.
+### Verifying it
+
+Two layers, deliberately separate:
+
+- `src/data/*.test.ts` run against a mock Supabase client. They pin the query
+  that gets built and the mapping that comes back — not what the database does
+  with it.
+- `supabase/tests/` applies the real migrations to a throwaway PostgreSQL and
+  exercises the policies and triggers as the roles the app connects as
+  (`npm run test:db`). Every security decision in this app lives there, so that
+  is where it is checked. This found `0004`: two policies read `contacts` with
+  an inline sub-select, which RLS hid from the caller, so blocking did nothing
+  and being added by someone did not let you see their name. The mocks had
+  agreed with the code all along.
+
+Not covered by either: PostgREST, GoTrue, Storage, Realtime and the Edge
+Functions as deployed. A green run says the schema is right, not that the
+hosted project is configured right.
 
 ## Theming
 

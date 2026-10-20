@@ -18,6 +18,20 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm test
+
+      # The migrations, applied to a real PostgreSQL, with the policies and
+      # triggers exercised as the roles the app connects as. The runner builds
+      # its own throwaway cluster; the image's server binaries are not on PATH
+      # by default, so point at them.
+      - name: Database tests
+        run: |
+          if ! ls -d /usr/lib/postgresql/*/bin >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y postgresql
+          fi
+          PGBIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          export PATH="$PGBIN:$PATH"
+          npm run test:db
+
       - run: npm run build
 
       # End-to-end runs against the production build the step above produced.
