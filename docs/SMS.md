@@ -1,6 +1,7 @@
 # Phone sign-in with Arkesel
 
-_Status: prepared and deployed, waiting on credentials. Last checked 20 October 2026._
+_Status: API key configured and verified, hook wired. Waiting on an approved
+sender ID. Last checked 20 October 2026._
 
 Supabase Auth (GoTrue) generates and verifies the one-time code itself. The
 only thing we provide is delivery: Supabase signs a webhook to
@@ -42,28 +43,61 @@ authentication system to secure.
 stays at 30 per hour — low enough to bound the bill during a first launch, and
 worth raising deliberately once real traffic justifies it.
 
+## What is configured
+
+| | |
+| --- | --- |
+| `ARKESEL_API_KEY` | Set, and **verified against Arkesel** with a read-only balance call: HTTP 200, account "Emmanuel Dzotsi", Ghana |
+| `SEND_SMS_HOOK_SECRET` | Generated and set on both sides |
+| Auth hook | `hook_send_sms_enabled = true`, pointed at `send-sms-hook` |
+| `ARKESEL_SENDER_ID` | **Not set** — see below |
+| Phone provider | **Off**, deliberately, until the sender ID exists |
+
+Both gates were then checked against the deployed function, without sending
+anything: with no sender ID it answers "SMS is not configured" before touching
+Arkesel, and with one set an unsigned request is refused by the webhook
+signature check. A placeholder sender ID was removed afterwards so the hook
+stays fail-closed.
+
+No secret is in a `VITE_` variable, the client bundle, git or a log — a `VITE_`
+variable is compiled into the JavaScript every visitor downloads.
+
 ## What is still needed from you
 
-Two values, from the Arkesel dashboard:
+1. **An approved sender ID**, 11 characters or fewer. There is no API that
+   lists them — I tried four plausible endpoints and Arkesel has none — so it
+   has to come from the dashboard. An unapproved one is the usual reason
+   Arkesel answers 200 and sends nothing.
 
-1. **`ARKESEL_API_KEY`** — the account's API key.
-2. **`ARKESEL_SENDER_ID`** — an approved sender ID, **11 characters or fewer**.
-   An unapproved one is the usual reason Arkesel answers 200 and sends nothing.
+   ```bash
+   supabase secrets set ARKESEL_SENDER_ID='…'
+   ```
 
-Both are server-side only:
+   Then **Authentication → Providers → Phone**, enabled — or ask, and I will
+   flip it.
 
-```bash
-supabase secrets set ARKESEL_API_KEY='…' ARKESEL_SENDER_ID='…'
+2. **A phone number you are holding**, for the delivery test. Everything up to
+   the send is verified; the last hop cannot be.
+
+## One thing to check on the account
+
+The balance call answers:
+
+```json
+{"data":{"sms_balance":0,"main_balance":"GHS 1107.364"},"status":"success"}
 ```
 
-They must never appear in a `VITE_` variable, the client bundle, git, browser
-storage or a log — a `VITE_` variable is compiled into the JavaScript every
-visitor downloads.
+The wallet has money in it, but the SMS balance reads **0** — and Arkesel's v1
+endpoint agrees (`"balance":0`). Their public documentation does not explain
+how the two relate, and third-party clients suggest the account can hold
+separate balances for SMS and for OTP sends.
 
-Then, in the dashboard: **Authentication → Hooks → Send SMS**, enabled and
-pointed at the `send-sms-hook` function. Copy the secret that screen generates
-into `SEND_SMS_HOOK_SECRET`. Finally, **Authentication → Providers → Phone**,
-enabled.
+I have not guessed which applies here, because the only way to find out is a
+real send. If the first attempt comes back refused for insufficient balance,
+the fix is in the dashboard — buy SMS units with the money already there — and
+not in this code. The hook already treats that case correctly: Arkesel answers
+HTTP 200 with the refusal in the body, and the hook returns 502 so a failed
+delivery is never reported as a sent code.
 
 Until phone sign-in is switched on, the app answers "We can't send codes by
 text right now. This is on our side, not yours" — deliberately, because a
