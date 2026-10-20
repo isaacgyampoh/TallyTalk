@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { looksDiallable, toE164 } from '@/lib/phone'
 import { Avatar } from './Avatar'
 import { CloseIcon, PlusIcon, SearchIcon } from './icons'
 import { useAddContact } from '@/data/hooks'
@@ -29,8 +30,9 @@ export function AddContactSheet({
   const [stage, setStage] = useState<Stage>({ step: 'entry' })
   const { find, add } = useAddContact()
 
-  const phone = `${dial}${digits.replace(/\D/g, '')}`
-  const canSearch = digits.replace(/\D/g, '').length >= 6
+  // The same rule sign-in uses, so a number that can sign in can be found.
+  const phone = toE164(dial, digits)
+  const canSearch = looksDiallable(digits)
 
   function search() {
     if (!canSearch) return

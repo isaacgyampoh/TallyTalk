@@ -5,6 +5,7 @@ import { COUNTRIES } from '@/lib/config'
 import { BackIcon, PhoneIcon } from '@/components/icons'
 import { isAppMode } from '@/lib/platform'
 import { OfflineBar } from '@/components/OfflineBar'
+import { looksDiallable, toE164 } from '@/lib/phone'
 import { useT } from '@/i18n/useT'
 import { Tx } from '@/i18n/Tx'
 
@@ -22,11 +23,11 @@ export function AuthFlow() {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const phone = `${country.dial}${local.replace(/\D/g, '').replace(/^0+/, '')}`
+  const phone = toE164(country.dial, local)
 
   function onNext() {
     setError(null)
-    if (local.replace(/\D/g, '').length < 6) {
+    if (!looksDiallable(local)) {
       setError(t('auth.phone.invalid'))
       return
     }

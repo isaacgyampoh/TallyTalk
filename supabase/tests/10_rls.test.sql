@@ -22,8 +22,8 @@ select test.ok(
   (select count(*) from public.profiles where id in (:'ama', :'kwame', :'yaw')) = 3,
   'signing up creates a profile row (on_auth_user_created)');
 select test.ok(
-  (select phone from public.profiles where id = :'ama') = '+233240000001',
-  'the profile carries the phone number from the sign-in');
+  (select phone from public.profiles where id = :'ama') = '233240000001',
+  'the profile carries the phone number from the sign-in, as GoTrue stores it');
 
 -- Ama knows Kwame; Yaw knows nobody.
 insert into public.contacts (owner_id, contact_id) values (:'ama', :'kwame');
@@ -223,8 +223,15 @@ rollback;
 begin;
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'ama')::text, true);
+-- The app sends what the person typed plus a dial code: "+233…". GoTrue
+-- stores "233…". Both have to find the same human being, or adding a contact
+-- by number silently finds nobody — which is what happened on the live site.
 select test.sees('select * from public.find_profile_by_phone(''+233240000003'')', 1,
-  'I can find someone by their number');
+  'I can find someone using the +233 form the app sends');
+select test.sees('select * from public.find_profile_by_phone(''233240000003'')', 1,
+  'and using the stored form, without the plus');
+select test.sees('select * from public.find_profile_by_phone(''+233 24 000 0003'')', 1,
+  'spaces in a typed number do not hide them either');
 select test.sees('select * from public.find_profile_by_phone(''+233240000001'')', 0,
   'the lookup never returns me to myself');
 select test.sees('select * from public.find_profile_by_phone(''+233249999999'')', 0,

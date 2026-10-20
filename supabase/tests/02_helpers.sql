@@ -96,6 +96,12 @@ $$;
 /**
  * Sign up a user the way GoTrue does, returning the id. The profile row
  * arrives via on_auth_user_created, which is itself worth asserting.
+ *
+ * Note the stripped "+". GoTrue stores E.164 digits with no leading plus, and
+ * this helper used to keep it — which hid a real bug: the app searches for a
+ * contact with "+233…" while the stored value is "233…", so no lookup ever
+ * matched. Fidelity here is the whole point of testing against a real
+ * database, so the helper now stores exactly what the real thing stores.
  */
 create or replace function test.signup(phone text, display_name text) returns uuid
 language plpgsql as $$
@@ -103,7 +109,7 @@ declare
   uid uuid := gen_random_uuid();
 begin
   insert into auth.users (id, phone, raw_user_meta_data)
-  values (uid, phone, jsonb_build_object('display_name', display_name));
+  values (uid, ltrim(phone, '+'), jsonb_build_object('display_name', display_name));
   return uid;
 end
 $$;
