@@ -89,61 +89,44 @@ npx cap sync
   app, so it runs true full-screen (even on tablets).
 - **Install prompts** — the web "Install app" UI is hidden inside the native app.
 
-## Push notifications
+## Notifications
 
-Everything but the provider credentials is built and tested. Only you can add
-those.
+There is no Firebase in this project. Delivery is standards-based Web Push
+(VAPID), and every notification is also a durable row in the database, which
+is what the in-app inbox reads. [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md)
+has the full decision, including what was ruled out.
 
-**Already built**
+**What that means for the Android app, plainly:** a Capacitor app is an Android
+WebView, and a WebView implements neither service workers nor the Push API. So
+the APK receives nothing while it is closed. It is not broken — it opens to an
+inbox containing everything that happened — but it will not buzz in someone's
+pocket.
 
-- Registration (`src/lib/push.ts`) — on sign-in inside the native app it asks
-  permission, registers with APNs/FCM, stores the device token in Supabase, and
-  removes it again on sign-out. Taps route through `routeForNotification`, with
-  a cold start replaying the pending route once the router exists.
-- Channels, one per category (assignments, updates, comments, nudges), created
-  on Android so the system settings screen can control sound and vibration.
-- `push_tokens` + RLS — `0002_push_tokens.sql`.
-- `send-push` Edge Function — looks up a user's devices, honours a muted
-  category, sends via FCM HTTP v1, and forgets tokens FCM reports as dead so
-  they stop costing a request.
-- **The caller** — `0005_notifications_have_a_caller.sql`. Triggers notify the
-  assignee of a new task, the recipient of a poke, and the other side of a
-  comment or a status change; `notify_overdue_tasks()` sweeps tasks whose due
-  date has passed. All of it goes through pg_net, so a slow function cannot
-  delay or roll back the write that caused it. Covered by 31 assertions in
-  `supabase/tests/12_push.test.sql`, which capture the exact request the
-  database would make.
+If background alerts on Android matter more than avoiding Google, there are two
+honest routes:
 
-**Remaining setup (your accounts)**
+1. **Distribute the Android experience as an installable PWA.** Chrome delivers
+   Web Push with no Firebase project of ours, and nothing in this codebase
+   changes.
+2. **Accept FCM for the native build only**, keeping the inbox and Web Push for
+   the web. Migration 0007 and `public.notify()` stay as they are; only the last
+   step of the chain changes.
 
-1. **Firebase** — create a project, add the Android app (`com.tasktally.app`),
-   put `google-services.json` in `android/app/` (or the
-   `GOOGLE_SERVICES_JSON` CI secret, base64-encoded). For iOS, upload an APNs
-   key to Firebase and add the iOS app plus `GoogleService-Info.plist`.
-2. Deploy the function and set its secrets:
-   ```bash
-   supabase functions deploy send-push --no-verify-jwt
-   supabase secrets set SEND_PUSH_SECRET='<random>' \
-     FCM_SERVICE_ACCOUNT='<service-account JSON>'
-   ```
-3. Tell the database where to find it, using the same secret:
-   ```sql
-   select vault.create_secret('https://<project>.supabase.co', 'project_url');
-   select vault.create_secret('<SEND_PUSH_SECRET>', 'send_push_secret');
-   ```
-   Until both secrets exist every trigger is a no-op: nothing is sent, nothing
-   fails, and no write is blocked.
-4. The overdue sweep is already scheduled on the project — pg_cron job
-   `overdue-sweep`, `0 7 * * *` (07:00 UTC, which is 07:00 in Accra). Check it
-   with `select * from cron.job;`.
+**Already built and verified**
 
-**Verified on the live project (20 October 2026):** a task created by a real
-signed-in user fired the trigger, pg_net reached the deployed `send-push`
-function, the function accepted the shared secret and found the registered
-device, and stopped at `{"error":"FCM_SERVICE_ACCOUNT not configured"}`. So the
-whole chain works and exactly one credential is missing — step 2 above, the
-service-account JSON. `SEND_PUSH_SECRET` is already set on the function and
-mirrored into the database vault, so step 3 is done.
+- `notifications` — the durable record, written by database triggers, read by
+  the inbox screen. Works with no push provider at all.
+- `push_subscriptions` + `send-notification` — Web Push with VAPID, private key
+  in Supabase function secrets, public key shipped in the client.
+- `public/sw.js` — receives push and caches nothing. It also clears the caches
+  left by the old PWA worker, which is what the previous self-destructing
+  worker was for.
+- Permission is asked for from a button in Settings, never automatically — iOS
+  refuses a request that is not tied to a gesture.
+- Signing out deletes the subscription server-side and unsubscribes the browser.
+
+**Nothing further is needed from you for notifications.** No Firebase project,
+no service account, no push credential.
 
 ## Signing a release build
 

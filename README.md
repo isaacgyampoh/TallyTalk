@@ -63,6 +63,11 @@ real signed-in clients rather than mocks:
 - Crash reporting: write-only from a signed-out client, unreadable by anyone,
   oversized reports refused, and 30-day retention enforced by the next insert —
   all checked against the live table.
+- The notification inbox: a task lands in the right person's inbox and nobody
+  else's, a stranger cannot mark it read, and a poke makes exactly one delivery
+  attempt. See [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md) for why there is
+  no Firebase, and [docs/MIGRATION.md](docs/MIGRATION.md) for what leaving
+  Supabase would take.
 
 What is still off, and needs an account only you hold:
 
@@ -72,7 +77,7 @@ What is still off, and needs an account only you hold:
 | SMS delivery | `ARKESEL_API_KEY` and `ARKESEL_SENDER_ID` are not set on `send-sms-hook` | PB-008 |
 | Push delivery | `FCM_SERVICE_ACCOUNT` is not set on `send-push` | PB-021 |
 | The website | Vercel returns 402 `DEPLOYMENT_DISABLED` | PB-029 |
-| Staying awake | A free project pauses when idle; this is the second restore | PB-036 |
+| Staying awake | A free project pauses when idle; this is the second restore. [docs/AVAILABILITY.md](docs/AVAILABILITY.md) has the limits, what a pause looks like from the app, and how to recover one | PB-036 |
 
 ## Everything below is click-only — no terminal needed
 

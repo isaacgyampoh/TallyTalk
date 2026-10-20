@@ -48,3 +48,39 @@ test.describe('without a session', () => {
     }
   })
 })
+
+test.describe('when the backend is unreachable', () => {
+  // The project runs on Supabase's free plan, which pauses after a week of
+  // inactivity, and phones lose signal. Neither may break the app.
+  test.beforeEach(async ({ context }) => {
+    await context.route('**/*.supabase.co/**', (route) => route.abort('connectionfailed'))
+  })
+
+  test('the marketing page is unaffected', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByText('Keep everyone')).toBeVisible()
+  })
+
+  test('sign-in still loads, rather than a blank screen or a crash', async ({ page }) => {
+    await page.goto('/signin')
+    await expect(page.locator('input[inputmode="tel"]').first()).toBeVisible()
+    await expect(page.getByText('Something went wrong')).toHaveCount(0)
+  })
+
+  test('asking for a code explains the problem instead of failing silently', async ({ page }) => {
+    await page.goto('/signin')
+    await page.locator('input[inputmode="tel"]').first().fill('241234567')
+    await page.getByRole('button', { name: /send code/i }).click()
+    await page.getByRole('button', { name: 'Yes, send code' }).click()
+    await expect(page.getByText(/can't reach the server|No connection/i)).toBeVisible()
+    // And the number is still there to try again with.
+    await expect(page.locator('input[inputmode="tel"]').first()).toHaveValue('241234567')
+  })
+
+  test('the legal pages still open, since a store reviewer may arrive mid-outage', async ({
+    page,
+  }) => {
+    await page.goto('/legal/privacy')
+    await expect(page.getByText('Last updated')).toBeVisible()
+  })
+})

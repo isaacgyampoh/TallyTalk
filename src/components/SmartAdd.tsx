@@ -14,6 +14,7 @@ export function SmartAdd() {
   const toast = useToast()
   const [text, setText] = useState('')
   const [parsed, setParsed] = useState<Parsed | null>(null)
+  const [sending, setSending] = useState(false)
 
   function analyse() {
     if (!text.trim()) return
@@ -23,25 +24,35 @@ export function SmartAdd() {
   const { data: contacts } = useContacts()
   const pickable = contacts ?? []
 
-  function create(contactId: string, contactName: string) {
-    if (!parsed) return
-    createTask({
-      title: parsed.title,
-      assigneeId: contactId,
-      priority: parsed.priority,
-      expected: parsed.expected,
-    })
-      .then(() => {
-        buzz(12)
-        toast(`Sent to ${contactName.split(' ')[0]}`, 'success')
-        nav(`/contacts/${contactId}`)
+  /**
+   * Nothing is claimed, cleared or navigated until the write has actually
+   * landed. This used to toast "Task created", wipe what the person had typed
+   * and leave the screen immediately, then toast a failure afterwards — with
+   * their sentence already gone. On a slow connection that is exactly when it
+   * mattered.
+   */
+  async function create(contactId: string, contactName: string) {
+    if (!parsed || sending) return
+    const firstName = contactName.split(' ')[0]
+    setSending(true)
+    try {
+      await createTask({
+        title: parsed.title,
+        assigneeId: contactId,
+        priority: parsed.priority,
+        expected: parsed.expected,
       })
-      .catch(() => toast('Could not send that', 'error'))
-    buzz([10, 30, 10])
-    toast(`Task created for ${contactName.split(' ')[0]}`, 'success')
-    setParsed(null)
-    setText('')
-    nav(`/contacts/${contactId}`)
+      buzz([10, 30, 10])
+      toast(`Sent to ${firstName}`, 'success')
+      setParsed(null)
+      setText('')
+      nav(`/contacts/${contactId}`)
+    } catch {
+      // The sheet stays open with the text intact, so it can be sent again.
+      toast('Could not send that — try again', 'error')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -114,10 +125,11 @@ export function SmartAdd() {
 
             {parsed.contactId ? (
               <button
-                onClick={() => create(parsed.contactId!, parsed.contactName!)}
-                className="btn-primary mt-5 w-full"
+                onClick={() => void create(parsed.contactId!, parsed.contactName!)}
+                disabled={sending}
+                className="btn-primary mt-5 w-full disabled:opacity-60"
               >
-                Send to {parsed.contactName!.split(' ')[0]}
+                {sending ? 'Sending…' : `Send to ${parsed.contactName!.split(' ')[0]}`}
               </button>
             ) : (
               <>
@@ -126,8 +138,9 @@ export function SmartAdd() {
                   {pickable.slice(0, 6).map((c) => (
                     <button
                       key={c.id}
-                      onClick={() => create(c.id, c.name)}
-                      className="press flex items-center gap-2 rounded-full border border-line py-1.5 pl-1.5 pr-3.5 text-[13px] font-semibold hover:bg-wash"
+                      onClick={() => void create(c.id, c.name)}
+                      disabled={sending}
+                      className="press flex items-center gap-2 rounded-full border border-line py-1.5 pl-1.5 pr-3.5 text-[13px] font-semibold hover:bg-wash disabled:opacity-50"
                     >
                       <Avatar initials={c.initials} color={c.color} size={26} />
                       {c.name.split(' ')[0]}

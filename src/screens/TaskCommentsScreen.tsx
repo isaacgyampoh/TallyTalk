@@ -158,7 +158,9 @@ export function TaskCommentsScreen() {
 
   function send() {
     const body = draft.trim()
-    if (!body) return
+    // A second tap while the first is in flight would post the comment twice,
+    // and each would be a separate event with its own notification.
+    if (!body || addComment.isPending) return
     buzz(12)
     addComment.mutate(body, {
       onSuccess: () => {
@@ -445,7 +447,7 @@ export function TaskCommentsScreen() {
             </div>
             <button
               onClick={send}
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || addComment.isPending}
               className="press grid h-12 w-12 shrink-0 place-items-center rounded-full bg-ink text-paper disabled:opacity-40"
               aria-label="Send comment"
             >
