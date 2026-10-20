@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { WandIcon, CheckIcon } from '@/components/icons'
 import { APP_NAME } from '@/lib/config'
+import { useT } from '@/i18n/useT'
 
 /**
  * The app's landing screen (native build / installed PWA). Image-forward: a
@@ -9,6 +10,7 @@ import { APP_NAME } from '@/lib/config'
  */
 export function Welcome() {
   const nav = useNavigate()
+  const { t } = useT()
 
   return (
     <div className="app-frame relative overflow-hidden">
@@ -28,9 +30,9 @@ export function Welcome() {
             <div className="flex items-start gap-2.5">
               <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border border-ink-faint" />
               <div>
-                <p className="text-[13.5px] leading-snug text-ink">Send me the report</p>
+                <p className="text-[13.5px] leading-snug text-ink">{t('intro.art.sample')}</p>
                 <span className="mt-1.5 inline-block rounded-full bg-urgent/15 px-2 py-0.5 text-[10.5px] font-semibold text-urgent-ink">
-                  Urgent
+                  {t('intro.art.urgent')}
                 </span>
               </div>
             </div>
@@ -41,7 +43,9 @@ export function Welcome() {
             <div className="flex">
               <div className="flex-[3] bg-violet px-3 py-2.5 text-white">
                 <p className="nums font-display text-[19px] font-extrabold leading-none">23</p>
-                <p className="mt-0.5 text-[9.5px] font-semibold text-white/80">they owe you</p>
+                <p className="mt-0.5 text-[9.5px] font-semibold text-white/80">
+                  {t('intro.art.theyOwe')}
+                </p>
               </div>
               <div className="flex-1 bg-carbon px-2 py-2.5 text-white">
                 <p className="nums font-display text-[19px] font-extrabold leading-none">8</p>
@@ -55,14 +59,14 @@ export function Welcome() {
               <span className="text-violet-glow">
                 <WandIcon width={14} height={14} />
               </span>
-              You poked Ben
+              {t('intro.art.poked')}
             </span>
           </div>
 
           {/* done chip */}
           <div className="absolute right-[8%] top-[52%] rotate-[5deg] rounded-full bg-violet px-3 py-1.5 shadow-float">
             <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white">
-              <CheckIcon width={13} height={13} /> Done
+              <CheckIcon width={13} height={13} /> {t('intro.art.done')}
             </span>
           </div>
 
@@ -81,18 +85,17 @@ export function Welcome() {
             {APP_NAME}
           </h1>
           <p className="mt-3 max-w-[19rem] text-[16.5px] font-medium leading-snug text-ink-soft">
-            Keep everyone to their word — a two-sided tally of what they owe you and what you owe
-            them.
+            {t('welcome.pitch')}
           </p>
         </div>
 
         {/* actions */}
         <div className="relative mt-6 space-y-3">
           <p className="text-center text-[12.5px] leading-relaxed text-ink-soft">
-            Tap &ldquo;Agree and continue&rdquo; to accept the Terms of Service and Privacy Policy.
+            {t('welcome.consent')}
           </p>
           <button onClick={() => nav('/signin')} className="btn-primary h-14 w-full text-[16px]">
-            Agree and continue
+            {t('welcome.cta')}
           </button>
         </div>
       </div>

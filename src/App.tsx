@@ -24,6 +24,8 @@ import { APP_NAME } from '@/lib/config'
 import { WandIcon } from '@/components/icons'
 import { retryImport } from '@/lib/retryImport'
 import { useOnline } from '@/hooks/useOnline'
+import { I18nProvider } from '@/i18n/I18nProvider'
+import { useT } from '@/i18n/useT'
 
 // Screens load on demand. The marketing landing page and the onboarding slides
 // are the big win: a signed-in user never downloads them, and a visitor to the
@@ -66,6 +68,7 @@ function Splash() {
   // A screen that is still arriving looks identical to one that cannot arrive.
   // If the device has no connection, say so rather than holding the logo.
   const online = useOnline()
+  const { t } = useT()
   return (
     <div className="app-frame items-center justify-center">
       <div className="flex flex-col items-center gap-3 text-violet-ink">
@@ -75,7 +78,7 @@ function Splash() {
         <span className="font-display text-lg font-bold text-ink">{APP_NAME}</span>
         {!online && (
           <span role="status" className="text-[13px] font-semibold text-ink-soft">
-            No connection — waiting for it to come back
+            {t('offline.waiting')}
           </span>
         )}
       </div>
@@ -217,23 +220,25 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <QueryClientProvider client={queryClient}>
-            <ToastProvider>
-              <Suspense
-                fallback={
-                  <AppViewport>
-                    <Splash />
-                  </AppViewport>
-                }
-              >
-                <Gate />
-              </Suspense>
-            </ToastProvider>
-          </QueryClientProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      <I18nProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <QueryClientProvider client={queryClient}>
+              <ToastProvider>
+                <Suspense
+                  fallback={
+                    <AppViewport>
+                      <Splash />
+                    </AppViewport>
+                  }
+                >
+                  <Gate />
+                </Suspense>
+              </ToastProvider>
+            </QueryClientProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </I18nProvider>
     </ThemeProvider>
   )
 }

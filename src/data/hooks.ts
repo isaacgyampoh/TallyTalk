@@ -6,7 +6,7 @@ import type { ChecklistItemRow } from './types'
 import { addTaskComment, eventsKey, listTaskEvents, recordTaskEvent } from './events'
 import { createGroupTask, poke } from './tasks'
 import { getMyProfile, updateMyProfile, uploadAvatar, type ProfilePatch } from './profile'
-import { getLanguage } from '@/lib/language'
+import { getLanguage, hasChosenLanguage, setLanguage } from '@/lib/language'
 import { attachmentsKey, listTaskAttachments, uploadTaskAttachment } from './attachments'
 import { useEffect } from 'react'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
@@ -297,12 +297,23 @@ export function useMyProfile() {
     enabled: live,
     queryFn: async () => {
       const profile = await getMyProfile()
-      // The language was chosen before an account existed, so it lives in
-      // localStorage until there is a row to put it on. Carry it over once.
-      const chosen = getLanguage()
-      if (chosen && profile.preferred_language !== chosen) {
-        await updateMyProfile({ preferred_language: chosen }).catch(() => {})
-        return { ...profile, preferred_language: chosen }
+
+      // The language is chosen before an account exists, so it lives in
+      // localStorage until there is a row to put it on. Which way it travels
+      // depends on whether this device has been asked:
+      //
+      //  * asked, and it differs — the person's latest explicit choice wins;
+      //  * never asked (the web build, or a fresh install) — adopt the
+      //    account's, so the choice follows them rather than being silently
+      //    reset to English by a device that never offered the question.
+      if (hasChosenLanguage()) {
+        const chosen = getLanguage()
+        if (profile.preferred_language !== chosen) {
+          await updateMyProfile({ preferred_language: chosen }).catch(() => {})
+          return { ...profile, preferred_language: chosen }
+        }
+      } else if (profile.preferred_language) {
+        setLanguage(profile.preferred_language)
       }
       return profile
     },

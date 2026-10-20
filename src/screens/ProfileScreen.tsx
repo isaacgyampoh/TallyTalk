@@ -9,6 +9,9 @@ import { NotificationSettings } from '@/components/NotificationSettings'
 import { deleteMyAccount, exportMyData } from '@/data/account'
 import { useRef, useState } from 'react'
 import { useToast } from '@/components/toastContext'
+import { LANGUAGES } from '@/lib/language'
+import { useT } from '@/i18n/useT'
+import { isTranslated } from '@/i18n'
 
 const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
   { value: 'system', label: 'System' },
@@ -19,6 +22,7 @@ const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
 export function ProfileScreen() {
   const { session, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
+  const { t, lang, setLang } = useT()
   const toast = useToast()
   const { data: profile, isError, refetch } = useMyProfile()
   const { save, changePhoto } = useUpdateProfile()
@@ -190,6 +194,40 @@ export function ProfileScreen() {
                 </button>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="mb-5">
+          <h2 className="eyebrow mb-2">{t('settings.language')}</h2>
+          <div className="overflow-hidden rounded-card border border-line">
+            <label className="flex items-center justify-between gap-3 px-4 py-3">
+              <span className="text-[15px] text-ink">{t('settings.language')}</span>
+              <select
+                value={lang}
+                onChange={(e) => {
+                  setLang(e.target.value)
+                  // Keep the account in step, so the choice follows the person
+                  // to their next device.
+                  save.mutate(
+                    { preferred_language: e.target.value },
+                    { onError: () => toast('Could not save that setting', 'error') },
+                  )
+                }}
+                className="field h-10 w-[160px] appearance-none pr-6 text-[14px] font-semibold"
+                aria-label={t('settings.language')}
+              >
+                {LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {!isTranslated(lang) && (
+              <p className="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-soft">
+                {t('settings.language.note')}
+              </p>
+            )}
           </div>
         </section>
 

@@ -5,9 +5,11 @@
  * exist until after sign-up, so the choice is held locally first and written to
  * the profile on the first signed-in load.
  *
- * IMPORTANT: choosing a language records the preference. It does not translate
- * the interface — there is no i18n layer in this project yet, and pretending
- * otherwise would be worse than the gap. See the card for translation.
+ * Changing it dispatches `tt:language`, which is how the interface follows a
+ * change made anywhere — the picker on first run, the setting in Profile, or
+ * the preference adopted from the account on a new device.
+ *
+ * What exists in each language is a separate question: see src/i18n.
  */
 
 export interface Language {
@@ -31,6 +33,9 @@ export const LANGUAGES: Language[] = [
 
 const KEY = 'tt.language'
 
+/** Dispatched on the window whenever the chosen language changes. */
+export const LANGUAGE_EVENT = 'tt:language'
+
 export function getLanguage(): string {
   try {
     const stored = localStorage.getItem(KEY)
@@ -46,6 +51,9 @@ export function setLanguage(code: string): void {
     localStorage.setItem(KEY, code)
   } catch {
     /* private mode — the choice just will not survive a restart */
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(LANGUAGE_EVENT, { detail: code }))
   }
 }
 

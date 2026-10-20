@@ -1,4 +1,5 @@
 import { useOnline } from '@/hooks/useOnline'
+import { useT } from '@/i18n/useT'
 
 /**
  * One connection notice for the whole app, rather than an offline branch on
@@ -7,6 +8,7 @@ import { useOnline } from '@/hooks/useOnline'
  */
 export function OfflineBar() {
   const online = useOnline()
+  const { t } = useT()
   if (online) return null
   return (
     <div
@@ -14,7 +16,7 @@ export function OfflineBar() {
       className="flex items-center justify-center gap-2 bg-overdue px-4 py-1.5 text-[12.5px] font-semibold text-white"
     >
       <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-white" />
-      No connection — showing what was last loaded
+      {t('offline.notice')}
     </div>
   )
 }

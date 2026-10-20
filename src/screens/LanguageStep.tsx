@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { APP_NAME } from '@/lib/config'
-import { LANGUAGES, getLanguage, setLanguage } from '@/lib/language'
+import { LANGUAGES, getLanguage } from '@/lib/language'
 import { ChevronRightIcon } from '@/components/icons'
+import { useT } from '@/i18n/useT'
+import { isTranslated } from '@/i18n'
 
 /**
  * First run, first screen: pick a language.
@@ -11,10 +13,11 @@ import { ChevronRightIcon } from '@/components/icons'
  * mistake and cannot read the list.
  */
 export function LanguageStep({ onDone }: { onDone: () => void }) {
+  const { t, setLang } = useT()
   const [choice, setChoice] = useState(getLanguage)
 
   function confirm() {
-    setLanguage(choice)
+    setLang(choice)
     onDone()
   }
 
@@ -22,17 +25,15 @@ export function LanguageStep({ onDone }: { onDone: () => void }) {
     <div className="app-frame">
       <div className="px-6 pb-4" style={{ paddingTop: 'calc(var(--safe-top) + 40px)' }}>
         <h1 className="text-center font-display text-[26px] font-bold tracking-tight text-ink">
-          Welcome to {APP_NAME}
+          {t('lang.title', { app: APP_NAME })}
         </h1>
-        <p className="mt-1.5 text-center text-[14.5px] text-ink-soft">
-          Choose your language to get started
-        </p>
+        <p className="mt-1.5 text-center text-[14.5px] text-ink-soft">{t('lang.subtitle')}</p>
       </div>
 
       <ul
         className="min-h-0 flex-1 overflow-y-auto px-3 pb-28"
         role="radiogroup"
-        aria-label="Language"
+        aria-label={t('lang.group')}
       >
         {LANGUAGES.map((l) => {
           const on = choice === l.code
@@ -64,13 +65,22 @@ export function LanguageStep({ onDone }: { onDone: () => void }) {
         })}
       </ul>
 
+      {!isTranslated(choice) && (
+        <p
+          className="absolute inset-x-0 bottom-0 px-6 pb-[calc(var(--safe-bottom)+92px)] text-[12.5px] leading-relaxed text-ink-soft"
+          role="status"
+        >
+          {t('lang.englishOnly')}
+        </p>
+      )}
+
       <div
         className="absolute inset-x-0 bottom-0 flex justify-end px-6"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 20px)' }}
       >
         <button
           onClick={confirm}
-          aria-label="Continue"
+          aria-label={t('lang.continue')}
           className="press grid h-14 w-14 place-items-center rounded-full bg-violet text-white shadow-float"
         >
           <ChevronRightIcon width={24} height={24} />

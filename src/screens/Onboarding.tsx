@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { buzz } from '@/lib/haptics'
 import { WandIcon, CheckIcon } from '@/components/icons'
 import { markOnboarded } from '@/lib/onboarding'
+import { useT } from '@/i18n/useT'
+import type { TranslationKey } from '@/i18n'
 
 export function Onboarding() {
   const nav = useNavigate()
+  const { t } = useT()
   const scroller = useRef<HTMLDivElement>(null)
   const [i, setI] = useState(0)
   const last = i === SLIDES.length - 1
@@ -46,10 +49,10 @@ export function Onboarding() {
             <div className="flex justify-center">{s.art}</div>
             <div className="mt-10">
               <h2 className="font-display text-[29px] font-extrabold leading-tight tracking-tight">
-                {s.title}
+                {t(s.title)}
               </h2>
               <p className="mt-2.5 max-w-[20rem] text-[16px] leading-relaxed text-ink-soft">
-                {s.body}
+                {t(s.body)}
               </p>
             </div>
           </section>
@@ -74,12 +77,12 @@ export function Onboarding() {
         {last ? (
           <>
             <button onClick={getStarted} className="btn-primary h-14 w-full text-[16px]">
-              Get started
+              {t('intro.start')}
             </button>
           </>
         ) : (
           <button onClick={next} className="btn-primary h-14 w-full text-[16px]">
-            Next
+            {t('intro.next')}
           </button>
         )}
       </div>
@@ -90,19 +93,20 @@ export function Onboarding() {
 // ---- slide illustrations, built from the app's own design language ----
 
 function TaskArt() {
+  const { t } = useT()
   return (
     <div className="w-full max-w-[300px]">
       <div className="rounded-bubble bg-paper p-4 shadow-soft">
         <div className="flex items-start gap-2.5">
           <span className="mt-0.5 grid h-5 w-5 place-items-center rounded-md border border-ink-faint" />
           <div>
-            <p className="text-[15px] leading-snug text-ink">Send me the Ecobank document</p>
+            <p className="text-[15px] leading-snug text-ink">{t('intro.art.sample')}</p>
             <div className="mt-2 flex gap-1.5">
               <span className="rounded-full bg-urgent/15 px-2 py-0.5 text-[11px] font-semibold text-urgent-ink">
-                Urgent
+                {t('intro.art.urgent')}
               </span>
               <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-semibold text-ink-soft">
-                Today
+                {t('intro.art.today')}
               </span>
             </div>
           </div>
@@ -110,7 +114,7 @@ function TaskArt() {
       </div>
       <div className="mt-3 flex justify-end">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-violet px-3.5 py-2 text-[13px] font-semibold text-white shadow-float">
-          <CheckIcon width={15} height={15} /> Marked done
+          <CheckIcon width={15} height={15} /> {t('intro.art.done')}
         </span>
       </div>
     </div>
@@ -118,22 +122,27 @@ function TaskArt() {
 }
 
 function LedgerArt() {
+  const { t } = useT()
   return (
     <div className="w-full max-w-[300px]">
       <div className="flex overflow-hidden rounded-[20px] border border-line shadow-soft">
         <div className="flex-[23] bg-violet px-5 py-6 text-white">
           <p className="nums font-display text-[32px] font-extrabold leading-none">23</p>
-          <p className="mt-1.5 text-[12.5px] font-semibold text-white/80">they owe you</p>
+          <p className="mt-1.5 text-[12.5px] font-semibold text-white/80">
+            {t('intro.art.theyOwe')}
+          </p>
         </div>
         <div className="flex-[8] bg-carbon px-5 py-6 text-white">
           <p className="nums font-display text-[32px] font-extrabold leading-none">8</p>
-          <p className="mt-1.5 text-[12.5px] font-semibold text-white/70">you owe</p>
+          <p className="mt-1.5 text-[12.5px] font-semibold text-white/70">
+            {t('intro.art.youOwe')}
+          </p>
         </div>
       </div>
       <div className="mt-3 space-y-2">
         {[
-          { i: '—', c: '#6600FF', n: 'A contact', t: '3 for them · 2 for you' },
-          { i: '—', c: '#0E7C86', n: 'Another contact', t: '2 for them' },
+          { i: '—', c: '#6600FF', n: t('intro.art.contact'), t: '3 · 2' },
+          { i: '—', c: '#0E7C86', n: t('intro.art.otherContact'), t: '2' },
         ].map((r) => (
           <div
             key={r.i}
@@ -155,19 +164,20 @@ function LedgerArt() {
 }
 
 function PokeArt() {
+  const { t } = useT()
   return (
     <div className="w-full max-w-[300px]">
       <div className="relative rounded-bubble bg-paper p-4 shadow-soft ring-2 ring-violet-glow">
         <span className="absolute -right-2 -top-3 text-violet-glow">
           <WandIcon width={26} height={26} />
         </span>
-        <p className="text-[15px] leading-snug text-ink">Confirm the venue booking</p>
+        <p className="text-[15px] leading-snug text-ink">{t('intro.art.venue')}</p>
         <div className="mt-2 flex items-center gap-2">
           <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-semibold text-ink-soft">
-            This Week
+            {t('intro.art.thisWeek')}
           </span>
           <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-violet-ink">
-            <WandIcon width={13} height={13} /> Poke
+            <WandIcon width={13} height={13} /> {t('intro.art.poke')}
           </span>
         </div>
       </div>
@@ -176,27 +186,15 @@ function PokeArt() {
           <span className="text-violet-glow">
             <WandIcon width={16} height={16} />
           </span>
-          You poked Ben
+          {t('intro.art.poked')}
         </span>
       </div>
     </div>
   )
 }
 
-const SLIDES = [
-  {
-    art: <TaskArt />,
-    title: 'Send tasks, not just messages',
-    body: 'Ask someone to do something and it becomes a real, trackable task — with a priority and a due date.',
-  },
-  {
-    art: <LedgerArt />,
-    title: 'Every contact is a two-sided tally',
-    body: 'One side is what they owe you, the other is what you owe them. Nothing quietly slips through.',
-  },
-  {
-    art: <PokeArt />,
-    title: 'Poke to nudge, gently',
-    body: 'A tap of the wand lifts your task to the top of their screen — a friendly reminder, not a nag.',
-  },
+const SLIDES: { art: React.ReactNode; title: TranslationKey; body: TranslationKey }[] = [
+  { art: <TaskArt />, title: 'intro.tasks.title', body: 'intro.tasks.body' },
+  { art: <LedgerArt />, title: 'intro.tally.title', body: 'intro.tally.body' },
+  { art: <PokeArt />, title: 'intro.poke.title', body: 'intro.poke.body' },
 ]

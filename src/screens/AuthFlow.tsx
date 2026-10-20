@@ -5,12 +5,15 @@ import { COUNTRIES } from '@/lib/config'
 import { BackIcon, PhoneIcon } from '@/components/icons'
 import { isAppMode } from '@/lib/platform'
 import { OfflineBar } from '@/components/OfflineBar'
+import { useT } from '@/i18n/useT'
+import { Tx } from '@/i18n/Tx'
 
 type Step = 'phone' | 'code'
 
 export function AuthFlow() {
   const { sendCode, verifyCode } = useAuth()
   const nav = useNavigate()
+  const { t } = useT()
   const [step, setStep] = useState<Step>('phone')
   const [country, setCountry] = useState(COUNTRIES[0])
   const [local, setLocal] = useState('')
@@ -24,7 +27,7 @@ export function AuthFlow() {
   function onNext() {
     setError(null)
     if (local.replace(/\D/g, '').length < 6) {
-      setError('Enter a valid mobile number.')
+      setError(t('auth.phone.invalid'))
       return
     }
     setConfirming(true)
@@ -43,7 +46,7 @@ export function AuthFlow() {
   async function onVerify() {
     setError(null)
     if (code.replace(/\D/g, '').length < 4) {
-      setError('Enter the code we texted you.')
+      setError(t('auth.code.missing'))
       return
     }
     setBusy(true)
@@ -65,24 +68,22 @@ export function AuthFlow() {
         onClick={(e) => e.stopPropagation()}
       >
         <p id="confirm-number" className="text-[15px] text-ink-soft">
-          You entered the phone number:
+          {t('auth.confirm.title')}
         </p>
         <p className="nums mt-1.5 text-[20px] font-semibold text-ink">{phone}</p>
-        <p className="mt-3 text-[14.5px] text-ink-soft">
-          Is this correct, or would you like to edit the number?
-        </p>
+        <p className="mt-3 text-[14.5px] text-ink-soft">{t('auth.confirm.question')}</p>
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={() => setConfirming(false)}
             className="press rounded-full px-5 py-2.5 text-[15px] font-semibold text-violet-ink"
           >
-            Edit
+            {t('auth.confirm.edit')}
           </button>
           <button
             onClick={onSendCode}
             className="press rounded-full bg-violet px-6 py-2.5 text-[15px] font-semibold text-white"
           >
-            Yes, send code
+            {t('auth.confirm.send')}
           </button>
         </div>
       </div>
@@ -105,17 +106,17 @@ export function AuthFlow() {
                 className="press mb-8 flex w-fit items-center gap-1 text-[14px] font-semibold text-ink-soft"
                 onClick={() => nav('/')}
               >
-                <BackIcon width={18} height={18} /> {!isAppMode && 'Back'}
+                <BackIcon width={18} height={18} /> {!isAppMode && t('auth.back')}
               </button>
               <h1 className="font-display text-[30px] font-bold leading-tight tracking-tight">
-                What&rsquo;s your number?
+                {t('auth.phone.title')}
               </h1>
               <p className="mt-2.5 max-w-[20rem] text-[15px] leading-snug text-ink-soft">
-                We&rsquo;ll text you a 6-digit code to confirm it&rsquo;s you.
+                {t('auth.phone.body')}
               </p>
 
               <div className="mt-8 space-y-3">
-                <label className="eyebrow block">Mobile number</label>
+                <label className="eyebrow block">{t('auth.phone.label')}</label>
                 <div className="flex gap-2">
                   <div className="relative">
                     <select
@@ -124,7 +125,7 @@ export function AuthFlow() {
                         setCountry(COUNTRIES.find((c) => c.code === e.target.value) ?? COUNTRIES[0])
                       }
                       className="field h-12 w-[104px] appearance-none pr-6 font-semibold"
-                      aria-label="Country code"
+                      aria-label={t('auth.phone.country')}
                     >
                       {COUNTRIES.map((c) => (
                         <option key={c.code} value={c.code}>
@@ -139,15 +140,15 @@ export function AuthFlow() {
                     value={local}
                     onChange={(e) => setLocal(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && onNext()}
-                    placeholder="24 000 0000"
+                    placeholder={t('auth.phone.placeholder')}
                     className="field nums flex-1"
-                    aria-label="Phone number"
+                    aria-label={t('auth.phone.aria')}
                   />
                 </div>
                 {error && <p className="text-[13px] font-medium text-overdue">{error}</p>}
                 <button className="btn-primary mt-2 w-full" onClick={onNext} disabled={busy}>
                   <PhoneIcon width={18} height={18} />
-                  {busy ? 'Sending code…' : 'Send code'}
+                  {busy ? t('auth.sending') : t('auth.phone.send')}
                 </button>
               </div>
             </div>
@@ -161,11 +162,16 @@ export function AuthFlow() {
                   setError(null)
                 }}
               >
-                <BackIcon width={18} height={18} /> Change number
+                <BackIcon width={18} height={18} /> {t('auth.code.change')}
               </button>
-              <h1 className="font-display text-[30px] font-bold tracking-tight">Enter the code</h1>
+              <h1 className="font-display text-[30px] font-bold tracking-tight">
+                {t('auth.code.title')}
+              </h1>
               <p className="mt-2 text-[15px] text-ink-soft">
-                We texted a code to <span className="font-semibold text-ink">{phone}</span>.
+                <Tx
+                  k="auth.code.body"
+                  slots={{ phone: <span className="font-semibold text-ink">{phone}</span> }}
+                />
               </p>
 
               <input
@@ -176,12 +182,12 @@ export function AuthFlow() {
                 onKeyDown={(e) => e.key === 'Enter' && onVerify()}
                 placeholder="• • • • • •"
                 className="field nums mt-7 text-center text-[24px] tracking-[0.5em]"
-                aria-label="Verification code"
+                aria-label={t('auth.code.label')}
               />
               {error && <p className="mt-3 text-[13px] font-medium text-overdue">{error}</p>}
 
               <button className="btn-primary mt-5 w-full" onClick={onVerify} disabled={busy}>
-                {busy ? 'Verifying…' : 'Verify'}
+                {busy ? t('auth.verifying') : t('auth.code.verify')}
               </button>
             </div>
           )}
@@ -191,21 +197,27 @@ export function AuthFlow() {
           className="pb-6 pt-4 text-center text-[12px] text-ink-faint"
           style={{ paddingBottom: 'calc(var(--safe-bottom) + 20px)' }}
         >
-          By continuing you agree to the{' '}
-          <button
-            onClick={() => nav('/legal/terms')}
-            className="font-semibold text-violet-ink underline-offset-2 hover:underline"
-          >
-            Terms
-          </button>{' '}
-          and{' '}
-          <button
-            onClick={() => nav('/legal/privacy')}
-            className="font-semibold text-violet-ink underline-offset-2 hover:underline"
-          >
-            Privacy Policy
-          </button>
-          .
+          <Tx
+            k="auth.legal"
+            slots={{
+              terms: (
+                <button
+                  onClick={() => nav('/legal/terms')}
+                  className="font-semibold text-violet-ink underline-offset-2 hover:underline"
+                >
+                  {t('auth.legal.terms')}
+                </button>
+              ),
+              privacy: (
+                <button
+                  onClick={() => nav('/legal/privacy')}
+                  className="font-semibold text-violet-ink underline-offset-2 hover:underline"
+                >
+                  {t('auth.legal.privacy')}
+                </button>
+              ),
+            }}
+          />
         </p>
       </div>
     </div>

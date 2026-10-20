@@ -2,16 +2,19 @@ import { OfflineBar } from './OfflineBar'
 import type { ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ContactsIcon, PersonalIcon, GroupsIcon, ProfileIcon } from './icons'
+import { useT } from '@/i18n/useT'
+import type { TranslationKey } from '@/i18n'
 
-const TABS = [
-  { to: '/personal', label: 'Personal', Icon: PersonalIcon },
-  { to: '/contacts', label: 'Contacts', Icon: ContactsIcon },
-  { to: '/groups', label: 'Groups', Icon: GroupsIcon },
-  { to: '/profile', label: 'Profile', Icon: ProfileIcon },
-] as const
+const TABS: { to: string; label: TranslationKey; Icon: typeof PersonalIcon }[] = [
+  { to: '/personal', label: 'nav.personal', Icon: PersonalIcon },
+  { to: '/contacts', label: 'nav.contacts', Icon: ContactsIcon },
+  { to: '/groups', label: 'nav.groups', Icon: GroupsIcon },
+  { to: '/profile', label: 'nav.profile', Icon: ProfileIcon },
+]
 
 export function Shell({ children }: { children: ReactNode }) {
   const loc = useLocation()
+  const { t } = useT()
   return (
     <div className="app-frame">
       <OfflineBar />
@@ -46,7 +49,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     >
                       <Icon width={22} height={22} />
                     </span>
-                    {label}
+                    {t(label)}
                   </>
                 )}
               </NavLink>

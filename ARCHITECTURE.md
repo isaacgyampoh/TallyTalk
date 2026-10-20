@@ -40,6 +40,11 @@ src/
     notifications.ts  Channels, categories, and where a notification routes to
     deeplinks.ts      Which in-app path an incoming URL may open
     retryImport.ts    Code-split screens that survive a dropped connection
+  i18n/
+    en.ts             The source catalogue: every string, under a key
+    index.ts          translate() with per-key fallback to English
+    I18nProvider.tsx  Holds the current language; re-renders on a change
+    Tx.tsx            A translated sentence with React nodes in its placeholders
   data/
     types.ts          DB row types mirroring the schema
     viewTypes.ts      The shapes screens render
@@ -125,6 +130,25 @@ Two layers, deliberately separate:
 Not covered by either: PostgREST, GoTrue, Storage, Realtime and the Edge
 Functions as deployed. A green run says the schema is right, not that the
 hosted project is configured right.
+
+## Language
+
+Every string on the first-run path — the language step, the intro slides,
+welcome, sign-in, the tab labels, the connection notices — is read from
+`src/i18n/en.ts` by key. A language with no catalogue, or a key missing from
+one, falls back to English, so a partial translation is useful the day it
+arrives. The rest of the screens are still English in JSX.
+
+English is the only catalogue shipped, deliberately: the wording here carries
+obligation ("owes you", "agree and continue", "overdue"), and a plausible
+mistranslation of that changes what someone believes they agreed to. A
+catalogue goes in when a speaker has written it — `src/i18n/README.md` is the
+instruction, and a test enforces that nothing machine-translated appears.
+
+The choice is held in localStorage before an account exists and mirrored to
+`profiles.preferred_language` once there is one. On a device that never asked
+(the web build, a fresh install) the account's language is adopted instead, so
+a preference is not silently reset to English.
 
 ## Theming
 
