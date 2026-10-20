@@ -20,12 +20,21 @@ describe('readableAuthError', () => {
     expect(spy.mock.calls[0].join(' ')).toContain('Unsupported phone provider')
   })
 
+  it('hides a failure from the SMS hook itself', () => {
+    // What GoTrue actually said once Arkesel was wired up and refused a send.
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const shown = readableAuthError(new Error('Unexpected status code returned from hook: 502'))
+    expect(shown).not.toMatch(/hook|502/i)
+    expect(shown).toMatch(/can't send codes by text/i)
+  })
+
   it('covers the other ways the SMS path fails on the server', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     for (const m of [
       'phone_provider_disabled',
       'Signups not allowed for otp',
       'Error sending confirmation sms',
+      'unexpected_failure',
     ]) {
       expect(readableAuthError(new Error(m)), m).toMatch(/can't send codes by text/i)
     }
