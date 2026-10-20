@@ -66,6 +66,16 @@ describe('deleteMyAccount', () => {
     await expect(deleteMyAccount()).rejects.toMatchObject({ message: 'nope' })
   })
 
+  it('reports a refused deletion, the one failure here with legal weight', async () => {
+    client = makeSupabaseMock({ invokeError: { message: 'nope' } })
+    await deleteMyAccount().catch(() => {})
+    const reports = client.calls.client_errors ?? []
+    const inserted = reports.find((c) => c.method === 'insert')?.args[0] as
+      { kind: string; message: string }[] | undefined
+    expect(inserted?.[0]).toMatchObject({ kind: 'edge' })
+    expect(inserted?.[0].message).toContain('delete-account')
+  })
+
   it('refuses when there is no session', async () => {
     client = makeSupabaseMock({ userId: null })
     await expect(deleteMyAccount()).rejects.toThrow(/not signed in/i)

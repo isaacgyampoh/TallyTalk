@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitest/config'
 import path from 'node:path'
 
-// Unit tests only — these cover pure logic (parsing, mapping, time), so no
-// browser environment is needed. Add `environment: 'jsdom'` when component
-// tests arrive.
+// Unit tests: pure logic (parsing, mapping, time) plus the data layer against a
+// mock Supabase client. jsdom, because several modules read browser APIs at
+// import time; src/test-setup.ts fills the gaps jsdom leaves.
 export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
@@ -14,6 +14,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    setupFiles: ['src/test-setup.ts'],
     include: ['src/**/*.test.ts'],
   },
 })

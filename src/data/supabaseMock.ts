@@ -23,7 +23,9 @@ export interface TableResult {
 export interface MockClient {
   auth: {
     getUser: () => Promise<{ data: { user: { id: string } | null } }>
-    getSession: () => Promise<{ data: { session: { access_token: string } | null } }>
+    getSession: () => Promise<{
+      data: { session: { access_token: string; user: { id: string } } | null }
+    }>
   }
   functions: {
     invoke: (name: string, opts?: unknown) => Promise<{ data: unknown; error: unknown }>
@@ -101,7 +103,9 @@ export function makeSupabaseMock(options: {
     auth: {
       getUser: async () => ({ data: { user: userId ? { id: userId } : null } }),
       getSession: async () => ({
-        data: { session: userId ? { access_token: `token-for-${userId}` } : null },
+        data: {
+          session: userId ? { access_token: `token-for-${userId}`, user: { id: userId } } : null,
+        },
       }),
     },
     functions: {

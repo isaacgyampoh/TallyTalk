@@ -17,7 +17,7 @@ export interface LegalDoc {
   sections: { heading: string; body: string[] }[]
 }
 
-const UPDATED = '12 October 2026'
+const UPDATED = '20 October 2026'
 
 export const PRIVACY: LegalDoc = {
   title: 'Privacy Policy',
@@ -35,6 +35,7 @@ export const PRIVACY: LegalDoc = {
         'The groups you belong to, who else is in them, and the tasks shared there.',
         'Your contacts inside TaskTally — the people you have added, and whether you have marked them as work, favourite, archived or blocked.',
         'A device token for each device you install on, so notifications can reach you.',
+        'When the app crashes: the error message, the technical stack, which screen you were on, and which build you are running. Phone numbers, email addresses, sign-in tokens and identifiers are removed from that report before it leaves your device, and it never includes the content of a task, a comment or a checklist.',
       ],
     },
     {
@@ -42,7 +43,7 @@ export const PRIVACY: LegalDoc = {
       body: [
         'We do not read your phone’s address book. Contacts in TaskTally are only the people you deliberately add by number.',
         'We do not track your location.',
-        'We do not use advertising identifiers, and there are no advertising or analytics trackers in the app.',
+        'We do not use advertising identifiers, and there are no advertising or analytics trackers in the app. Crash reports go to our own database, not to a third-party analytics service, and they are not used to build any profile of you.',
         'We do not sell anything to anyone.',
       ],
     },
@@ -72,6 +73,7 @@ export const PRIVACY: LegalDoc = {
         'We keep your information for as long as your account exists.',
         'You can export everything we hold about you from Settings, as a file.',
         'You can delete your account from Settings. That removes your profile, your contacts, your checklists, your device tokens, and the tasks you raised. Tasks you agreed to do for someone else remain in their record, because deleting your account should not quietly rewrite what another person is owed.',
+        'A crash report is kept for up to 30 days and then deleted automatically. Deleting your account unlinks any report from you immediately.',
       ],
     },
     {

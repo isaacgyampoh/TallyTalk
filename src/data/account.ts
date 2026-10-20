@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { reportEdgeFailure } from '@/lib/telemetry'
 
 /**
  * Leaving: taking your data with you, and closing the account.
@@ -65,5 +66,10 @@ export async function deleteMyAccount(): Promise<void> {
   const { error } = await client.functions.invoke('delete-account', {
     headers: { Authorization: `Bearer ${session.access_token}` },
   })
-  if (error) throw error
+  if (error) {
+    // A deletion that fails quietly is the one failure here with legal weight,
+    // so it is reported as well as raised.
+    await reportEdgeFailure('delete-account', error.message)
+    throw error
+  }
 }

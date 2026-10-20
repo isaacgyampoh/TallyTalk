@@ -3,6 +3,12 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { installCrashHandlers } from '@/lib/telemetry'
+
+// Before anything renders: an error thrown outside React, or a rejected promise
+// nobody handled, is otherwise lost. This also sends any report a previous run
+// could not get out.
+installCrashHandlers()
 
 // This app no longer uses a service worker (web or native). Proactively remove
 // any worker + caches left over from the previous PWA so old installs recover.

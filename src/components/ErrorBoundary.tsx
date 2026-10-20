@@ -1,4 +1,5 @@
-import { Component, type ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportCrash } from '@/lib/telemetry'
 
 interface State {
   hasError: boolean
@@ -10,6 +11,18 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
 
   static getDerivedStateFromError(): State {
     return { hasError: true }
+  }
+
+  // Runs after the recovery screen is on-screen, so reporting can never keep
+  // the user looking at a broken one. Nothing here is allowed to throw.
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    void reportCrash({
+      kind: 'render',
+      message: error.message,
+      // The component stack says which screen broke; the JS stack is minified
+      // in a release build and says much less.
+      stack: `${error.stack ?? ''}\n--- components ---${info.componentStack ?? ''}`,
+    })
   }
 
   handleReload = () => {
