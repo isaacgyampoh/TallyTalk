@@ -133,11 +133,9 @@ those.
    ```
    Until both secrets exist every trigger is a no-op: nothing is sent, nothing
    fails, and no write is blocked.
-4. Schedule the overdue sweep (needs pg_cron enabled on the project):
-   ```sql
-   select cron.schedule('overdue-sweep', '0 7 * * *',
-                        $$select public.notify_overdue_tasks()$$);
-   ```
+4. The overdue sweep is already scheduled on the project — pg_cron job
+   `overdue-sweep`, `0 7 * * *` (07:00 UTC, which is 07:00 in Accra). Check it
+   with `select * from cron.job;`.
 
 **Verified on the live project (20 October 2026):** a task created by a real
 signed-in user fired the trigger, pg_net reached the deployed `send-push`

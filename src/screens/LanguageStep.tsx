@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { APP_NAME } from '@/lib/config'
-import { LANGUAGES, getLanguage } from '@/lib/language'
+import { offeredLanguages, getLanguage } from '@/lib/language'
 import { ChevronRightIcon } from '@/components/icons'
 import { useT } from '@/i18n/useT'
 import { isTranslated } from '@/i18n'
@@ -35,7 +35,7 @@ export function LanguageStep({ onDone }: { onDone: () => void }) {
         role="radiogroup"
         aria-label={t('lang.group')}
       >
-        {LANGUAGES.map((l) => {
+        {offeredLanguages().map((l) => {
           const on = choice === l.code
           return (
             <li key={l.code}>

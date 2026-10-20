@@ -2,21 +2,20 @@ import { expect, test } from '@playwright/test'
 import { asInstalledApp } from './helpers'
 
 test.describe('registration', () => {
-  test('a first run asks for a language before anything else', async ({ page }) => {
+  test('a first run goes straight to the intro while only English exists', async ({ page }) => {
+    // The picker is not shown for a question with one answer: asking someone
+    // to choose Twi and then showing them English is worse than not asking.
     await asInstalledApp(page)
     await page.goto('/')
-    await expect(page.getByText('Choose your language')).toBeVisible()
-    await expect(page.getByText('Twi')).toBeVisible()
-    await expect(page.getByText('Gã')).toBeVisible()
+    await expect(page.getByText('Send tasks, not just messages')).toBeVisible()
+    await expect(page.getByText('Choose your language')).toHaveCount(0)
   })
 
-  test('choosing a language records it and moves on', async ({ page }) => {
+  test('no language is offered that the interface cannot actually show', async ({ page }) => {
     await asInstalledApp(page)
     await page.goto('/')
-    await page.getByText('Twi').first().click()
-    await page.getByRole('button', { name: 'Continue' }).click()
-    await expect(page.getByText('Choose your language')).toHaveCount(0)
-    expect(await page.evaluate(() => localStorage.getItem('tt.language'))).toBe('tw')
+    const body = await page.locator('body').innerText()
+    expect(body).not.toMatch(/Twi|Gã|Eʋegbe|Hausa|Pidgin/)
   })
 
   test('the number is confirmed before any code is sent', async ({ page }) => {
@@ -39,6 +38,10 @@ test.describe('registration', () => {
 
   test('the country picker uses codes, not flag emoji', async ({ page }) => {
     await page.goto('/signin')
+    // allTextContents() reads whatever is there and does not retry, so the
+    // screen has to be present first — against a deployed site the lazy chunk
+    // has not always arrived by the time goto() resolves.
+    await expect(page.locator('select')).toBeVisible()
     // Options inside a <select> are never "visible" to Playwright, so assert
     // on their text rather than their visibility.
     const options = await page.locator('select option').allTextContents()

@@ -73,3 +73,30 @@ describe('the catalogues we ship', () => {
     }
   })
 })
+
+describe('which languages are offered', () => {
+  it('offers English only while it is the only catalogue', async () => {
+    const { offeredLanguages } = await import('@/lib/language')
+    expect(offeredLanguages().map((l) => l.code)).toEqual(['en'])
+  })
+
+  it('offers a language as soon as a catalogue covers it', async () => {
+    const { offeredLanguages } = await import('@/lib/language')
+    CATALOGUES.tw = { ...en }
+    try {
+      expect(offeredLanguages().map((l) => l.code)).toEqual(['en', 'tw'])
+    } finally {
+      delete CATALOGUES.tw
+    }
+  })
+
+  it('does not offer one whose catalogue is barely started', async () => {
+    const { offeredLanguages } = await import('@/lib/language')
+    CATALOGUES.ha = { 'auth.phone.send': 'Aika lambar' }
+    try {
+      expect(offeredLanguages().map((l) => l.code)).toEqual(['en'])
+    } finally {
+      delete CATALOGUES.ha
+    }
+  })
+})

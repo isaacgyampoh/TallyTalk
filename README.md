@@ -27,6 +27,18 @@ shows real data or nothing.
 
 ---
 
+## Where production stands (20 October 2026)
+
+The web app is live at **https://tally-talk-iota.vercel.app**, serving commit
+`9bb6877` from `main`. The suite runs against it, not only against a local
+build:
+
+```bash
+E2E_BASE_URL=https://tally-talk-iota.vercel.app npm run e2e
+```
+
+52 runs, Chromium and WebKit, all passing against the deployed site.
+
 ## Where the backend stands (20 October 2026)
 
 The Supabase project `apbdqgussaylxilqjowa` is restored and holds migrations
@@ -40,9 +52,17 @@ real signed-in clients rather than mocks:
 - Account deletion, end to end, through the `delete-account` function — which
   was in this repo but had never been deployed, so until today that path would
   have failed for every user.
-- The push chain, as far as it can go without an FCM service account: a new
-  task reaches the deployed `send-push` function, which authenticates and finds
-  the device before stopping at the missing credential.
+- Every notification path, on the hosted database: a new task notifies its
+  assignee, a poke notifies the person poked, a comment and a status change
+  notify the other side and never the person acting, a muted category sends
+  nothing, and the overdue sweep fires once per task. The sweep is scheduled
+  with pg_cron (`overdue-sweep`, 07:00 UTC daily).
+- The push chain, as far as it can go without an FCM service account: each of
+  those reaches the deployed `send-push` function, which authenticates and
+  finds the device before stopping at the missing credential.
+- Crash reporting: write-only from a signed-out client, unreadable by anyone,
+  oversized reports refused, and 30-day retention enforced by the next insert —
+  all checked against the live table.
 
 What is still off, and needs an account only you hold:
 

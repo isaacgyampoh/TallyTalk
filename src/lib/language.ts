@@ -12,6 +12,8 @@
  * What exists in each language is a separate question: see src/i18n.
  */
 
+import { isTranslated } from '@/i18n'
+
 export interface Language {
   /** BCP-47-ish code stored in profiles.preferred_language. */
   code: string
@@ -30,6 +32,21 @@ export const LANGUAGES: Language[] = [
   { code: 'ha', name: 'Hausa', english: 'Hausa' },
   { code: 'pcm', name: 'Pidgin', english: 'Ghanaian Pidgin' },
 ]
+
+/**
+ * The languages actually offered: English, plus any with a catalogue written
+ * for it. Asking someone to pick Twi and then showing them English is a worse
+ * answer than not asking — so the list is derived from what exists rather than
+ * from what is planned, and grows by itself when a catalogue is registered.
+ */
+export function offeredLanguages(): Language[] {
+  return LANGUAGES.filter((l) => l.code === 'en' || isTranslated(l.code))
+}
+
+/** Whether the first run has a question worth asking. */
+export function shouldAskForLanguage(): boolean {
+  return offeredLanguages().length > 1 && !hasChosenLanguage()
+}
 
 const KEY = 'tt.language'
 

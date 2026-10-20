@@ -71,6 +71,9 @@ test.describe('accessibility', () => {
     // the element matches :focus-visible, which the stylesheet rule below
     // decorates — so check both halves separately.
     await page.goto('/signin')
+    // Same reason as the country-picker test: tabbing before the screen exists
+    // finds nothing to focus.
+    await expect(page.locator('input[inputmode="tel"]').first()).toBeVisible()
     await page.emulateMedia({ reducedMotion: 'reduce' })
     let stops = 0
     for (let i = 0; i < 8; i++) {

@@ -11,7 +11,7 @@ import {
 } from '@/lib/push'
 import { isAppMode } from '@/lib/platform'
 import { isOnboarded } from '@/lib/onboarding'
-import { hasChosenLanguage } from '@/lib/language'
+import { shouldAskForLanguage } from '@/lib/language'
 import { useMyProfile } from '@/data/hooks'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/components/Toast'
@@ -91,7 +91,7 @@ let introPlayed = false
 function Gate() {
   const { ready, signedIn, session } = useAuth()
   const [intro, setIntro] = useState(isAppMode && !introPlayed)
-  const [languageChosen, setLanguageChosen] = useState(hasChosenLanguage)
+  const [needsLanguage, setNeedsLanguage] = useState(shouldAskForLanguage)
   useAndroidBack()
 
   const nav = useNavigate()
@@ -167,8 +167,8 @@ function Gate() {
           element={
             isAppMode ? (
               <AppViewport>
-                {!languageChosen ? (
-                  <LanguageStep onDone={() => setLanguageChosen(true)} />
+                {needsLanguage ? (
+                  <LanguageStep onDone={() => setNeedsLanguage(false)} />
                 ) : isOnboarded() ? (
                   <Welcome />
                 ) : (
