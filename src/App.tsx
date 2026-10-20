@@ -22,13 +22,16 @@ import { IntroSplash } from '@/screens/IntroSplash'
 import { useAndroidBack } from '@/hooks/useSwipeBack'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon } from '@/components/icons'
+import { retryImport } from '@/lib/retryImport'
+import { useOnline } from '@/hooks/useOnline'
 
 // Screens load on demand. The marketing landing page and the onboarding slides
 // are the big win: a signed-in user never downloads them, and a visitor to the
 // website never downloads the app. `screen` unwraps the named export so these
-// read like the static imports they replaced.
+// read like the static imports they replaced, and retries the fetch so a
+// moment's loss of signal does not end the session (see lib/retryImport).
 const screen = <T extends string>(name: T, load: () => Promise<Record<T, React.ComponentType>>) =>
-  lazy(() => load().then((m) => ({ default: m[name] })))
+  lazy(() => retryImport(load).then((m) => ({ default: m[name] })))
 
 const Landing = screen('Landing', () => import('@/screens/Landing'))
 const AuthFlow = screen('AuthFlow', () => import('@/screens/AuthFlow'))
@@ -39,7 +42,7 @@ const LegalScreen = screen('LegalScreen', () => import('@/screens/LegalScreen'))
 
 // `screen` is typed for prop-less screens; this one takes a callback.
 const LanguageStep = lazy(() =>
-  import('@/screens/LanguageStep').then((m) => ({ default: m.LanguageStep })),
+  retryImport(() => import('@/screens/LanguageStep')).then((m) => ({ default: m.LanguageStep })),
 )
 const ContactsScreen = screen('ContactsScreen', () => import('@/screens/ContactsScreen'))
 const ContactSpaceScreen = screen(
@@ -60,6 +63,9 @@ const GroupDetailScreen = screen('GroupDetailScreen', () => import('@/screens/Gr
 const ProfileScreen = screen('ProfileScreen', () => import('@/screens/ProfileScreen'))
 
 function Splash() {
+  // A screen that is still arriving looks identical to one that cannot arrive.
+  // If the device has no connection, say so rather than holding the logo.
+  const online = useOnline()
   return (
     <div className="app-frame items-center justify-center">
       <div className="flex flex-col items-center gap-3 text-violet-ink">
@@ -67,6 +73,11 @@ function Splash() {
           <WandIcon width={28} height={28} />
         </span>
         <span className="font-display text-lg font-bold text-ink">{APP_NAME}</span>
+        {!online && (
+          <span role="status" className="text-[13px] font-semibold text-ink-soft">
+            No connection — waiting for it to come back
+          </span>
+        )}
       </div>
     </div>
   )

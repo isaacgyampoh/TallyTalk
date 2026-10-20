@@ -6,8 +6,8 @@ import { routeForUrl } from './deeplinks'
 /**
  * Device push: registration, channels, and what happens when one arrives.
  *
- * Everything here is native-only and no-ops on web and in preview, so screens
- * can call it unconditionally.
+ * Everything here is native-only and no-ops on the web build, so screens can
+ * call it unconditionally.
  */
 
 let registered = false

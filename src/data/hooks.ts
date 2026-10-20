@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/context/authState'
 import { supabase } from '@/lib/supabase'
-import { SAMPLE_CONTACTS, type SampleTask } from '@/lib/sampleData'
+import type { Task } from './viewTypes'
 import type { ChecklistItemRow } from './types'
 import { addTaskComment, eventsKey, listTaskEvents, recordTaskEvent } from './events'
 import { createGroupTask, poke } from './tasks'
@@ -31,8 +31,9 @@ import {
 } from './checklists'
 
 /**
- * Live when there's a real Supabase session; preview (sample data) otherwise.
- * Screens branch on this so the demo keeps working with no backend at all.
+ * Whether there is a configured client *and* a session — i.e. whether a query
+ * can actually read anything. Queries stay disabled until then, and it is part
+ * of every query key so one account's cache cannot outlive its session.
  */
 export function useIsLive(): boolean {
   const { session } = useAuth()
@@ -46,7 +47,7 @@ export function useContacts() {
   const live = useIsLive()
   return useQuery({
     queryKey: ['contacts', live],
-    queryFn: () => (live ? listContacts() : Promise.resolve(SAMPLE_CONTACTS)),
+    queryFn: () => listContacts(),
   })
 }
 
@@ -54,7 +55,7 @@ export function useSpaceTasks(contactId: string) {
   const live = useIsLive()
   return useQuery({
     queryKey: spaceKey(contactId, live),
-    enabled: live && !!contactId, // in preview, screens use their own seeded tasks
+    enabled: live && !!contactId,
     queryFn: () => listSpaceTasks(contactId),
   })
 }
@@ -149,10 +150,10 @@ export function useTaskSpaceMutations(contactId: string) {
 
   async function snapshot() {
     await qc.cancelQueries({ queryKey: key })
-    return qc.getQueryData<SampleTask[]>(key)
+    return qc.getQueryData<Task[]>(key)
   }
 
-  function restore(prev: SampleTask[] | undefined) {
+  function restore(prev: Task[] | undefined) {
     if (prev) qc.setQueryData(key, prev)
   }
 
@@ -167,7 +168,7 @@ export function useTaskSpaceMutations(contactId: string) {
     },
     onMutate: async ({ taskId, status }) => {
       const prev = await snapshot()
-      qc.setQueryData<SampleTask[]>(key, (old) =>
+      qc.setQueryData<Task[]>(key, (old) =>
         old?.map((t) =>
           t.id === taskId
             ? { ...t, status: status === 'declined' ? 'active' : status, receipt: 'accepted' }

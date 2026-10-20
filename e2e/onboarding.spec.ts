@@ -75,13 +75,31 @@ test.describe('legal pages', () => {
 })
 
 test.describe('losing the network', () => {
-  test('says so, and clears when it returns', async ({ page, context }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: /try the live demo/i }).click()
-    await page.waitForURL(/\/contacts/)
+  test('sign-in says so, and clears when it returns', async ({ page, context }) => {
+    await page.goto('/signin')
+    // Wait for the screen itself first: going offline mid-chunk is a different
+    // failure, covered below.
+    await expect(page.locator('input[inputmode="tel"]').first()).toBeVisible()
     await context.setOffline(true)
     await expect(page.getByText('No connection')).toBeVisible()
     await context.setOffline(false)
     await expect(page.getByText('No connection')).toHaveCount(0)
+  })
+
+  test('a screen interrupted mid-download recovers instead of dying', async ({ page, context }) => {
+    // Screens are code-split. A dropped chunk fetch used to reject for good and
+    // drop the whole app into "reinstall the latest version" — on a phone that
+    // changes cell mid-tap, that is a fatal answer to a two-second outage.
+    await page.goto('/signin')
+    await expect(page.locator('input[inputmode="tel"]').first()).toBeVisible()
+
+    await context.setOffline(true)
+    await page.getByRole('button', { name: 'Privacy Policy' }).click()
+    await expect(page.getByText('Something went wrong')).toHaveCount(0)
+    await expect(page.getByText('waiting for it to come back')).toBeVisible()
+
+    await context.setOffline(false)
+    await expect(page.getByText('Last updated')).toBeVisible()
+    await expect(page.getByText('Something went wrong')).toHaveCount(0)
   })
 })

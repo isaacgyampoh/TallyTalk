@@ -99,7 +99,7 @@ describe('signedAttachmentUrl', () => {
   })
 
   it('returns null rather than throwing when it cannot be signed', async () => {
-    // A broken preview link should degrade quietly, not take the screen down.
+    // A link that cannot be signed should degrade quietly, not take the screen down.
     client = makeSupabaseMock({ uploadError: { message: 'nope' } })
     expect(await signedAttachmentUrl('x/y.pdf')).toBeNull()
   })

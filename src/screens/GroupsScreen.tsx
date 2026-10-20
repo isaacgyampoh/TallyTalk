@@ -4,44 +4,26 @@ import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
 import { NameSheet } from '@/components/NameSheet'
 import { PlusIcon } from '@/components/icons'
-import { SAMPLE_GROUPS } from '@/lib/sampleData'
-import { addCustomGroup, getCustomGroups } from '@/lib/demoStore'
-import {
-  useCreateGroup,
-  useGroups,
-  useInvitations,
-  useIsLive,
-  useMyInvitations,
-} from '@/data/hooks'
+import { useCreateGroup, useGroups, useInvitations, useMyInvitations } from '@/data/hooks'
 
 export function GroupsScreen() {
   const nav = useNavigate()
   const [creating, setCreating] = useState(false)
-  const live = useIsLive()
   const { data: liveGroups, isPending, isError, refetch } = useGroups()
   const createGroupMutation = useCreateGroup()
   const { data: invitations } = useMyInvitations()
   const { respond } = useInvitations()
 
-  // Live groups carry no tallies yet — counting open tasks per group would be a
-  // query per row, so the counts stay a preview affordance for now.
-  const groups = live
-    ? (liveGroups ?? []).map((g) => ({
-        id: g.id,
-        name: g.name,
-        color: '#6600FF',
-        members: 0,
-        open: 0,
-        done: 0,
-      }))
-    : [...getCustomGroups(), ...SAMPLE_GROUPS]
+  // No per-group tallies: counting open tasks would be a query per row, and
+  // showing zeros instead would be a lie about every group that has members.
+  const groups = liveGroups ?? []
 
   return (
     <div className="relative flex h-full flex-col">
       <ScreenHeader title="Groups" />
       <p className="px-5 pb-3 text-[14px] text-ink-soft">Shared checklists your team works from.</p>
 
-      {live && !!invitations?.length && (
+      {!!invitations?.length && (
         <section className="px-3 pb-2">
           <h2 className="eyebrow mb-2 px-1">Invitations</h2>
           <ul className="overflow-hidden rounded-card border border-line">
@@ -74,10 +56,10 @@ export function GroupsScreen() {
       )}
 
       <ul className="flex-1 overflow-y-auto px-3 pb-24">
-        {live && isPending && (
+        {isPending && (
           <li className="px-3 py-6 text-center text-[15px] text-ink-soft">Loading your groups…</li>
         )}
-        {live && isError && (
+        {isError && (
           <li className="px-3 py-6 text-center">
             <p className="text-[15px] text-ink">We couldn&rsquo;t load your groups.</p>
             <button onClick={() => refetch()} className="btn-ghost mt-3">
@@ -85,7 +67,7 @@ export function GroupsScreen() {
             </button>
           </li>
         )}
-        {live && !isPending && !isError && groups.length === 0 && (
+        {!isPending && !isError && groups.length === 0 && (
           <li className="px-6 py-8 text-center text-[15px] text-ink-soft">
             No groups yet. Create one to share a list with a team.
           </li>
@@ -96,18 +78,13 @@ export function GroupsScreen() {
               onClick={() => nav(`/groups/${g.id}`)}
               className="press flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-wash"
             >
-              <Avatar initials={g.name.slice(0, 2)} color={g.color} />
+              <Avatar initials={g.name.slice(0, 2)} color="#6600FF" />
               <div className="min-w-0 flex-1">
                 <span className="block truncate font-semibold text-ink">{g.name}</span>
-                <p className="nums mt-0.5 text-[13px] text-ink-faint">
-                  {g.members} members · {g.open} open · {g.done} done
-                </p>
+                {g.description && (
+                  <p className="mt-0.5 truncate text-[13px] text-ink-faint">{g.description}</p>
+                )}
               </div>
-              {g.open > 0 && (
-                <span className="nums grid h-6 min-w-6 place-items-center rounded-full bg-violet px-2 text-[12px] font-bold text-white">
-                  {g.open}
-                </span>
-              )}
             </button>
           </li>
         ))}
@@ -128,12 +105,6 @@ export function GroupsScreen() {
           cta="Create group"
           onClose={() => setCreating(false)}
           onCreate={(name) => {
-            if (!live) {
-              const g = addCustomGroup(name)
-              setCreating(false)
-              nav(`/groups/${g.id}`)
-              return
-            }
             createGroupMutation.mutate(name, {
               onSuccess: (id) => {
                 setCreating(false)

@@ -24,7 +24,6 @@ import {
 import {
   useAddComment,
   useContacts,
-  useIsLive,
   usePoke,
   useTaskAttachments,
   useTaskEvents,
@@ -34,14 +33,8 @@ import {
 import { RecorderUnavailable, recordingFileName, startRecording } from '@/lib/recorder'
 import type { ActiveRecording } from '@/lib/recorder'
 import { OfflineBar } from '@/components/OfflineBar'
-import {
-  SAMPLE_CONTACTS,
-  SAMPLE_TASK_COMMENTS,
-  SAMPLE_TASK_FILES,
-  type SampleTask,
-  type TaskComment,
-  type TaskFile,
-} from '@/lib/sampleData'
+import type { Task, TaskComment, TaskFile } from '@/data/viewTypes'
+import { signedAttachmentUrl } from '@/data/attachments'
 
 /** How each logged event reads in the timeline. */
 const HISTORY_LABEL: Record<string, string> = {
@@ -68,9 +61,8 @@ export function TaskCommentsScreen() {
   const toast = useToast()
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const live = useIsLive()
   const { data: contacts } = useContacts()
-  const contact = (live ? contacts : SAMPLE_CONTACTS)?.find((c) => c.id === id)
+  const contact = contacts?.find((c) => c.id === id)
   const seed = contact?.tasks.find((t) => t.id === taskId)
 
   const events = useTaskEvents(taskId ?? '')
@@ -82,25 +74,20 @@ export function TaskCommentsScreen() {
   const recordingRef = useRef<ActiveRecording | null>(null)
   useTaskRealtime(taskId ?? '')
 
-  const [task, setTask] = useState<SampleTask | undefined>(seed)
-  const [previewComments, setPreviewComments] = useState<TaskComment[]>(
-    () => SAMPLE_TASK_COMMENTS[taskId ?? ''] ?? [],
-  )
+  const [task, setTask] = useState<Task | undefined>(seed)
 
   // Live comments are task_events carrying a body; the rest of the timeline is
   // the task's own history, rendered as quiet system lines.
-  const comments: TaskComment[] = live
-    ? (events.data ?? [])
-        .filter((e) => e.event_type === 'comment' && e.metadata?.body)
-        .map((e) => ({
-          id: e.id,
-          body: e.metadata!.body!,
-          mine: e.actor_id === contact?.id ? false : true,
-          at: e.created_at,
-        }))
-    : previewComments
+  const comments: TaskComment[] = (events.data ?? [])
+    .filter((e) => e.event_type === 'comment' && e.metadata?.body)
+    .map((e) => ({
+      id: e.id,
+      body: e.metadata!.body!,
+      mine: e.actor_id === contact?.id ? false : true,
+      at: e.created_at,
+    }))
 
-  const history = live ? (events.data ?? []).filter((e) => e.event_type !== 'comment') : []
+  const history = (events.data ?? []).filter((e) => e.event_type !== 'comment')
   const [draft, setDraft] = useState('')
   const [recording, setRecording] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -132,22 +119,34 @@ export function TaskCommentsScreen() {
 
   const firstName = contact.name.split(' ')[0]
   const side = task.direction === 'i_owe_them' ? 'owe' : 'owed'
-  const files: TaskFile[] = live
-    ? (liveFiles.data ?? []).map((a) => ({
-        id: a.id,
-        name: a.file_name ?? 'Attachment',
-        kind:
-          a.attachment_type === 'image'
-            ? 'image'
-            : a.attachment_type === 'audio'
-              ? 'audio'
-              : a.file_name?.toLowerCase().endsWith('.pdf')
-                ? 'pdf'
-                : 'doc',
-        size: a.file_size ? `${Math.max(1, Math.round(a.file_size / 1024))} KB` : '',
-        at: a.created_at,
-      }))
-    : (SAMPLE_TASK_FILES[task.id] ?? [])
+  const files: TaskFile[] = (liveFiles.data ?? []).map((a) => ({
+    id: a.id,
+    name: a.file_name ?? 'Attachment',
+    kind:
+      a.attachment_type === 'image'
+        ? 'image'
+        : a.attachment_type === 'audio'
+          ? 'audio'
+          : a.file_name?.toLowerCase().endsWith('.pdf')
+            ? 'pdf'
+            : 'doc',
+    size: a.file_size ? `${Math.max(1, Math.round(a.file_size / 1024))} KB` : '',
+    at: a.created_at,
+    path: a.storage_path,
+  }))
+
+  /**
+   * The bucket is private, so a file is opened through a short-lived signed
+   * URL rather than a public link.
+   */
+  async function openFile(file: TaskFile) {
+    const url = await signedAttachmentUrl(file.path).catch(() => null)
+    if (!url) {
+      toast('Could not open that file', 'error')
+      return
+    }
+    window.open(url, '_blank', 'noopener')
+  }
   const flagged = task.priority === 'urgent' || task.priority === 'high'
 
   function toBottom(smooth = true) {
@@ -157,20 +156,10 @@ export function TaskCommentsScreen() {
     })
   }
 
-  function post(comment: TaskComment) {
-    setPreviewComments((prev) => [...prev, comment])
-    window.requestAnimationFrame(() => toBottom())
-  }
-
   function send() {
     const body = draft.trim()
     if (!body) return
     buzz(12)
-    if (!live) {
-      post({ id: `c-${Date.now()}`, body, mine: true, at: new Date().toISOString() })
-      setDraft('')
-      return
-    }
     addComment.mutate(body, {
       onSuccess: () => {
         setDraft('')
@@ -181,13 +170,6 @@ export function TaskCommentsScreen() {
   }
 
   async function startRec() {
-    if (!live) {
-      // Preview has nowhere to upload to; keep the existing mimed recorder.
-      setRecording(true)
-      setElapsed(0)
-      recRef.current = window.setInterval(() => setElapsed((e) => e + 1), 1000)
-      return
-    }
     try {
       recordingRef.current = await startRecording()
       setRecording(true)
@@ -208,26 +190,11 @@ export function TaskCommentsScreen() {
 
   async function stopRec(keep: boolean) {
     if (recRef.current) window.clearInterval(recRef.current)
-    const seconds = Math.max(1, elapsed)
     setRecording(false)
     setElapsed(0)
 
     const active = recordingRef.current
     recordingRef.current = null
-
-    if (!live) {
-      if (keep) {
-        buzz(12)
-        post({
-          id: `v-${Date.now()}`,
-          body: 'Voice note',
-          mine: true,
-          at: new Date().toISOString(),
-          voice: seconds,
-        })
-      }
-      return
-    }
 
     const blob = await active?.stop(keep)
     if (!keep || !blob) return
@@ -265,7 +232,7 @@ export function TaskCommentsScreen() {
 
       {/* The task itself, pinned above its conversation. */}
       <div className="border-b border-line bg-paper px-3 py-2.5">
-        {live && side === 'owed' && task.status !== 'completed' && contact && (
+        {side === 'owed' && task.status !== 'completed' && contact && (
           <button
             onClick={() =>
               pokeThem.mutate(contact.id, {
@@ -339,7 +306,7 @@ export function TaskCommentsScreen() {
                 <button
                   className="press grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft"
                   aria-label={`Download ${f.name}`}
-                  onClick={() => toast('Downloads arrive with the live backend', 'info')}
+                  onClick={() => void openFile(f)}
                 >
                   <DownloadIcon width={20} height={20} />
                 </button>
@@ -356,7 +323,7 @@ export function TaskCommentsScreen() {
             </div>
           ))}
 
-          {live && events.isError && (
+          {events.isError && (
             <div className="mx-auto max-w-[88%] rounded-[10px] bg-paper px-4 py-3 text-center">
               <p className="text-[14px] text-ink">We couldn&rsquo;t load this conversation.</p>
               <button
@@ -442,11 +409,7 @@ export function TaskCommentsScreen() {
             <button
               className="press grid h-10 w-8 shrink-0 place-items-center text-ink"
               aria-label="Attach to this task"
-              onClick={() =>
-                live
-                  ? fileRef.current?.click()
-                  : toast('Attachments arrive with the live backend', 'info')
-              }
+              onClick={() => fileRef.current?.click()}
             >
               <PlusIcon width={26} height={26} />
             </button>

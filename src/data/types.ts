@@ -1,5 +1,5 @@
 // Row shapes that mirror supabase/migrations/0001_init.sql. These are the live
-// database types; the UI's sample shapes live in lib/sampleData.ts. Mappers in
+// database types; the shapes screens render live in ./viewTypes. Mappers in
 // ./mappers convert between them.
 
 export type TaskStatus = 'pending_acceptance' | 'active' | 'completed' | 'declined' | 'deleted'

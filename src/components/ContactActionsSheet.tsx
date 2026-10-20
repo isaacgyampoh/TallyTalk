@@ -1,6 +1,6 @@
 import { CloseIcon } from './icons'
 import { useContactFlags } from '@/data/hooks'
-import type { SampleContact } from '@/lib/sampleData'
+import type { Contact } from '@/data/viewTypes'
 
 interface Action {
   key: 'is_work' | 'is_favorite' | 'is_archived' | 'is_blocked'
@@ -32,7 +32,7 @@ export function ContactActionsSheet({
   onClose,
   onError,
 }: {
-  contact: SampleContact
+  contact: Contact
   onClose: () => void
   onError: (message: string) => void
 }) {

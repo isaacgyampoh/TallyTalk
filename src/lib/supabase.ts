@@ -4,9 +4,9 @@ const url = import.meta.env.VITE_SUPABASE_URL
 const anon = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 /**
- * True only when both public Supabase env vars are present.
- * When false, the app runs in local "Preview" mode (sample data, no network),
- * so stakeholders can see how it works before the backend is wired up.
+ * True only when both public Supabase env vars are present. When false there is
+ * no client at all: the app can show its public pages, and anything that needs
+ * an account reports that the server is unreachable rather than inventing data.
  */
 export const isSupabaseConfigured = Boolean(url && anon)
 

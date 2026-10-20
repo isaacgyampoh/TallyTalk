@@ -4,15 +4,13 @@ import { isAppMode } from '@/lib/platform'
 import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { BackIcon, CheckIcon, PhoneIcon, PlusIcon } from '@/components/icons'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
-import { SAMPLE_CHECKLIST_ITEMS, type ChecklistItem } from '@/lib/sampleData'
-import { getCustomList } from '@/lib/demoStore'
+import type { ChecklistItem } from '@/data/viewTypes'
 import { OfflineBar } from '@/components/OfflineBar'
 import {
   needsDailyReset,
   useChecklistItems,
   useChecklistMutations,
   useChecklists,
-  useIsLive,
   useResetChecklist,
 } from '@/data/hooks'
 
@@ -25,35 +23,27 @@ export function ChecklistDetailScreen() {
   const nav = useNavigate()
   useSwipeBack()
   const { key = '' } = useParams()
-  const live = useIsLive()
   const { data: lists } = useChecklists()
-  const liveList = live ? lists?.find((l) => l.id === key) : undefined
+  const liveList = lists?.find((l) => l.id === key)
   const itemsQuery = useChecklistItems(key)
   const { toggle: toggleItem, add: addItem } = useChecklistMutations(key)
   const resetList = useResetChecklist(key)
 
   const meta = PREDEFINED_CHECKLISTS.find((l) => l.key === key)
-  const custom = meta || live ? undefined : getCustomList(key)
-  const title = liveList?.title ?? meta?.title ?? custom?.title ?? 'Checklist'
+  const title = liveList?.title ?? meta?.title ?? 'Checklist'
   const behavior = liveList?.behavior ?? meta?.behavior ?? 'normal'
   const color = listColor(key)
 
-  // Preview keeps its rows in state; live reads them from the database and maps
-  // the row shape onto the one this screen already renders.
-  const [previewItems, setPreviewItems] = useState<ChecklistItem[]>(
-    () => SAMPLE_CHECKLIST_ITEMS[key]?.map((i) => ({ ...i })) ?? [],
-  )
+  // Map the database row shape onto the one this screen renders.
   const items: ChecklistItem[] = useMemo(
     () =>
-      live
-        ? (itemsQuery.data ?? []).map((r) => ({
-            id: r.id,
-            title: r.title,
-            done: r.is_completed,
-            phone: r.phone_number ?? undefined,
-          }))
-        : previewItems,
-    [live, itemsQuery.data, previewItems],
+      (itemsQuery.data ?? []).map((r) => ({
+        id: r.id,
+        title: r.title,
+        done: r.is_completed,
+        phone: r.phone_number ?? undefined,
+      })),
+    [itemsQuery.data],
   )
   const [draft, setDraft] = useState('')
 
@@ -62,11 +52,11 @@ export function ChecklistDetailScreen() {
   // first write is still in flight.
   const resetFired = useRef(false)
   useEffect(() => {
-    if (!live || !liveList || resetFired.current) return
+    if (!liveList || resetFired.current) return
     if (!needsDailyReset(liveList)) return
     resetFired.current = true
     resetList.mutate()
-  }, [live, liveList, resetList])
+  }, [liveList, resetList])
 
   const { open, done } = useMemo(
     () => ({ open: items.filter((i) => !i.done).length, done: items.filter((i) => i.done).length }),
@@ -76,36 +66,23 @@ export function ChecklistDetailScreen() {
   function toggle(id: string) {
     const item = items.find((i) => i.id === id)
     if (!item) return
-    if (!live) {
-      setPreviewItems((prev) => prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i)))
-      return
-    }
     toggleItem.mutate({ itemId: id, isCompleted: !item.done })
   }
 
   function add() {
     const t = draft.trim()
     if (!t) return
-    if (!live) {
-      setPreviewItems((prev) => [...prev, { id: `n-${Date.now()}`, title: t, done: false }])
-      setDraft('')
-      return
-    }
     addItem.mutate(t, { onSuccess: () => setDraft('') })
   }
 
   function resetAll() {
-    if (!live) {
-      setPreviewItems((prev) => prev.map((i) => ({ ...i, done: false })))
-      return
-    }
     resetList.mutate()
   }
 
   const sorted = [...items].sort((a, b) => Number(a.done) - Number(b.done))
 
-  const loading = live && itemsQuery.isPending
-  const failed = live && itemsQuery.isError
+  const loading = itemsQuery.isPending
+  const failed = itemsQuery.isError
 
   return (
     <div className="app-frame">

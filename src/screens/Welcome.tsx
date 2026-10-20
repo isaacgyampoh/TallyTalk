@@ -1,6 +1,4 @@
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/authState'
-import { buzz } from '@/lib/haptics'
 import { WandIcon, CheckIcon } from '@/components/icons'
 import { APP_NAME } from '@/lib/config'
 
@@ -11,13 +9,6 @@ import { APP_NAME } from '@/lib/config'
  */
 export function Welcome() {
   const nav = useNavigate()
-  const { enterPreview } = useAuth()
-
-  function demo() {
-    buzz(10)
-    enterPreview()
-    nav('/contacts')
-  }
 
   return (
     <div className="app-frame relative overflow-hidden">
@@ -102,12 +93,6 @@ export function Welcome() {
           </p>
           <button onClick={() => nav('/signin')} className="btn-primary h-14 w-full text-[16px]">
             Agree and continue
-          </button>
-          <button
-            onClick={demo}
-            className="press h-14 w-full rounded-full border border-line bg-paper text-[16px] font-semibold text-ink"
-          >
-            Explore with sample data
           </button>
         </div>
       </div>

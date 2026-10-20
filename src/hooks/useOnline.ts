@@ -14,6 +14,10 @@ export function useOnline(): boolean {
   )
 
   useEffect(() => {
+    // Re-read on mount: an `offline` event that fires between the first render
+    // and this listener being attached is gone for good, and the bar would
+    // never appear for the rest of the session.
+    setOnline(navigator.onLine)
     const up = () => setOnline(true)
     const down = () => setOnline(false)
     window.addEventListener('online', up)

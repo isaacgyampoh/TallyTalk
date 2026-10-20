@@ -1,5 +1,3 @@
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/authState'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon, ContactsIcon, CheckIcon } from '@/components/icons'
 import shotContacts from '@/assets/shot-contacts.webp'
@@ -8,13 +6,6 @@ import shotSpace from '@/assets/shot-space.webp'
 const APK_URL = '/download'
 
 export function Landing() {
-  const nav = useNavigate()
-  const { enterPreview } = useAuth()
-
-  function demo() {
-    enterPreview()
-    nav('/contacts')
-  }
   function getApk() {
     window.location.href = APK_URL
   }
@@ -62,12 +53,6 @@ export function Landing() {
               <StoreBadge store="play" onClick={getApk} />
               <StoreBadge store="apple" soon />
             </div>
-            <button
-              onClick={demo}
-              className="press mt-4 text-[14.5px] font-semibold text-violet-ink underline underline-offset-4"
-            >
-              or try the live demo in your browser →
-            </button>
 
             {/* social proof */}
             <div className="mt-8 flex items-center gap-3">

@@ -5,7 +5,7 @@ import type { ContactRow } from './types'
 // live session; callers only reach them in live mode (see ./hooks).
 
 function db() {
-  if (!supabase) throw new Error('Supabase client unavailable (running in preview mode)')
+  if (!supabase) throw new Error('Not connected to the server')
   return supabase
 }
 

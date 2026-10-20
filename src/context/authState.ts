@@ -1,18 +1,12 @@
 import { createContext, useContext } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
-export type AuthMode = 'live' | 'preview'
-
 export interface AuthState {
-  mode: AuthMode
   ready: boolean
   session: Session | null
-  /** true in preview mode after the user taps "Explore with sample data" */
-  previewSignedIn: boolean
   signedIn: boolean
   sendCode: (phone: string) => Promise<{ error?: string }>
   verifyCode: (phone: string, code: string) => Promise<{ error?: string }>
-  enterPreview: () => void
   signOut: () => Promise<void>
 }
 

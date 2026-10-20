@@ -10,7 +10,7 @@ import type { NotificationPrefs } from '@/lib/notifications'
  */
 
 function db() {
-  if (!supabase) throw new Error('Supabase client unavailable (running in preview mode)')
+  if (!supabase) throw new Error('Not connected to the server')
   return supabase
 }
 

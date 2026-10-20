@@ -1,5 +1,5 @@
 import { agoLabel } from '@/lib/time'
-import type { SampleTask } from '@/lib/sampleData'
+import type { Task } from '@/data/viewTypes'
 import {
   CheckIcon,
   CommentIcon,
@@ -15,7 +15,7 @@ import {
 export type Side = 'owe' | 'owed'
 
 /** How far the other person has got — the glyph after the timestamp. */
-function ReceiptMark({ task }: { task: SampleTask }) {
+function ReceiptMark({ task }: { task: Task }) {
   if (task.status === 'completed') return null
   switch (task.receipt) {
     case 'seen':
@@ -49,7 +49,7 @@ export function TaskRow({
   onAccept,
   showComments = true,
 }: {
-  task: SampleTask
+  task: Task
   side: Side
   onOpen?: () => void
   onToggle?: () => void

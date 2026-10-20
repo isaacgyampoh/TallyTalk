@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   colorFor,
-  contactRowToSample,
+  contactRowToView,
   expectedLabel,
   initialsFrom,
   isOverdue,
-  taskRowToSample,
+  taskRowToView,
 } from './mappers'
 import type { ContactRow, TaskRow } from './types'
 
@@ -91,35 +91,35 @@ describe('isOverdue', () => {
   })
 })
 
-describe('taskRowToSample — which side of the ledger', () => {
+describe('taskRowToView — which side of the ledger', () => {
   it('is "they owe me" when I am the requester', () => {
-    expect(taskRowToSample(task({ requester_id: ME }), ME).direction).toBe('they_owe_me')
+    expect(taskRowToView(task({ requester_id: ME }), ME).direction).toBe('they_owe_me')
   })
 
   it('is "i owe them" when someone else asked', () => {
-    expect(taskRowToSample(task({ requester_id: THEM, assignee_id: ME }), ME).direction).toBe(
+    expect(taskRowToView(task({ requester_id: THEM, assignee_id: ME }), ME).direction).toBe(
       'i_owe_them',
     )
   })
 
   it('collapses declined and deleted into active for display', () => {
-    expect(taskRowToSample(task({ status: 'declined' }), ME).status).toBe('active')
+    expect(taskRowToView(task({ status: 'declined' }), ME).status).toBe('active')
   })
 
   it('preserves completed and pending_acceptance', () => {
-    expect(taskRowToSample(task({ status: 'completed' }), ME).status).toBe('completed')
-    expect(taskRowToSample(task({ status: 'pending_acceptance' }), ME).status).toBe(
+    expect(taskRowToView(task({ status: 'completed' }), ME).status).toBe('completed')
+    expect(taskRowToView(task({ status: 'pending_acceptance' }), ME).status).toBe(
       'pending_acceptance',
     )
   })
 
   it('carries the note through, using undefined rather than null', () => {
-    expect(taskRowToSample(task({ note: null }), ME).note).toBeUndefined()
-    expect(taskRowToSample(task({ note: 'The signed copy' }), ME).note).toBe('The signed copy')
+    expect(taskRowToView(task({ note: null }), ME).note).toBeUndefined()
+    expect(taskRowToView(task({ note: 'The signed copy' }), ME).note).toBe('The signed copy')
   })
 })
 
-describe('contactRowToSample', () => {
+describe('contactRowToView', () => {
   const row: ContactRow = {
     id: 'c1',
     owner_id: ME,
@@ -139,7 +139,7 @@ describe('contactRowToSample', () => {
   }
 
   it('derives name, initials and a stable colour', () => {
-    const c = contactRowToSample(row, { forThem: 2, forYou: 1, overdue: 0, urgent: 1 })
+    const c = contactRowToView(row, { forThem: 2, forYou: 1, overdue: 0, urgent: 1 })
     expect(c.id).toBe(THEM)
     expect(c.name).toBe('Felicia Hammond')
     expect(c.initials).toBe('FH')
@@ -147,7 +147,7 @@ describe('contactRowToSample', () => {
   })
 
   it('carries the tallies and the classification flags', () => {
-    const c = contactRowToSample(row, { forThem: 2, forYou: 1, overdue: 0, urgent: 1 })
+    const c = contactRowToView(row, { forThem: 2, forYou: 1, overdue: 0, urgent: 1 })
     expect([c.forThem, c.forYou, c.overdue, c.urgent]).toEqual([2, 1, 0, 1])
     expect(c.work).toBe(true)
     expect(c.favorite).toBe(false)

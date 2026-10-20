@@ -26,7 +26,7 @@ src/
   App.tsx             Providers + routing "Gate" (auth vs app vs landing)
   index.css           Tailwind layers, theme tokens, .app-frame/.app-device
   context/
-    AuthContext.tsx   Session state; Supabase phone OTP + a "preview" demo mode
+    AuthContext.tsx   Session state; Supabase phone OTP
     ThemeContext.tsx  System/Light/Dark; applies .dark; syncs native status bar
   hooks/
     useInstallPrompt  PWA install prompt + iOS/standalone detection
@@ -37,13 +37,23 @@ src/
     haptics.ts        buzz(): native Haptics or web Vibration
     push.ts           Native push registration -> stores token in Supabase
     smartParse.ts     Natural-language -> structured task (the "smart add")
-    sampleData.ts     Demo data (contacts, tasks, checklists, groups)
-    demoStore.ts      In-memory demo state (created tasks/lists/groups)
+    notifications.ts  Channels, categories, and where a notification routes to
+    deeplinks.ts      Which in-app path an incoming URL may open
+    retryImport.ts    Code-split screens that survive a dropped connection
+  data/
+    types.ts          DB row types mirroring the schema
+    viewTypes.ts      The shapes screens render
+    tasks.ts          Contacts, tallies, task spaces, accept/complete/poke
+    checklists.ts     Personal lists, groups, members, invitations
+    attachments.ts    Private file uploads and short-lived signed links
+    profile.ts        Your own row: identity, privacy scopes, preferences
+    mappers.ts        DB rows -> view shapes
+    hooks.ts          TanStack Query hooks, keys and optimistic mutations
   components/         Reusable UI (Shell/nav, Avatar, Toast, sheets, icons…)
   screens/           One file per screen (Today, Contacts, Personal, Groups…)
 supabase/
-  migrations/        SQL schema (0001 core, 0002 push tokens) — RLS on everything
-  functions/         Edge Functions (send-sms-hook, send-push)
+  migrations/        0001 core schema, 0002 push tokens, 0003 security hardening
+  functions/         Edge Functions (send-sms-hook, send-push, delete-account)
 android/  ios/        Native Capacitor projects
 assets/              Source icon/splash for native asset generation
 ```
@@ -56,53 +66,52 @@ then renders `<Gate/>`:
 1. **Not ready** → splash.
 2. **Not signed in** → `/signin` shows the phone-OTP `AuthFlow`; everything else
    shows the marketing `Landing`.
-3. **Signed in** (real session *or* demo preview) → the app: full-screen detail
-   routes (`/contacts/:id`, `/personal/:key`, `/groups/:id`) and the tabbed
-   `Shell` (Today / Contacts / Personal / Groups / Profile).
+3. **Signed in** → the app: full-screen detail routes (`/contacts/:id`,
+   `/personal/:key`, `/groups/:id`) and the tabbed `Shell` (Contacts /
+   Personal / Groups / Profile).
+
+Screens are code-split. A chunk fetch that is interrupted is retried and, once
+the connection returns, the page reloads on the same URL — losing signal
+mid-tap must not end the session (`lib/retryImport.ts`).
 
 `AppViewport` frames the app as a device on tablet/desktop and full-bleed on
 phones and in the native app.
 
 ## Auth
 
-`AuthContext` runs in one of two modes:
+Phone OTP, and nothing else. `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
+build the client; `supabase.auth.signInWithOtp` / `verifyOtp` own the code, and
+the `send-sms-hook` Edge Function delivers it through Arkesel. The number is
+the identity: a trigger in `0003` rejects any attempt to change it, and
+`ProfilePatch` does not offer the column.
 
-- **Live** — when `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` are present.
-  Phone OTP via `supabase.auth.signInWithOtp` / `verifyOtp`. Supabase owns the
-  code; the `send-sms-hook` Edge Function delivers it through Arkesel.
-- **Preview** — when those env vars are absent **or** the user taps "Explore with
-  sample data". Renders the app against `sampleData.ts` + `demoStore` with no
-  network. This is what makes the demo shareable with no backend.
+Without those env vars there is no client at all. The public pages still open
+and anything needing an account reports that the server is unreachable. There
+is no sample-data mode: a screen shows real data or an empty state, never
+invented rows.
 
-## The demo/real split — and how to scale
+## The data layer
 
-Screens currently read from `sampleData.ts` / `demoStore` so the demo works with
-zero backend. The **live data layer is now built** in `src/data/`:
+Screens never touch Supabase directly. `src/data/` holds the queries and
+mutations; `hooks.ts` wraps them in TanStack Query with one key builder per
+collection, so a query and the mutation that invalidates it cannot drift apart.
+Mutations that the user watches happen (accepting, completing, poking) apply
+optimistically and roll back on failure.
 
-- `types.ts` — DB row types mirroring the schema.
-- `tasks.ts` / `checklists.ts` — typed Supabase query & mutation functions
-  (contacts + tallies, task spaces, accept/complete/poke, checklists, groups).
-- `mappers.ts` — convert DB rows into the UI's existing shapes.
-- `hooks.ts` — TanStack Query hooks (`useContacts`, `useSpaceTasks`,
-  `useChecklists`, `useGroups`) that return **sample data in preview** and **live
-  queries when there's a real session** (`useIsLive`).
+`useIsLive()` is the gate: a configured client *and* a session. Queries stay
+disabled until both hold, and it is part of every query key, so one account's
+cache cannot outlive its session.
 
-The app is wrapped in a `QueryClientProvider`. To finish going live:
+Because every table has **Row-Level Security** (`0001_init.sql`) and the
+hardening triggers in `0003` own the writes a client must not make (seating a
+group's first admin, accepting an invitation), the client queries Postgres
+directly with the anon key — there is no bespoke API tier.
 
-1. Run the migrations in Supabase (`0001_init.sql`, `0002_push_tokens.sql`).
-2. Flip each screen from its sample import to the matching hook — e.g. in
-   `ContactsScreen`, replace `SAMPLE_CONTACTS` with
-   `const { data: contacts = [] } = useContacts()`. The shapes already match, so
-   this is mechanical. Add optimistic mutations for create/accept/complete.
-3. Subscribe to Supabase Realtime and invalidate queries so task spaces update
-   live like a chat.
-
-Because every table has **Row-Level Security** (`0001_init.sql`), the client can
-query directly with the anon key — no bespoke API tier needed.
-
-> The live query functions are written against the validated schema but have not
-> yet been exercised against a running database; verify them once the migration
-> is applied.
+> Verification status: the data layer is covered by unit tests against a mock
+> client, which pin the queries and the mapping but not the database's own
+> behaviour. The migrations have been applied to an empty project and the
+> triggers checked by hand; no part of the app has yet been exercised against a
+> database holding real user data.
 
 ## Theming
 

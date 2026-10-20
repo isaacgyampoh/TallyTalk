@@ -3,7 +3,7 @@ import { PREDEFINED_CHECKLISTS } from '@/lib/config'
 import type { ChecklistItemRow, ChecklistRow, GroupMemberRow, GroupRow, TaskRow } from './types'
 
 function db() {
-  if (!supabase) throw new Error('Supabase client unavailable (running in preview mode)')
+  if (!supabase) throw new Error('Not connected to the server')
   return supabase
 }
 

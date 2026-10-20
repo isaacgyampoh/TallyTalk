@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Priority } from '@/lib/config'
-import type { SampleContact, SampleTask } from '@/lib/sampleData'
-import { contactRowToSample, taskRowToSample } from './mappers'
+import type { Contact, Task } from './viewTypes'
+import { contactRowToView, taskRowToView } from './mappers'
 import type { ContactRow, TaskRow } from './types'
 
 // Every function here assumes a live Supabase session. Callers only invoke them
@@ -9,7 +9,7 @@ import type { ContactRow, TaskRow } from './types'
 // obvious rather than silent.
 
 function db() {
-  if (!supabase) throw new Error('Supabase client unavailable (running in preview mode)')
+  if (!supabase) throw new Error('Not connected to the server')
   return supabase
 }
 
@@ -32,7 +32,7 @@ const EXPECTED_TO_PERIOD: Record<string, string> = {
 }
 
 /** Contacts with per-contact "for them / for you" tallies. */
-export async function listContacts(): Promise<SampleContact[]> {
+export async function listContacts(): Promise<Contact[]> {
   const me = await myId()
   const [{ data: contactRows, error: cErr }, { data: taskRows, error: tErr }] = await Promise.all([
     db().from('contacts').select(CONTACT_SELECT).eq('owner_id', me).eq('is_archived', false),
@@ -52,7 +52,7 @@ export async function listContacts(): Promise<SampleContact[]> {
     const forThem = tasks.filter((t) => t.requester_id === me && t.assignee_id === cid)
     const forYou = tasks.filter((t) => t.requester_id === cid && t.assignee_id === me)
     const all = [...forThem, ...forYou]
-    return contactRowToSample(c, {
+    return contactRowToView(c, {
       forThem: forThem.length,
       forYou: forYou.length,
       overdue: all.filter((t) => t.due_date && new Date(t.due_date).getTime() < Date.now()).length,
@@ -62,7 +62,7 @@ export async function listContacts(): Promise<SampleContact[]> {
 }
 
 /** The two-sided task space between me and one contact. */
-export async function listSpaceTasks(contactId: string): Promise<SampleTask[]> {
+export async function listSpaceTasks(contactId: string): Promise<Task[]> {
   const me = await myId()
   const { data, error } = await db()
     .from('tasks')
@@ -74,7 +74,7 @@ export async function listSpaceTasks(contactId: string): Promise<SampleTask[]> {
     )
     .order('created_at', { ascending: true })
   if (error) throw error
-  return ((data ?? []) as TaskRow[]).map((t) => taskRowToSample(t, me))
+  return ((data ?? []) as TaskRow[]).map((t) => taskRowToView(t, me))
 }
 
 export async function createTask(input: {

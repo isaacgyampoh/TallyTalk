@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { Avatar } from '@/components/Avatar'
@@ -6,18 +6,10 @@ import { TaskWallpaper } from '@/components/TaskWallpaper'
 import { TaskRow, type Side } from '@/components/TaskRow'
 import { useToast } from '@/components/toastContext'
 import { buzz } from '@/lib/haptics'
-import { daysAgo } from '@/lib/time'
 import { BackIcon, ChevronRightIcon, ChevronUpIcon } from '@/components/icons'
 import { TASK_TITLE_MAX } from '@/lib/config'
-import { type SampleTask } from '@/lib/sampleData'
-import { getDemoTasks } from '@/lib/demoStore'
-import {
-  useContacts,
-  useIsLive,
-  useSpaceRealtime,
-  useSpaceTasks,
-  useTaskSpaceMutations,
-} from '@/data/hooks'
+import { type Task } from '@/data/viewTypes'
+import { useContacts, useSpaceRealtime, useSpaceTasks, useTaskSpaceMutations } from '@/data/hooks'
 import { ContactActionsSheet } from '@/components/ContactActionsSheet'
 import { OfflineBar } from '@/components/OfflineBar'
 
@@ -33,7 +25,6 @@ export function ContactSpaceScreen() {
   const toast = useToast()
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const live = useIsLive()
   const { data: contacts, isPending: contactsPending } = useContacts()
   const contact = contacts?.find((c) => c.id === id)
 
@@ -41,18 +32,9 @@ export function ContactSpaceScreen() {
   const { setStatus, create } = useTaskSpaceMutations(id)
   useSpaceRealtime(id)
 
-  // Preview keeps its own rows in memory; live reads them from the database.
-  const [previewTasks, setPreviewTasks] = useState<SampleTask[]>([])
-  useEffect(() => {
-    if (!live && contact) setPreviewTasks([...contact.tasks, ...getDemoTasks(contact.id)])
-  }, [live, contact])
-
   // Memoised so the split below does not recompute on every render: the
   // `?? []` fallback would otherwise hand it a fresh array each time.
-  const tasks = useMemo(
-    () => (live ? (space.data ?? []) : previewTasks),
-    [live, space.data, previewTasks],
-  )
+  const tasks = useMemo(() => space.data ?? [], [space.data])
 
   const [draft, setDraft] = useState('')
   const [managing, setManaging] = useState(false)
@@ -91,27 +73,17 @@ export function ContactSpaceScreen() {
   const person = contact
   const firstName = person.name.split(' ')[0]
 
-  function patchPreview(taskId: string, next: Partial<SampleTask>) {
-    setPreviewTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...next } : t)))
-  }
-
-  function toggleDone(task: SampleTask) {
+  function toggleDone(task: Task) {
     buzz(15)
     const status = task.status === 'completed' ? 'active' : 'completed'
-    if (!live) return patchPreview(task.id, { status })
     setStatus.mutate(
       { taskId: task.id, status },
       { onError: () => toast('Could not save that — put back as it was', 'error') },
     )
   }
 
-  function accept(task: SampleTask) {
+  function accept(task: Task) {
     buzz(15)
-    if (!live) {
-      patchPreview(task.id, { status: 'active', receipt: 'accepted' })
-      toast('Task accepted', 'success')
-      return
-    }
     setStatus.mutate(
       { taskId: task.id, status: 'active' },
       {
@@ -132,26 +104,6 @@ export function ContactSpaceScreen() {
     if (!title) return
     buzz(12)
 
-    if (!live) {
-      setPreviewTasks((prev) => [
-        ...prev,
-        {
-          id: `t-${Date.now()}`,
-          title,
-          direction: 'they_owe_me',
-          status: 'pending_acceptance',
-          priority: 'normal',
-          expected: 'This Week',
-          at: daysAgo(0),
-          receipt: 'sent',
-        },
-      ])
-      setDraft('')
-      toast(`Sent to ${firstName}`, 'success')
-      toBottom()
-      return
-    }
-
     // Only say it was sent once the insert has actually succeeded.
     create.mutate(title, {
       onSuccess: () => {
@@ -163,7 +115,7 @@ export function ContactSpaceScreen() {
     })
   }
 
-  function renderSide(side: Side, rows: SampleTask[], total: number) {
+  function renderSide(side: Side, rows: Task[], total: number) {
     const open = rows.filter((t) => t.status !== 'completed')
     const done = rows.filter((t) => t.status === 'completed')
     const expanded = showDone[side]
@@ -244,7 +196,7 @@ export function ContactSpaceScreen() {
             Tasks
           </p>
         </div>
-        {live && (
+        {
           <button
             onClick={() => setManaging(true)}
             className="press grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink"
@@ -254,7 +206,7 @@ export function ContactSpaceScreen() {
               &middot;&middot;&middot;
             </span>
           </button>
-        )}
+        }
       </header>
 
       {managing && (
@@ -267,7 +219,7 @@ export function ContactSpaceScreen() {
 
       <div ref={scrollRef} className="thread-surface min-h-0 flex-1 overflow-y-auto">
         <TaskWallpaper />
-        {live && space.isError && (
+        {space.isError && (
           <div className="relative px-6 py-8 text-center">
             <p className="font-display text-[16px] font-semibold text-ink">
               We couldn&rsquo;t load these tasks

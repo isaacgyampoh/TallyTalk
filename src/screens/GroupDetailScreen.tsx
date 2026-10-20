@@ -4,8 +4,7 @@ import { isAppMode } from '@/lib/platform'
 import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { Avatar } from '@/components/Avatar'
 import { BackIcon, CheckIcon, PlusIcon } from '@/components/icons'
-import { SAMPLE_GROUPS, type GroupTask } from '@/lib/sampleData'
-import { getCustomGroup } from '@/lib/demoStore'
+import type { GroupTask } from '@/data/viewTypes'
 import { OfflineBar } from '@/components/OfflineBar'
 import {
   useContacts,
@@ -13,14 +12,12 @@ import {
   useGroups,
   useGroupTaskMutations,
   useInvitations,
-  useIsLive,
 } from '@/data/hooks'
 
 export function GroupDetailScreen() {
   const nav = useNavigate()
   useSwipeBack()
   const { id = '' } = useParams()
-  const live = useIsLive()
   const { data: liveGroups } = useGroups()
   const detail = useGroupDetail(id)
   const { invite } = useInvitations(id)
@@ -28,44 +25,34 @@ export function GroupDetailScreen() {
   const { data: myContacts } = useContacts()
   const [inviting, setInviting] = useState(false)
 
-  // Preview may fall back to a sample group; a live session never may. Showing
-  // SAMPLE_GROUPS[0] for an unknown id would present a fabricated group as real.
-  const sampleGroup = live
-    ? undefined
-    : (SAMPLE_GROUPS.find((g) => g.id === id) ?? getCustomGroup(id) ?? SAMPLE_GROUPS[0])
-  const liveGroup = live ? liveGroups?.find((g) => g.id === id) : undefined
-  const missing = live && !detail.members.isPending && !liveGroup
+  const liveGroup = liveGroups?.find((g) => g.id === id)
+  const missing = !detail.members.isPending && !liveGroup
 
   // One shape for the header and both tabs, whichever source is behind it.
-  const group = live
-    ? {
-        id,
-        name: liveGroup?.name ?? 'Group',
-        description: liveGroup?.description ?? '',
-        color: '#6600FF',
-        members: (detail.members.data ?? []).length,
-        memberList: (detail.members.data ?? []).map((m) => ({
-          id: m.user_id,
-          name: m.member.display_name,
-          initials: m.member.display_name.slice(0, 2).toUpperCase(),
-          color: '#6600FF',
-          role: m.role,
-        })),
-        tasks: [] as GroupTask[],
-      }
-    : sampleGroup!
+  const group = {
+    id,
+    name: liveGroup?.name ?? 'Group',
+    description: liveGroup?.description ?? '',
+    color: '#6600FF',
+    members: (detail.members.data ?? []).length,
+    memberList: (detail.members.data ?? []).map((m) => ({
+      id: m.user_id,
+      name: m.member.display_name,
+      initials: m.member.display_name.slice(0, 2).toUpperCase(),
+      color: '#6600FF',
+      role: m.role,
+    })),
+    tasks: [] as GroupTask[],
+  }
 
   const [tab, setTab] = useState<'tasks' | 'members'>('tasks')
-  const [previewTasks, setPreviewTasks] = useState<GroupTask[]>(sampleGroup?.tasks ?? [])
-  const tasks: GroupTask[] = live
-    ? (detail.tasks.data ?? []).map((t) => ({
-        id: t.id,
-        title: t.title,
-        assignee: '',
-        done: t.status === 'completed',
-        priority: t.priority,
-      }))
-    : previewTasks
+  const tasks: GroupTask[] = (detail.tasks.data ?? []).map((t) => ({
+    id: t.id,
+    title: t.title,
+    assignee: '',
+    done: t.status === 'completed',
+    priority: t.priority,
+  }))
   const [draft, setDraft] = useState('')
 
   const { open, done } = useMemo(
@@ -74,10 +61,6 @@ export function GroupDetailScreen() {
   )
 
   function toggle(taskId: string) {
-    if (!live) {
-      setPreviewTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)))
-      return
-    }
     const current = tasks.find((t) => t.id === taskId)
     if (!current) return
     groupTasks.setDone.mutate({ taskId, done: !current.done })
@@ -85,20 +68,12 @@ export function GroupDetailScreen() {
   function add() {
     const t = draft.trim()
     if (!t) return
-    if (!live) {
-      setPreviewTasks((prev) => [
-        ...prev,
-        { id: `n-${Date.now()}`, title: t, assignee: 'You', done: false, priority: 'normal' },
-      ])
-      setDraft('')
-      return
-    }
     groupTasks.add.mutate(t, { onSuccess: () => setDraft('') })
   }
 
   const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done))
 
-  if (live && detail.members.isPending) {
+  if (detail.members.isPending) {
     return (
       <div className="app-frame items-center justify-center">
         <p className="text-[15px] text-ink-soft">Loading this group…</p>
@@ -106,7 +81,7 @@ export function GroupDetailScreen() {
     )
   }
 
-  if (live && detail.members.isError) {
+  if (detail.members.isError) {
     return (
       <div className="app-frame items-center justify-center px-8 text-center">
         <div>
@@ -236,7 +211,7 @@ export function GroupDetailScreen() {
             ))}
       </div>
 
-      {tab === 'members' && live && (
+      {tab === 'members' && (
         <div className="px-3 pb-4">
           <button
             onClick={() => setInviting((v) => !v)}

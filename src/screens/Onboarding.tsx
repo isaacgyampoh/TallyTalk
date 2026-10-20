@@ -1,13 +1,11 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/authState'
 import { buzz } from '@/lib/haptics'
 import { WandIcon, CheckIcon } from '@/components/icons'
 import { markOnboarded } from '@/lib/onboarding'
 
 export function Onboarding() {
   const nav = useNavigate()
-  const { enterPreview } = useAuth()
   const scroller = useRef<HTMLDivElement>(null)
   const [i, setI] = useState(0)
   const last = i === SLIDES.length - 1
@@ -26,12 +24,6 @@ export function Onboarding() {
   function getStarted() {
     markOnboarded()
     nav('/signin')
-  }
-  function demo() {
-    markOnboarded()
-    buzz(10)
-    enterPreview()
-    nav('/contacts')
   }
 
   return (
@@ -83,9 +75,6 @@ export function Onboarding() {
           <>
             <button onClick={getStarted} className="btn-primary h-14 w-full text-[16px]">
               Get started
-            </button>
-            <button onClick={demo} className="btn-ghost h-14 w-full text-[16px]">
-              Explore with sample data
             </button>
           </>
         ) : (
@@ -143,8 +132,8 @@ function LedgerArt() {
       </div>
       <div className="mt-3 space-y-2">
         {[
-          { i: 'BO', c: '#6600FF', n: 'Ben Owusu', t: '3 for them · 2 for you' },
-          { i: 'AS', c: '#0E7C86', n: 'Ama Serwaa', t: '2 for them' },
+          { i: '—', c: '#6600FF', n: 'A contact', t: '3 for them · 2 for you' },
+          { i: '—', c: '#0E7C86', n: 'Another contact', t: '2 for them' },
         ].map((r) => (
           <div
             key={r.i}

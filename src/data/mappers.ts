@@ -1,5 +1,5 @@
 import type { Priority } from '@/lib/config'
-import type { SampleContact, SampleTask } from '@/lib/sampleData'
+import type { Contact, Task } from './viewTypes'
 import type { ContactRow, ExpectedPeriod, TaskRow } from './types'
 
 const PALETTE = [
@@ -46,9 +46,9 @@ export function isOverdue(row: TaskRow): boolean {
   )
 }
 
-/** DB task -> the UI SampleTask, relative to the current user. */
-export function taskRowToSample(row: TaskRow, myId: string): SampleTask {
-  const status: SampleTask['status'] =
+/** DB task -> the UI Task, relative to the current user. */
+export function taskRowToView(row: TaskRow, myId: string): Task {
+  const status: Task['status'] =
     row.status === 'completed'
       ? 'completed'
       : row.status === 'pending_acceptance'
@@ -66,12 +66,12 @@ export function taskRowToSample(row: TaskRow, myId: string): SampleTask {
   }
 }
 
-/** DB contact + aggregated task counts -> the UI SampleContact. */
-export function contactRowToSample(
+/** DB contact + aggregated task counts -> the UI Contact. */
+export function contactRowToView(
   row: ContactRow,
   counts: { forThem: number; forYou: number; overdue: number; urgent: number },
-  tasks: SampleTask[] = [],
-): SampleContact {
+  tasks: Task[] = [],
+): Contact {
   const name = row.contact.display_name
   return {
     id: row.contact_id,

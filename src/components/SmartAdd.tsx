@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { smartParse, type Parsed } from '@/lib/smartParse'
-import { addDemoTask } from '@/lib/demoStore'
-import { useContacts, useIsLive } from '@/data/hooks'
+import { useContacts } from '@/data/hooks'
 import { createTask } from '@/data/tasks'
 
 import { useToast } from '@/components/toastContext'
@@ -18,39 +17,26 @@ export function SmartAdd() {
 
   function analyse() {
     if (!text.trim()) return
-    setParsed(smartParse(text))
+    setParsed(smartParse(text, pickable))
   }
 
-  const live = useIsLive()
   const { data: contacts } = useContacts()
   const pickable = contacts ?? []
 
   function create(contactId: string, contactName: string) {
     if (!parsed) return
-    if (live) {
-      // Live quick-add writes a real task; the demo store is preview-only.
-      createTask({
-        title: parsed.title,
-        assigneeId: contactId,
-        priority: parsed.priority,
-        expected: parsed.expected,
-      })
-        .then(() => {
-          buzz(12)
-          toast(`Sent to ${contactName.split(' ')[0]}`, 'success')
-          nav(`/contacts/${contactId}`)
-        })
-        .catch(() => toast('Could not send that', 'error'))
-      return
-    }
-    addDemoTask(contactId, {
-      id: `sa-${Date.now()}`,
+    createTask({
       title: parsed.title,
-      direction: 'they_owe_me',
-      status: 'pending_acceptance',
+      assigneeId: contactId,
       priority: parsed.priority,
       expected: parsed.expected,
     })
+      .then(() => {
+        buzz(12)
+        toast(`Sent to ${contactName.split(' ')[0]}`, 'success')
+        nav(`/contacts/${contactId}`)
+      })
+      .catch(() => toast('Could not send that', 'error'))
     buzz([10, 30, 10])
     toast(`Task created for ${contactName.split(' ')[0]}`, 'success')
     setParsed(null)

@@ -20,9 +20,10 @@ codebase (Capacitor), on **Supabase** (Postgres + Auth + Realtime + Storage) wit
   Edge Function (`send-sms-hook`) delivers it through Arkesel.
 - **Data** — Postgres with Row-Level Security on every table.
 
-If the two Supabase env values are missing, the app boots in **Preview mode**
-(local sample data, no backend) so you can show it around before anything is
-wired up.
+Without the two Supabase env values there is no backend to talk to: the public
+pages (landing, Terms, Privacy) still open, and anything needing an account
+says the server is unreachable. There is no offline sample mode — every screen
+shows real data or nothing.
 
 ---
 
@@ -85,7 +86,7 @@ That's the whole backend, entirely in the browser.
 
 ```bash
 npm install
-cp .env.example .env     # blank = Preview mode; fill in the two values for live auth
+cp .env.example .env     # fill in the two values; without them sign-in cannot work
 npm run dev
 ```
 
@@ -95,8 +96,9 @@ npm run dev
 src/
   screens/        Contacts (owe-ledger), contact task space, Personal, Groups, Profile, Auth
   components/     Shell + bottom nav, Avatar, icons
-  context/        AuthContext (Supabase phone OTP + Preview fallback)
-  lib/            supabase client, config, sample data
+  context/        AuthContext (Supabase phone OTP)
+  data/           queries, mutations and React Query hooks over Postgres
+  lib/            supabase client, config, parsing, push, deep links
 supabase/
   migrations/0001_init.sql          full schema + RLS + storage + realtime
   functions/send-sms-hook/index.ts  Arkesel SMS delivery hook

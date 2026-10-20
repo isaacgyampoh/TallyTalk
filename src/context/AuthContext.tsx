@@ -1,31 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { AuthContext, type AuthMode, type AuthState } from './authState'
+import { AuthContext, type AuthState } from './authState'
 import type { Session } from '@supabase/supabase-js'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { unregisterPush } from '@/lib/push'
 
-const PREVIEW_KEY = 'tallytalk.preview'
-
-/** sessionStorage throws in some privacy modes; never let that break boot. */
-function readPreviewFlag(): boolean {
-  try {
-    return sessionStorage.getItem(PREVIEW_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function writePreviewFlag(on: boolean) {
-  try {
-    if (on) sessionStorage.setItem(PREVIEW_KEY, '1')
-    else sessionStorage.removeItem(PREVIEW_KEY)
-  } catch {
-    /* private mode — the flag just won't survive the reload */
-  }
-}
-
-const UNREACHABLE =
-  "We can't reach the server right now. Check your connection, or explore with sample data."
+const UNREACHABLE = "We can't reach the server right now. Check your connection and try again."
 
 /** supabase-js reports a dead host or no network as a bare fetch failure. */
 function readableAuthError(err: unknown): string {
@@ -36,13 +15,8 @@ function readableAuthError(err: unknown): string {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const mode: AuthMode = isSupabaseConfigured ? 'live' : 'preview'
   const [ready, setReady] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
-  // Only an explicit "explore with sample data" tap sets this, so honour it in
-  // both modes — reading it only when Supabase is unconfigured meant a reload
-  // dropped the demo on any build that does have a backend configured.
-  const [previewSignedIn, setPreviewSignedIn] = useState(readPreviewFlag)
 
   useEffect(() => {
     if (!supabase) {
@@ -61,13 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthState>(() => {
-    const signedIn = Boolean(session) || previewSignedIn
+    const signedIn = Boolean(session)
 
     return {
-      mode,
       ready,
       session,
-      previewSignedIn,
       signedIn,
 
       async sendCode(phone: string) {
@@ -90,22 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
 
-      enterPreview() {
-        writePreviewFlag(true)
-        setPreviewSignedIn(true)
-      },
-
       async signOut() {
         // Detach the device before the session goes: the delete needs it, and
         // leaving the token behind sends this account's notifications to
         // whoever uses the device next.
         await unregisterPush()
         if (supabase) await supabase.auth.signOut().catch(() => {})
-        writePreviewFlag(false)
-        setPreviewSignedIn(false)
       },
     }
-  }, [mode, ready, session, previewSignedIn])
+  }, [ready, session])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

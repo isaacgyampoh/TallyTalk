@@ -3,8 +3,7 @@ import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
 import { useAuth } from '@/context/authState'
 import { useTheme, type ThemePref } from '@/context/themeState'
-import { SAMPLE_PROFILE } from '@/lib/sampleData'
-import { useIsLive, useMyProfile, useUpdateProfile } from '@/data/hooks'
+import { useMyProfile, useUpdateProfile } from '@/data/hooks'
 import { PrivacySettings } from '@/components/PrivacySettings'
 import { NotificationSettings } from '@/components/NotificationSettings'
 import { deleteMyAccount, exportMyData } from '@/data/account'
@@ -20,7 +19,6 @@ const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
 export function ProfileScreen() {
   const { session, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
-  const live = useIsLive()
   const toast = useToast()
   const { data: profile, isError, refetch } = useMyProfile()
   const { save, changePhoto } = useUpdateProfile()
@@ -61,14 +59,8 @@ export function ProfileScreen() {
     }
   }
 
-  // A live session must never borrow the sample identity: while the profile
-  // query is in flight the fallback would show a fabricated name and number.
-  const phone = live
-    ? (profile?.phone ?? (session?.user?.phone ? `+${session.user.phone}` : ''))
-    : SAMPLE_PROFILE.phone
-  const name = live
-    ? (profile?.display_name ?? (session?.user?.user_metadata?.display_name as string) ?? '')
-    : SAMPLE_PROFILE.name
+  const phone = profile?.phone ?? (session?.user?.phone ? `+${session.user.phone}` : '')
+  const name = profile?.display_name ?? (session?.user?.user_metadata?.display_name as string) ?? ''
 
   const avatarNode = profile?.photo_url ? (
     <img src={profile.photo_url} alt="" className="h-[60px] w-[60px] rounded-full object-cover" />
@@ -96,7 +88,7 @@ export function ProfileScreen() {
         <div className="flex items-center gap-4 rounded-card border border-line p-4">
           {/* Only a control when it does something. A disabled button with no
               label is both the wrong element and an unnamed control. */}
-          {live ? (
+          {
             <button
               onClick={() => fileRef.current?.click()}
               disabled={changePhoto.isPending}
@@ -105,9 +97,7 @@ export function ProfileScreen() {
             >
               {avatarNode}
             </button>
-          ) : (
-            <div className="shrink-0">{avatarNode}</div>
-          )}
+          }
           <input
             ref={fileRef}
             type="file"
@@ -144,7 +134,7 @@ export function ProfileScreen() {
             ) : (
               <p className="flex items-center gap-2 truncate font-display text-[20px] font-bold">
                 {name}
-                {live && (
+                {
                   <button
                     onClick={() => {
                       setNameDraft(name)
@@ -154,23 +144,23 @@ export function ProfileScreen() {
                   >
                     Edit
                   </button>
-                )}
+                }
               </p>
             )}
             <p className="nums text-[14px] text-ink-soft">{phone}</p>
-            {live && (
+            {
               <p className="text-[11.5px] text-ink-faint">
                 Your number comes from sign-in and cannot be changed.
               </p>
-            )}
+            }
             <span className="mt-1 inline-block rounded-full bg-wash px-2 py-0.5 text-[11px] font-semibold text-ink-faint">
-              {session ? 'Connected to Supabase' : 'Preview · sample data'}
+              {'Signed in'}
             </span>
           </div>
         </div>
       </div>
 
-      {live && isError && (
+      {isError && (
         <div className="mx-5 mt-3 rounded-card border border-line px-4 py-3">
           <p className="text-[14px] text-ink">We couldn&rsquo;t load your profile.</p>
           <button
@@ -203,7 +193,7 @@ export function ProfileScreen() {
           </div>
         </section>
 
-        {live && profile && (
+        {profile && (
           <NotificationSettings
             profile={profile}
             saving={save.isPending}
@@ -213,7 +203,7 @@ export function ProfileScreen() {
           />
         )}
 
-        {live && profile && (
+        {profile && (
           <PrivacySettings
             profile={profile}
             saving={save.isPending}
@@ -223,7 +213,7 @@ export function ProfileScreen() {
           />
         )}
 
-        {live && (
+        {
           <section className="mb-5">
             <h2 className="eyebrow mb-2">Data &amp; account</h2>
             <ul className="overflow-hidden rounded-card border border-line">
@@ -273,7 +263,7 @@ export function ProfileScreen() {
               </li>
             </ul>
           </section>
-        )}
+        }
 
         <button className="btn-ghost w-full" onClick={signOut}>
           Sign out

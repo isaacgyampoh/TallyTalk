@@ -1,4 +1,4 @@
-import { SAMPLE_CONTACTS } from './sampleData'
+import type { Contact } from '@/data/viewTypes'
 import type { Priority } from './config'
 
 export interface Parsed {
@@ -28,11 +28,11 @@ const DAYS = [
 const has = (s: string, re: RegExp) => re.test(s)
 
 /**
- * Rule-based "AI" quick-add for the demo. Turns a sentence into a structured
- * task. Designed so it can later be swapped for a real model call without
- * changing callers.
+ * Rule-based quick-add: turns a typed sentence into a structured task. Kept
+ * behind one function so it can later be swapped for a real model call without
+ * changing any caller.
  */
-export function smartParse(input: string): Parsed {
+export function smartParse(input: string, contacts: Contact[] = []): Parsed {
   const raw = input.trim()
   const lower = raw.toLowerCase()
 
@@ -54,7 +54,7 @@ export function smartParse(input: string): Parsed {
 
   let contactId: string | undefined
   let contactName: string | undefined
-  for (const c of SAMPLE_CONTACTS) {
+  for (const c of contacts) {
     const first = c.name.split(' ')[0].toLowerCase()
     if (has(lower, new RegExp('\\b' + first + '\\b')) || lower.includes(c.name.toLowerCase())) {
       contactId = c.id
