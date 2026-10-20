@@ -1,7 +1,7 @@
 # Phone sign-in with Arkesel
 
-_Status: API key configured and verified, hook wired. Waiting on an approved
-sender ID. Last checked 20 October 2026._
+_Status: configured and switched on. Every step is verified except delivery to
+a real handset, which needs a phone. Last checked 20 October 2026._
 
 Supabase Auth (GoTrue) generates and verifies the one-time code itself. The
 only thing we provide is delivery: Supabase signs a webhook to
@@ -50,8 +50,8 @@ worth raising deliberately once real traffic justifies it.
 | `ARKESEL_API_KEY` | Set, and **verified against Arkesel** with a read-only balance call: HTTP 200, account "Emmanuel Dzotsi", Ghana |
 | `SEND_SMS_HOOK_SECRET` | Generated and set on both sides |
 | Auth hook | `hook_send_sms_enabled = true`, pointed at `send-sms-hook` |
-| `ARKESEL_SENDER_ID` | **Not set** — see below |
-| Phone provider | **Off**, deliberately, until the sender ID exists |
+| `ARKESEL_SENDER_ID` | Set to `tasktally` |
+| Phone provider | **On** |
 
 Both gates were then checked against the deployed function, without sending
 anything: with no sender ID it answers "SMS is not configured" before touching
@@ -62,22 +62,37 @@ stays fail-closed.
 No secret is in a `VITE_` variable, the client bundle, git or a log — a `VITE_`
 variable is compiled into the JavaScript every visitor downloads.
 
+## What has been verified end to end
+
+Requesting a code for an unroutable number (`+233000000000`) walks the whole
+chain without any phone being able to receive anything:
+
+1. GoTrue accepts the request — phone sign-in is on, no more
+   `phone_provider_disabled`.
+2. It generates the OTP and calls the hook.
+3. The hook **verifies the webhook signature** — a 502 back means it got past
+   that; an unsigned request gets 500 instead.
+4. The hook reaches **Arkesel**, which refuses the invalid recipient.
+5. The hook turns that into a 502, so a failed delivery is never reported as a
+   sent code.
+6. The app shows "We can't send codes by text right now. This is on our side,
+   not yours", keeps the number typed in, and stays on the same step.
+
+Unconfirmed user rows created by those attempts were deleted afterwards; the
+database is empty again.
+
 ## What is still needed from you
 
-1. **An approved sender ID**, 11 characters or fewer. There is no API that
-   lists them — I tried four plausible endpoints and Arkesel has none — so it
-   has to come from the dashboard. An unapproved one is the usual reason
-   Arkesel answers 200 and sends nothing.
+**A phone you are holding.** Enter its number on
+https://tally-talk-iota.vercel.app/signin and tell me what happens. That one
+send answers the two questions nothing else can:
 
-   ```bash
-   supabase secrets set ARKESEL_SENDER_ID='…'
-   ```
+- whether `tasktally` is approved as a sender ID on the Arkesel account, and
+- whether the account's SMS balance allows a send at all.
 
-   Then **Authentication → Providers → Phone**, enabled — or ask, and I will
-   flip it.
-
-2. **A phone number you are holding**, for the delivery test. Everything up to
-   the send is verified; the last hop cannot be.
+If the code arrives, phone sign-in is done. If it does not, the failure is now
+legible: the hook logs Arkesel's exact refusal, and the user-facing message
+stays honest either way.
 
 ## One thing to check on the account
 
