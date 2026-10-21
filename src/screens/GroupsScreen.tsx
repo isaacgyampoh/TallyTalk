@@ -2,15 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
-import { NameSheet } from '@/components/NameSheet'
+import { NewGroupSheet } from '@/components/NewGroupSheet'
 import { PlusIcon } from '@/components/icons'
-import { useCreateGroup, useGroups, useInvitations, useMyInvitations } from '@/data/hooks'
+import { useGroups, useInvitations, useMyInvitations } from '@/data/hooks'
 
 export function GroupsScreen() {
   const nav = useNavigate()
   const [creating, setCreating] = useState(false)
   const { data: liveGroups, isPending, isError, refetch } = useGroups()
-  const createGroupMutation = useCreateGroup()
   const { data: invitations } = useMyInvitations()
   const { respond } = useInvitations()
 
@@ -99,18 +98,11 @@ export function GroupsScreen() {
       </button>
 
       {creating && (
-        <NameSheet
-          title="New group"
-          placeholder="e.g. Wedding Committee"
-          cta="Create group"
+        <NewGroupSheet
           onClose={() => setCreating(false)}
-          onCreate={(name) => {
-            createGroupMutation.mutate(name, {
-              onSuccess: (id) => {
-                setCreating(false)
-                nav(`/groups/${id}`)
-              },
-            })
+          onCreated={(id) => {
+            setCreating(false)
+            nav(`/groups/${id}`)
           }}
         />
       )}

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { messageRow, type Target } from './messages'
 
 /**
  * Files sent inside a conversation.
@@ -50,6 +51,9 @@ export interface MessageAttachment {
   file_name: string
   mime_type: string
   file_size: number
+  thumbnail_path: string | null
+  width: number | null
+  height: number | null
   created_at: string
 }
 
@@ -94,7 +98,7 @@ function storagePath(me: string, original: string): string {
  * anything after the upload fails, the file is removed again rather than left
  * paying for storage forever.
  */
-export async function sendFileMessage(contactId: string, file: File, note = ''): Promise<void> {
+export async function sendFileMessage(target: Target, file: File, note = ''): Promise<void> {
   const problem = fileProblem(file)
   if (problem) throw new Error(problem)
 
@@ -106,10 +110,15 @@ export async function sendFileMessage(contactId: string, file: File, note = ''):
     .upload(path, file, { contentType: file.type })
   if (upErr) throw upErr
 
+  // An image gets a small preview beside it, so a conversation never has to
+  // download a full-resolution photograph to show one. Made in the browser:
+  // server-side image processing would mean another service to pay for.
+  const thumb = isImage(file.type) ? await uploadThumbnail(path, file).catch(() => null) : null
+
   try {
     const { data: message, error: msgErr } = await db()
       .from('messages')
-      .insert({ sender_id: me, recipient_id: contactId, body: note.trim() })
+      .insert(messageRow(me, target, note.trim()))
       .select('id')
       .single()
     if (msgErr) throw msgErr
@@ -123,17 +132,72 @@ export async function sendFileMessage(contactId: string, file: File, note = ''):
         file_name: file.name.slice(0, 200),
         mime_type: file.type,
         file_size: file.size,
+        thumbnail_path: thumb?.path ?? null,
+        width: thumb?.width ?? null,
+        height: thumb?.height ?? null,
       })
     if (attErr) throw attErr
   } catch (err) {
+    const orphans = thumb ? [path, thumb.path] : [path]
     await db()
       .storage.from('message-files')
-      .remove([path])
+      .remove(orphans)
       .catch(() => {
         /* the upload is orphaned; it is readable only by its uploader */
       })
     throw err
   }
+}
+
+export function isImage(mime: string): boolean {
+  return ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif'].includes(mime)
+}
+
+/** The longest edge of a preview. Enough for a conversation, no more. */
+export const THUMB_MAX_EDGE = 480
+
+/**
+ * Draw the image down to a small WebP and upload it beside the original.
+ *
+ * Returns null when the browser cannot do it — an old WebView, a format it
+ * will not decode, a corrupt file. The message still sends; it simply shows a
+ * file card instead of a preview.
+ */
+export async function makeThumbnail(file: File): Promise<Blob | null> {
+  if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return null
+  try {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, THUMB_MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close?.()
+    return await new Promise((resolve) =>
+      canvas.toBlob((blob) => resolve(blob), 'image/webp', 0.72),
+    )
+  } catch {
+    return null
+  }
+}
+
+async function uploadThumbnail(
+  originalPath: string,
+  file: File,
+): Promise<{ path: string; width: number; height: number } | null> {
+  const blob = await makeThumbnail(file)
+  if (!blob) return null
+  const bitmap = await createImageBitmap(file).catch(() => null)
+  const path = `${originalPath}.thumb.webp`
+  const { error } = await db()
+    .storage.from('message-files')
+    .upload(path, blob, { contentType: 'image/webp' })
+  if (error) return null
+  const result = { path, width: bitmap?.width ?? 0, height: bitmap?.height ?? 0 }
+  bitmap?.close?.()
+  return result
 }
 
 /** The attachments for a page of messages, in one query rather than per row. */

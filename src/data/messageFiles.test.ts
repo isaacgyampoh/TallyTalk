@@ -3,6 +3,7 @@ import { makeSupabaseMock, type MockClient } from './supabaseMock'
 
 const ME = 'me-uuid'
 const THEM = 'them-uuid'
+const PERSON = { kind: 'person' as const, id: THEM }
 let client: MockClient
 vi.mock('@/lib/supabase', () => ({
   get supabase() {
@@ -71,23 +72,24 @@ describe('readableSize', () => {
 
 describe('sendFileMessage', () => {
   it('uploads into my own folder, which is what the write policy checks', async () => {
-    await sendFileMessage(THEM, fakeFile())
+    await sendFileMessage(PERSON, fakeFile())
     expect(client.uploads[0].bucket).toBe('message-files')
     expect(client.uploads[0].path.startsWith(`${ME}/`)).toBe(true)
   })
 
   it('cannot be tricked into escaping that folder by the file name', async () => {
-    await sendFileMessage(THEM, fakeFile({ name: '../../etc/passwd' }))
+    await sendFileMessage(PERSON, fakeFile({ name: '../../etc/passwd' }))
     const path = client.uploads[0].path
     expect(path.startsWith(`${ME}/`)).toBe(true)
     expect(path).not.toContain('..')
   })
 
   it('sends the message and records the attachment against it', async () => {
-    await sendFileMessage(THEM, fakeFile(), 'The invoice')
+    await sendFileMessage(PERSON, fakeFile(), 'The invoice')
     expect(client.argFor('messages', 'insert')).toMatchObject({
       sender_id: ME,
       recipient_id: THEM,
+      group_id: null,
       body: 'The invoice',
     })
     expect(client.argFor('message_attachments', 'insert')).toMatchObject({
@@ -100,7 +102,7 @@ describe('sendFileMessage', () => {
   })
 
   it('refuses before uploading anything when the file is not allowed', async () => {
-    await expect(sendFileMessage(THEM, fakeFile({ size: 20 * 1024 * 1024 }))).rejects.toThrow(
+    await expect(sendFileMessage(PERSON, fakeFile({ size: 20 * 1024 * 1024 }))).rejects.toThrow(
       /10 MB/,
     )
     expect(client.uploads).toHaveLength(0)
@@ -111,7 +113,7 @@ describe('sendFileMessage', () => {
     client = makeSupabaseMock({
       results: { messages: { error: { message: 'blocked' } } },
     })
-    await expect(sendFileMessage(THEM, fakeFile())).rejects.toMatchObject({ message: 'blocked' })
+    await expect(sendFileMessage(PERSON, fakeFile())).rejects.toMatchObject({ message: 'blocked' })
     expect(client.removals).toHaveLength(1)
   })
 })

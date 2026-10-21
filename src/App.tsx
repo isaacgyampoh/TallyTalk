@@ -201,6 +201,7 @@ function Gate() {
         <Route path="/contacts/:id" element={<ContactSpaceScreen />} />
         <Route path="/contacts/:id/t/:taskId" element={<TaskCommentsScreen />} />
         <Route path="/contacts/:id/chat" element={<ChatScreen />} />
+        <Route path="/groups/:id/chat" element={<ChatScreen />} />
         <Route path="/messages" element={<ConversationsScreen />} />
         <Route path="/legal/:doc" element={<LegalScreen />} />
         <Route path="/notifications" element={<NotificationsScreen />} />

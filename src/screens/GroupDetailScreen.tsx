@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { isAppMode } from '@/lib/platform'
 import { useSwipeBack } from '@/hooks/useSwipeBack'
 import { Avatar } from '@/components/Avatar'
-import { BackIcon, CheckIcon, PlusIcon } from '@/components/icons'
+import { BackIcon, CheckIcon, PlusIcon, CommentIcon } from '@/components/icons'
 import type { GroupTask } from '@/data/viewTypes'
 import { OfflineBar } from '@/components/OfflineBar'
 import {
@@ -138,6 +138,13 @@ export function GroupDetailScreen() {
             {group.members} members · {open} open · {done} done
           </p>
         </div>
+        <button
+          onClick={() => nav(`/groups/${group.id}/chat`)}
+          aria-label={`Message ${group.name}`}
+          className="press grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft"
+        >
+          <CommentIcon width={21} height={21} />
+        </button>
       </header>
 
       <div className="px-5 pt-3">

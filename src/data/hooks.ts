@@ -13,11 +13,14 @@ import { listAttachmentsFor, sendFileMessage } from './messageFiles'
 import {
   conversationsKey,
   listConversations,
+  listReceipts,
   listThread,
-  markThreadRead,
+  markRead,
+  searchMessages,
   sendMessage,
   threadKey,
   unreadMessageCount,
+  type Target,
 } from './messages'
 import {
   listNotifications,
@@ -40,6 +43,8 @@ import {
   type ContactFlags,
 } from './contacts'
 import {
+  addGroupMembers,
+  removeGroupMember,
   addChecklistItem,
   createChecklist,
   listChecklistItems,
@@ -316,6 +321,42 @@ export function useGroupDetail(groupId: string) {
   return { members, tasks }
 }
 
+/** Just the membership, for a group conversation's header and receipts. */
+export function useGroupMembers(groupId: string) {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: ['group-members', groupId],
+    enabled: live && !!groupId,
+    queryFn: () => getGroupMembers(groupId),
+  })
+}
+
+export function useAddGroupMembers() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  return useMutation({
+    mutationFn: (v: { groupId: string; userIds: string[] }) =>
+      addGroupMembers(v.groupId, v.userIds),
+    onSettled: (_d, _e, v) => {
+      qc.invalidateQueries({ queryKey: ['group-members', v.groupId] })
+      qc.invalidateQueries({ queryKey: ['groups', live] })
+      qc.invalidateQueries({ queryKey: [...conversationsKey, live] })
+    },
+  })
+}
+
+export function useRemoveGroupMember() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  return useMutation({
+    mutationFn: (v: { groupId: string; userId: string }) => removeGroupMember(v.groupId, v.userId),
+    onSettled: (_d, _e, v) => {
+      qc.invalidateQueries({ queryKey: ['group-members', v.groupId] })
+      qc.invalidateQueries({ queryKey: ['groups', live] })
+    },
+  })
+}
+
 export function useCreateGroup() {
   const qc = useQueryClient()
   const live = useIsLive()
@@ -534,7 +575,7 @@ export function useUnreadMessages() {
  * the end while it is being read, and an offset would repeat a message or skip
  * one. `older()` fetches the page before the oldest message held.
  */
-export function useThread(contactId: string) {
+export function useThread(target: Target) {
   const live = useIsLive()
   const qc = useQueryClient()
   const [pages, setPages] = useState<MessageRow[]>([])
@@ -542,9 +583,9 @@ export function useThread(contactId: string) {
   const [loadingOlder, setLoadingOlder] = useState(false)
 
   const latest = useQuery({
-    queryKey: [...threadKey(contactId), live],
-    enabled: live && !!contactId,
-    queryFn: () => listThread(contactId),
+    queryKey: [...threadKey(target), live],
+    enabled: live && !!target.id,
+    queryFn: () => listThread(target),
   })
 
   // Older pages are held beside the query rather than inside it, so a refetch
@@ -554,25 +595,65 @@ export function useThread(contactId: string) {
     if (!oldest || reachedStart || loadingOlder) return
     setLoadingOlder(true)
     try {
-      const page = await listThread(contactId, oldest.created_at)
+      const page = await listThread(target, oldest.created_at)
       if (page.length === 0) setReachedStart(true)
       else setPages((held) => [...page, ...held])
     } finally {
       setLoadingOlder(false)
     }
-  }, [contactId, pages, latest.data, reachedStart, loadingOlder])
+  }, [target, pages, latest.data, reachedStart, loadingOlder])
 
   const messages = [...pages, ...(latest.data ?? [])]
 
-  const markRead = useCallback(() => {
-    if (!live || !contactId) return
-    void markThreadRead(contactId).then(() => {
-      qc.invalidateQueries({ queryKey: ['unread-messages', live] })
-      qc.invalidateQueries({ queryKey: [...conversationsKey, live] })
-    })
-  }, [contactId, live, qc])
+  /**
+   * Record that these messages were read.
+   *
+   * Called when they are actually on screen in a visible window, not when the
+   * query happens to fetch them — a receipt that fires on a background refetch
+   * would say someone read something they never saw.
+   */
+  const markSeen = useCallback(
+    (ids: string[]) => {
+      if (!live || ids.length === 0) return
+      void markRead(ids).then(() => {
+        qc.invalidateQueries({ queryKey: ['unread-messages', live] })
+        qc.invalidateQueries({ queryKey: [...conversationsKey, live] })
+      })
+    },
+    [live, qc],
+  )
 
-  return { ...latest, messages, older, reachedStart, loadingOlder, markRead }
+  return { ...latest, messages, older, reachedStart, loadingOlder, markSeen }
+}
+
+/** Who has read one message. Opened on demand, not for every row. */
+export function useReceipts(messageId: string | null) {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: ['receipts', messageId, live],
+    enabled: live && !!messageId,
+    queryFn: () => listReceipts(messageId as string),
+  })
+}
+
+/**
+ * Search, debounced, so a query runs when typing pauses rather than per
+ * keystroke.
+ */
+export function useMessageSearch(query: string, scope?: Target) {
+  const live = useIsLive()
+  const [debounced, setDebounced] = useState(query)
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query), 250)
+    return () => clearTimeout(t)
+  }, [query])
+
+  return useQuery({
+    queryKey: ['search', debounced, scope?.kind, scope?.id, live],
+    enabled: live && debounced.trim().length >= 2,
+    queryFn: () => searchMessages(debounced, scope),
+  })
 }
 
 /** The files attached to a page of messages, fetched in one query. */
@@ -586,52 +667,58 @@ export function useThreadAttachments(messageIds: string[]) {
   })
 }
 
-export function useSendFile(contactId: string) {
+export function useSendFile(target: Target) {
   const qc = useQueryClient()
   const live = useIsLive()
   return useMutation({
-    mutationFn: (v: { file: File; note?: string }) =>
-      sendFileMessage(contactId, v.file, v.note ?? ''),
+    mutationFn: (v: { file: File; note?: string }) => sendFileMessage(target, v.file, v.note ?? ''),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [...threadKey(contactId), live] })
+      qc.invalidateQueries({ queryKey: [...threadKey(target), live] })
       qc.invalidateQueries({ queryKey: [...conversationsKey, live] })
       qc.invalidateQueries({ queryKey: ['thread-files'] })
     },
   })
 }
 
-export function useSendMessage(contactId: string) {
+export function useSendMessage(target: Target) {
   const qc = useQueryClient()
   const live = useIsLive()
   return useMutation({
-    mutationFn: (body: string) => sendMessage(contactId, body),
+    mutationFn: (body: string) => sendMessage(target, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [...threadKey(contactId), live] })
+      qc.invalidateQueries({ queryKey: [...threadKey(target), live] })
       qc.invalidateQueries({ queryKey: [...conversationsKey, live] })
     },
   })
 }
 
 /** New messages while the thread is open. */
-export function useThreadRealtime(contactId: string) {
+export function useThreadRealtime(target: Target) {
   const qc = useQueryClient()
   const live = useIsLive()
+  // Depended on by value, not by identity: callers build the target inline, so
+  // a new object each render would resubscribe on every render.
+  const { kind, id } = target
 
   useEffect(() => {
-    if (!live || !supabase || !contactId) return
+    if (!live || !supabase || !id) return
+    const target = { kind, id }
     const channel = supabase
-      .channel(`thread:${contactId}`)
+      .channel(`thread:${kind}:${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-        qc.invalidateQueries({ queryKey: [...threadKey(contactId), true] })
+        qc.invalidateQueries({ queryKey: [...threadKey(target), true] })
         qc.invalidateQueries({ queryKey: [...conversationsKey, true] })
         qc.invalidateQueries({ queryKey: ['unread-messages', true] })
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'message_reads' }, () => {
+        qc.invalidateQueries({ queryKey: ['receipts'] })
       })
       .subscribe()
 
     return () => {
       supabase?.removeChannel(channel)
     }
-  }, [live, contactId, qc])
+  }, [live, kind, id, qc])
 }
 
 export function useSpaceRealtime(contactId: string) {

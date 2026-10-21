@@ -76,6 +76,34 @@ export async function listMyGroups(): Promise<GroupRow[]> {
   return ((data ?? []) as unknown as { group: GroupRow }[]).map((r) => r.group)
 }
 
+/**
+ * Put people in a group.
+ *
+ * Only an administrator may, and `group_members_admin_manage` is what decides
+ * that — this is a plain insert whose authorisation lives in the policy. The
+ * unique constraint on (group_id, user_id) makes a retry harmless.
+ */
+export async function addGroupMembers(groupId: string, userIds: string[]): Promise<void> {
+  if (userIds.length === 0) return
+  const { error } = await db()
+    .from('group_members')
+    .upsert(
+      userIds.map((user_id) => ({ group_id: groupId, user_id })),
+      { onConflict: 'group_id,user_id', ignoreDuplicates: true },
+    )
+  if (error) throw error
+}
+
+/** Take someone out. An administrator only; leaving is removing yourself. */
+export async function removeGroupMember(groupId: string, userId: string): Promise<void> {
+  const { error } = await db()
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+  if (error) throw error
+}
+
 export async function getGroupMembers(groupId: string): Promise<GroupMemberRow[]> {
   const { data, error } = await db()
     .from('group_members')
