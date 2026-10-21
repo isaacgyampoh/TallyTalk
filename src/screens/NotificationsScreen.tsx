@@ -6,6 +6,7 @@ import {
   BellIcon,
   CheckIcon,
   CommentIcon,
+  ContactsIcon,
   UrgentIcon,
   WandIcon,
 } from '@/components/icons'
@@ -121,17 +122,24 @@ export function NotificationsScreen() {
   )
 }
 
+// Exhaustive on purpose: the database has written 'messages' and 'contacts'
+// since migration 0011, and before this map covered them those notifications
+// were drawn with no tone at all and the urgent glyph.
 const TONE: Record<NotificationRow['category'], string> = {
   assignments: 'bg-violet/10 text-violet-ink',
   updates: 'bg-ink/5 text-ink-soft',
   comments: 'bg-owed text-ink-soft',
   pokes: 'bg-urgent/10 text-urgent-ink',
+  messages: 'bg-violet/10 text-violet-ink',
+  contacts: 'bg-ink/5 text-ink-soft',
 }
 
 function Glyph({ category }: { category: NotificationRow['category'] }) {
   const size = { width: 17, height: 17 }
   if (category === 'pokes') return <WandIcon {...size} />
+  if (category === 'messages') return <CommentIcon {...size} />
   if (category === 'comments') return <CommentIcon {...size} />
+  if (category === 'contacts') return <ContactsIcon {...size} />
   if (category === 'updates') return <CheckIcon {...size} />
   return <UrgentIcon {...size} />
 }

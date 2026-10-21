@@ -23,6 +23,7 @@ import { useAndroidBack } from '@/hooks/useSwipeBack'
 import { APP_NAME } from '@/lib/config'
 import { WandIcon } from '@/components/icons'
 import { retryImport } from '@/lib/retryImport'
+import { isNetworkError, reportReachable } from '@/lib/connection'
 import { useOnline } from '@/hooks/useOnline'
 import { I18nProvider } from '@/i18n/I18nProvider'
 import { useT } from '@/i18n/useT'
@@ -229,6 +230,22 @@ function Gate() {
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+})
+
+// Every query and mutation votes on whether anything is getting through. The
+// Android WebView reports itself online with the radios off, so what requests
+// actually did is the more honest signal — see lib/connection.ts.
+queryClient.getQueryCache().subscribe((event) => {
+  if (event.type !== 'updated') return
+  const { status, error } = event.query.state
+  if (status === 'success') reportReachable(true)
+  else if (status === 'error' && isNetworkError(error)) reportReachable(false)
+})
+queryClient.getMutationCache().subscribe((event) => {
+  if (event.type !== 'updated' || !event.mutation) return
+  const { status, error } = event.mutation.state
+  if (status === 'success') reportReachable(true)
+  else if (status === 'error' && isNetworkError(error)) reportReachable(false)
 })
 
 export default function App() {

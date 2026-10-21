@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { reportEdgeFailure } from '@/lib/telemetry'
+import { myId } from './session'
 
 /**
  * Leaving: taking your data with you, and closing the account.
@@ -25,16 +26,13 @@ export interface DataExport {
 
 export async function exportMyData(): Promise<DataExport> {
   const client = db()
-  const {
-    data: { user },
-  } = await client.auth.getUser()
-  if (!user) throw new Error('Not signed in')
+  const me = await myId()
 
   const [profile, contacts, tasks, checklists, items] = await Promise.all([
-    client.from('profiles').select('*').eq('id', user.id).single(),
-    client.from('contacts').select('*').eq('owner_id', user.id),
-    client.from('tasks').select('*').or(`requester_id.eq.${user.id},assignee_id.eq.${user.id}`),
-    client.from('checklists').select('*').eq('owner_id', user.id),
+    client.from('profiles').select('*').eq('id', me).single(),
+    client.from('contacts').select('*').eq('owner_id', me),
+    client.from('tasks').select('*').or(`requester_id.eq.${me},assignee_id.eq.${me}`),
+    client.from('checklists').select('*').eq('owner_id', me),
     client.from('checklist_items').select('*'),
   ])
 

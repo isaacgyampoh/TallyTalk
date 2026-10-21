@@ -102,6 +102,35 @@ describe('routeForNotificationRow', () => {
     expect(routeForNotificationRow({ ...row, actor_id: null, group_id: 'g1' })).toBe('/groups/g1')
   })
 
+  // A real group notification names its sender too. Checking the sender first
+  // sent every one of them to that person's profile instead of to the group.
+  it('opens the group, not the sender, when a notification names both', () => {
+    expect(
+      routeForNotificationRow({ ...row, task_id: null, actor_id: 'ama-uuid', group_id: 'g1' }),
+    ).toBe('/groups/g1')
+  })
+
+  it('opens the conversation for a message, where the message can be read', () => {
+    expect(
+      routeForNotificationRow({ ...row, category: 'messages', task_id: null, group_id: null }),
+    ).toBe('/contacts/ama-uuid/chat')
+  })
+
+  it('opens the group conversation for a group message', () => {
+    expect(
+      routeForNotificationRow({
+        ...row,
+        category: 'messages',
+        task_id: null,
+        group_id: 'g1',
+      }),
+    ).toBe('/groups/g1/chat')
+  })
+
+  it('still opens a task a message-less notification names', () => {
+    expect(routeForNotificationRow({ ...row, group_id: 'g1' })).toBe('/contacts/ama-uuid/t/task-1')
+  })
+
   it('returns null rather than guessing when nothing is named', () => {
     expect(routeForNotificationRow({ ...row, task_id: null, actor_id: null })).toBeNull()
   })

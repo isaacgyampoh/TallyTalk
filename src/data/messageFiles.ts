@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { myId } from './session'
 import { messageRow, type Target } from './messages'
 
 /**
@@ -15,14 +16,6 @@ import { messageRow, type Target } from './messages'
 function db() {
   if (!supabase) throw new Error('Not connected to the server')
   return supabase
-}
-
-async function myId(): Promise<string> {
-  const {
-    data: { user },
-  } = await db().auth.getUser()
-  if (!user) throw new Error('Not signed in')
-  return user.id
 }
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024

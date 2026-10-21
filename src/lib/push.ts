@@ -72,10 +72,10 @@ export type PushSetupResult = 'registered' | 'denied' | 'unsupported' | 'no-sess
  */
 export async function registerPush(): Promise<PushSetupResult> {
   if (!supabase) return 'no-session'
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return 'no-session'
+  // The session, not the network: this runs on every signed-in load, and a
+  // round-trip here delayed everything behind it.
+  const { data } = await supabase.auth.getSession()
+  if (!data.session?.user) return 'no-session'
   if (registered) return 'registered'
 
   const state = await pushState()

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { myId } from './session'
 import type { Priority } from '@/lib/config'
 import type { Contact, Task } from './viewTypes'
 import { contactRowToView, taskRowToView } from './mappers'
@@ -11,14 +12,6 @@ import type { ContactRow, TaskRow } from './types'
 function db() {
   if (!supabase) throw new Error('Not connected to the server')
   return supabase
-}
-
-async function myId(): Promise<string> {
-  const {
-    data: { user },
-  } = await db().auth.getUser()
-  if (!user) throw new Error('Not signed in')
-  return user.id
 }
 
 const CONTACT_SELECT =

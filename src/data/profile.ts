@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { myId } from './session'
 import type { NotificationPrefs } from '@/lib/notifications'
 
 /**
@@ -12,14 +13,6 @@ import type { NotificationPrefs } from '@/lib/notifications'
 function db() {
   if (!supabase) throw new Error('Not connected to the server')
   return supabase
-}
-
-async function myId(): Promise<string> {
-  const {
-    data: { user },
-  } = await db().auth.getUser()
-  if (!user) throw new Error('Not signed in')
-  return user.id
 }
 
 /** Who may do a given thing. Mirrors the privacy_scope enum in 0001. */

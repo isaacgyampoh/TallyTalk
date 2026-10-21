@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { myId } from './session'
 import type { ContactRow } from './types'
 
 // Adding and classifying the people you owe things to. Every function assumes a
@@ -7,14 +8,6 @@ import type { ContactRow } from './types'
 function db() {
   if (!supabase) throw new Error('Not connected to the server')
   return supabase
-}
-
-async function myId(): Promise<string> {
-  const {
-    data: { user },
-  } = await db().auth.getUser()
-  if (!user) throw new Error('Not signed in')
-  return user.id
 }
 
 export interface FoundProfile {

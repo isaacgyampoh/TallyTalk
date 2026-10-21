@@ -28,6 +28,7 @@ import { fileProblem, isImage, readableSize, signedFileUrl } from '@/data/messag
 import type { MessageAttachment } from '@/data/messageFiles'
 import type { MessageRow, Target } from '@/data/messages'
 import { initialsFrom, colorFor } from '@/data/mappers'
+import { useAuth } from '@/context/authState'
 import { useToast } from '@/components/toastContext'
 import { buzz } from '@/lib/haptics'
 import { agoLabel } from '@/lib/time'
@@ -47,6 +48,7 @@ export function ChatScreen() {
   const location = useLocation()
   const nav = useNavigate()
   const toast = useToast()
+  const { session } = useAuth()
 
   const target: Target = useMemo(
     () => ({ kind: location.pathname.startsWith('/groups/') ? 'group' : 'person', id }),
@@ -84,8 +86,11 @@ export function ChatScreen() {
   const fileRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
 
-  const me = messages.find((m) => m.sender_id !== id)?.sender_id
-  const unreadFromOthers = messages.filter((m) => m.sender_id !== me && !m.read_at).map((m) => m.id)
+  // Who I am comes from the session, never from the messages. Inferring it
+  // from "the sender who is not the other person" is wrong while nothing has
+  // been sent back yet, and meaningless in a group, where `id` is the group.
+  const me = session?.user?.id
+  const unreadFromOthers = messages.filter((m) => m.sender_id !== me).map((m) => m.id)
 
   /**
    * A receipt means someone saw the message, so it is recorded when the end of
@@ -266,7 +271,7 @@ export function ChatScreen() {
             <Bubble
               key={m.id}
               message={m as MessageRow}
-              mine={m.sender_id !== id && m.sender_id === me}
+              mine={m.sender_id === me}
               group={target.kind === 'group'}
               senderName={
                 target.kind === 'group'

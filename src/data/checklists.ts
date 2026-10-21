@@ -1,18 +1,11 @@
 import { supabase } from '@/lib/supabase'
+import { myId } from './session'
 import { PREDEFINED_CHECKLISTS } from '@/lib/config'
 import type { ChecklistItemRow, ChecklistRow, GroupMemberRow, GroupRow, TaskRow } from './types'
 
 function db() {
   if (!supabase) throw new Error('Not connected to the server')
   return supabase
-}
-
-async function myId(): Promise<string> {
-  const {
-    data: { user },
-  } = await db().auth.getUser()
-  if (!user) throw new Error('Not signed in')
-  return user.id
 }
 
 // --- checklists (private to owner) ---

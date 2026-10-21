@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { myId } from './session'
 
 /**
  * Files on a task — documents, images, and voice notes.
@@ -14,14 +15,6 @@ import { supabase } from '@/lib/supabase'
 function db() {
   if (!supabase) throw new Error('Not connected to the server')
   return supabase
-}
-
-async function myId(): Promise<string> {
-  const {
-    data: { user },
-  } = await db().auth.getUser()
-  if (!user) throw new Error('Not signed in')
-  return user.id
 }
 
 export type AttachmentKind = 'document' | 'image' | 'audio'
