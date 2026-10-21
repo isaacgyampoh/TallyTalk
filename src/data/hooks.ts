@@ -9,6 +9,7 @@ import { createGroupTask, poke } from './tasks'
 import { getMyProfile, updateMyProfile, uploadAvatar, type ProfilePatch } from './profile'
 import { getLanguage, hasChosenLanguage, setLanguage } from '@/lib/language'
 import { attachmentsKey, listTaskAttachments, uploadTaskAttachment } from './attachments'
+import { listAttachmentsFor, sendFileMessage } from './messageFiles'
 import {
   conversationsKey,
   listConversations,
@@ -572,6 +573,31 @@ export function useThread(contactId: string) {
   }, [contactId, live, qc])
 
   return { ...latest, messages, older, reachedStart, loadingOlder, markRead }
+}
+
+/** The files attached to a page of messages, fetched in one query. */
+export function useThreadAttachments(messageIds: string[]) {
+  const live = useIsLive()
+  const key = messageIds.join(',')
+  return useQuery({
+    queryKey: ['thread-files', key, live],
+    enabled: live && messageIds.length > 0,
+    queryFn: () => listAttachmentsFor(messageIds),
+  })
+}
+
+export function useSendFile(contactId: string) {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  return useMutation({
+    mutationFn: (v: { file: File; note?: string }) =>
+      sendFileMessage(contactId, v.file, v.note ?? ''),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...threadKey(contactId), live] })
+      qc.invalidateQueries({ queryKey: [...conversationsKey, live] })
+      qc.invalidateQueries({ queryKey: ['thread-files'] })
+    },
+  })
 }
 
 export function useSendMessage(contactId: string) {

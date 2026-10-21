@@ -7,7 +7,7 @@ _Checked against Supabase's docs on 20 October 2026._
 | | Free plan | Where we are |
 | --- | --- | --- |
 | Database | 500 MB | Empty (0 users) |
-| File storage | 1 GB | Empty |
+| File storage | 1 GB | Effectively empty |
 | Monthly active users | 50,000 | 0 |
 | Active projects | 2 per organisation | 1 is TaskTally |
 | Daily backups / point-in-time recovery | None | — |
@@ -15,6 +15,23 @@ _Checked against Supabase's docs on 20 October 2026._
 
 No payment method is on file, which means no overage charges — and also that
 hitting a limit stops the service rather than billing for it.
+
+### What that means for files people send
+
+Every bucket now has a server-side size and type limit, set in migration 0012,
+so the storage service refuses an oversized or disallowed file before a byte
+reaches a policy:
+
+| Bucket | Limit | Accepts |
+| --- | --- | --- |
+| `message-files` | 10 MB | images, PDF, Word, Excel, CSV, plain text |
+| `attachments` (task files) | 10 MB | the same, plus recorded audio |
+| `avatars`, `group-photos` | 5 MB | images only |
+
+10 MB a file is roughly a hundred documents inside the free plan's 1 GB, which
+suits scanned invoices, receipts and photographs — and is deliberately too
+small for video. Raising it is a plan decision, not a code one: the numbers
+live in `0012` and in `src/data/messageFiles.ts`, which are kept in step.
 
 ## The pause, precisely
 

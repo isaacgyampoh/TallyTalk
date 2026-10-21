@@ -2,8 +2,24 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { OfflineBar } from '@/components/OfflineBar'
 import { Avatar } from '@/components/Avatar'
-import { BackIcon, CheckIcon, DoubleCheckIcon } from '@/components/icons'
-import { useContacts, useSendMessage, useThread, useThreadRealtime } from '@/data/hooks'
+import {
+  BackIcon,
+  CheckIcon,
+  DocIcon,
+  DoubleCheckIcon,
+  DownloadIcon,
+  PaperclipIcon,
+} from '@/components/icons'
+import {
+  useContacts,
+  useSendFile,
+  useSendMessage,
+  useThread,
+  useThreadAttachments,
+  useThreadRealtime,
+} from '@/data/hooks'
+import { fileProblem, readableSize, signedFileUrl } from '@/data/messageFiles'
+import type { MessageAttachment } from '@/data/messageFiles'
 import { useToast } from '@/components/toastContext'
 import { buzz } from '@/lib/haptics'
 import { agoLabel } from '@/lib/time'
@@ -25,9 +41,15 @@ export function ChatScreen() {
   const { messages, isPending, isError, refetch, older, reachedStart, loadingOlder, markRead } =
     useThread(id)
   const send = useSendMessage(id)
+  const sendFile = useSendFile(id)
+  const files = useThreadAttachments(messages.map((m) => m.id))
+  const byMessage = new Map<string, MessageAttachment>(
+    (files.data ?? []).map((f) => [f.message_id, f]),
+  )
   useThreadRealtime(id)
 
   const [draft, setDraft] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
 
@@ -61,6 +83,39 @@ export function ChatScreen() {
       // The draft stays exactly where it is, so nothing typed is lost.
       onError: () => toast('Could not send that — try again', 'error'),
     })
+  }
+
+  function choose(file: File | undefined) {
+    if (!file) return
+    // Checked here for a fast, clear message; the bucket enforces the same
+    // limits itself, so a client that skipped this would simply be refused.
+    const problem = fileProblem(file)
+    if (problem) {
+      toast(problem, 'error')
+      return
+    }
+    sendFile.mutate(
+      { file, note: draft.trim() },
+      {
+        onSuccess: () => {
+          setDraft('')
+          atBottom.current = true
+        },
+        onError: () => toast('Could not send that file — try again', 'error'),
+      },
+    )
+  }
+
+  async function open(path: string, fileName: string) {
+    // The bucket is private: a link is signed for a few minutes and nothing in
+    // it is reachable by URL alone.
+    const url = await signedFileUrl(path)
+    if (!url) {
+      toast('Could not open that file', 'error')
+      return
+    }
+    window.open(url, '_blank', 'noopener')
+    void fileName
   }
 
   const name = contact?.name ?? 'Conversation'
@@ -117,9 +172,41 @@ export function ChatScreen() {
                     mine ? 'bg-violet text-white' : 'bg-paper text-ink shadow-soft'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">
-                    {m.body}
-                  </p>
+                  {byMessage.has(m.id) && (
+                    <button
+                      onClick={() => {
+                        const f = byMessage.get(m.id)!
+                        void open(f.storage_path, f.file_name)
+                      }}
+                      className={`press mb-1.5 flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left ${
+                        mine ? 'bg-white/15' : 'bg-wash'
+                      }`}
+                    >
+                      <span
+                        className={`grid h-9 w-8 shrink-0 place-items-center rounded-[6px] ${
+                          mine ? 'bg-white/20 text-white' : 'bg-ink/5 text-ink-soft'
+                        }`}
+                      >
+                        <DocIcon width={16} height={16} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13.5px] font-semibold">
+                          {byMessage.get(m.id)!.file_name}
+                        </span>
+                        <span
+                          className={`block text-[11.5px] ${mine ? 'text-white/70' : 'text-ink-faint'}`}
+                        >
+                          {readableSize(byMessage.get(m.id)!.file_size)}
+                        </span>
+                      </span>
+                      <DownloadIcon width={17} height={17} className="shrink-0" />
+                    </button>
+                  )}
+                  {m.body && (
+                    <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">
+                      {m.body}
+                    </p>
+                  )}
                   <span
                     className={`mt-0.5 flex items-center justify-end gap-1 text-[11px] ${
                       mine ? 'text-white/70' : 'text-ink-faint'
@@ -140,10 +227,34 @@ export function ChatScreen() {
         </ul>
       </div>
 
+      {sendFile.isPending && (
+        <p className="border-t border-line bg-paper px-4 py-2 text-[12.5px] text-ink-soft">
+          Sending file…
+        </p>
+      )}
+
       <div
         className="flex items-end gap-2 border-t border-line bg-paper px-3 pt-2"
         style={{ paddingBottom: 'calc(var(--safe-bottom) + 10px)' }}
       >
+        <input
+          ref={fileRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,image/*"
+          onChange={(e) => {
+            choose(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={sendFile.isPending}
+          aria-label="Attach a file"
+          className="press grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-soft disabled:opacity-40"
+        >
+          <PaperclipIcon width={20} height={20} />
+        </button>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

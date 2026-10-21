@@ -71,11 +71,17 @@ $$;
 -- and 0003 can be tested as written. The real table has more columns; none of
 -- them appear in our policies.
 -- ---------------------------------------------------------------------------
+-- The columns our migrations set. file_size_limit and allowed_mime_types are
+-- how Supabase enforces size and type in the storage service itself, before a
+-- byte reaches a policy — so a shim without them would let a migration that
+-- sets no limits at all pass its tests.
 create table if not exists storage.buckets (
-  id         text primary key,
-  name       text not null,
-  public     boolean not null default false,
-  created_at timestamptz not null default now()
+  id                 text primary key,
+  name               text not null,
+  public             boolean not null default false,
+  file_size_limit    bigint,
+  allowed_mime_types text[],
+  created_at         timestamptz not null default now()
 );
 
 create table if not exists storage.objects (

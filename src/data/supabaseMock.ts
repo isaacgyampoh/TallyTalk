@@ -35,6 +35,7 @@ export interface MockClient {
   storage: {
     from: (bucket: string) => {
       upload: (path: string, file: unknown, opts?: unknown) => Promise<{ error: unknown }>
+      remove: (paths: string[]) => Promise<{ error: unknown }>
       getPublicUrl: (path: string) => { data: { publicUrl: string } }
       createSignedUrl: (
         path: string,
@@ -48,6 +49,8 @@ export interface MockClient {
   rpcCalls: Array<{ fn: string; args?: Record<string, unknown> }>
   /** Storage uploads, in order. */
   uploads: Array<{ bucket: string; path: string; opts?: unknown }>
+  /** Storage removals, in order — how an abandoned upload is cleaned up. */
+  removals: Array<{ bucket: string; paths: string[] }>
   /** Edge function invocations, in order. */
   invocations: Array<{ name: string; opts?: unknown }>
   /** Convenience: the argument a given method was called with. */
@@ -75,6 +78,7 @@ export function makeSupabaseMock(options: {
   const calls: Record<string, Recorded[]> = {}
   const rpcCalls: Array<{ fn: string; args?: Record<string, unknown> }> = []
   const uploads: Array<{ bucket: string; path: string; opts?: unknown }> = []
+  const removals: Array<{ bucket: string; paths: string[] }> = []
   const invocations: Array<{ name: string; opts?: unknown }> = []
 
   function chainFor(table: string) {
@@ -128,6 +132,10 @@ export function makeSupabaseMock(options: {
           uploads.push({ bucket, path, opts })
           return { error: uploadError }
         },
+        remove: async (paths: string[]) => {
+          removals.push({ bucket, paths })
+          return { error: null }
+        },
         getPublicUrl: (path: string) => ({
           data: { publicUrl: `https://example.test/storage/${bucket}/${path}` },
         }),
@@ -143,6 +151,7 @@ export function makeSupabaseMock(options: {
     calls,
     rpcCalls,
     uploads,
+    removals,
     invocations,
     argFor(table, method) {
       return (calls[table] ?? []).find((c) => c.method === method)?.args[0]
