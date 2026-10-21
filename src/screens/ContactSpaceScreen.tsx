@@ -6,7 +6,7 @@ import { TaskWallpaper } from '@/components/TaskWallpaper'
 import { TaskRow, type Side } from '@/components/TaskRow'
 import { useToast } from '@/components/toastContext'
 import { buzz } from '@/lib/haptics'
-import { BackIcon, ChevronRightIcon, ChevronUpIcon } from '@/components/icons'
+import { BackIcon, ChevronRightIcon, ChevronUpIcon, CommentIcon } from '@/components/icons'
 import { TASK_TITLE_MAX } from '@/lib/config'
 import { type Task } from '@/data/viewTypes'
 import { useContacts, useSpaceRealtime, useSpaceTasks, useTaskSpaceMutations } from '@/data/hooks'
@@ -196,6 +196,13 @@ export function ContactSpaceScreen() {
             Tasks
           </p>
         </div>
+        <button
+          onClick={() => nav(`/contacts/${contact.id}/chat`)}
+          className="press grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft"
+          aria-label={`Message ${firstName}`}
+        >
+          <CommentIcon width={21} height={21} />
+        </button>
         {
           <button
             onClick={() => setManaging(true)}

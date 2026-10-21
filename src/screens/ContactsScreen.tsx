@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
-import { SearchIcon, PlusIcon, BellIcon } from '@/components/icons'
+import { SearchIcon, PlusIcon, BellIcon, CommentIcon } from '@/components/icons'
 import { type Contact } from '@/data/viewTypes'
 import {
   useContacts,
   useContactRequests,
   useNotifications,
   useRespondToContactRequest,
+  useUnreadMessages,
 } from '@/data/hooks'
 import { initialsFrom, colorFor } from '@/data/mappers'
 import { AddContactSheet } from '@/components/AddContactSheet'
@@ -54,6 +55,7 @@ export function ContactsScreen() {
   const { data: contacts, isPending, isError, refetch } = useContacts()
   const { data: notifications } = useNotifications()
   const unread = (notifications ?? []).filter((n) => !n.read_at).length
+  const { data: unreadMessages } = useUnreadMessages()
   const { incoming } = useContactRequests()
   const { respond } = useRespondToContactRequest()
   const waiting = incoming.data ?? []
@@ -66,6 +68,18 @@ export function ContactsScreen() {
         title="Contacts"
         right={
           <div className="flex items-center gap-0.5">
+            <button
+              className="press relative grid h-10 w-10 place-items-center rounded-full text-ink-soft"
+              aria-label={unreadMessages ? `Messages, ${unreadMessages} unread` : 'Messages'}
+              onClick={() => nav('/messages')}
+            >
+              <CommentIcon width={21} height={21} />
+              {!!unreadMessages && (
+                <span className="nums absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-violet px-1 text-[10px] font-bold text-white">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </span>
+              )}
+            </button>
             <button
               className="press relative grid h-10 w-10 place-items-center rounded-full text-ink-soft"
               aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}

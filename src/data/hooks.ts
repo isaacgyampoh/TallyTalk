@@ -3,18 +3,28 @@ import { useAuth } from '@/context/authState'
 import { supabase } from '@/lib/supabase'
 import type { Task } from './viewTypes'
 import type { ChecklistItemRow } from './types'
+import type { MessageRow } from './messages'
 import { addTaskComment, eventsKey, listTaskEvents, recordTaskEvent } from './events'
 import { createGroupTask, poke } from './tasks'
 import { getMyProfile, updateMyProfile, uploadAvatar, type ProfilePatch } from './profile'
 import { getLanguage, hasChosenLanguage, setLanguage } from '@/lib/language'
 import { attachmentsKey, listTaskAttachments, uploadTaskAttachment } from './attachments'
 import {
+  conversationsKey,
+  listConversations,
+  listThread,
+  markThreadRead,
+  sendMessage,
+  threadKey,
+  unreadMessageCount,
+} from './messages'
+import {
   listNotifications,
   markAllNotificationsRead,
   markNotificationsRead,
   notificationsKey,
 } from './notifications'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
 import {
   contactRequestState,
@@ -494,6 +504,110 @@ export function useTaskRealtime(taskId: string) {
 }
 
 /** Keep a contact's task space current while it is on screen. */
+/** Everyone you have actually exchanged messages with, newest first. */
+export function useConversations() {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: [...conversationsKey, live],
+    enabled: live,
+    queryFn: () => listConversations(),
+    refetchInterval: live ? 60_000 : false,
+  })
+}
+
+/** What is waiting across all conversations, for the badge. */
+export function useUnreadMessages() {
+  const live = useIsLive()
+  return useQuery({
+    queryKey: ['unread-messages', live],
+    enabled: live,
+    queryFn: () => unreadMessageCount(),
+    refetchInterval: live ? 60_000 : false,
+  })
+}
+
+/**
+ * One conversation, a page at a time.
+ *
+ * Pages are keyset by timestamp rather than offset: a conversation grows at
+ * the end while it is being read, and an offset would repeat a message or skip
+ * one. `older()` fetches the page before the oldest message held.
+ */
+export function useThread(contactId: string) {
+  const live = useIsLive()
+  const qc = useQueryClient()
+  const [pages, setPages] = useState<MessageRow[]>([])
+  const [reachedStart, setReachedStart] = useState(false)
+  const [loadingOlder, setLoadingOlder] = useState(false)
+
+  const latest = useQuery({
+    queryKey: [...threadKey(contactId), live],
+    enabled: live && !!contactId,
+    queryFn: () => listThread(contactId),
+  })
+
+  // Older pages are held beside the query rather than inside it, so a refetch
+  // of the newest page does not throw away history already read.
+  const older = useCallback(async () => {
+    const oldest = pages[0] ?? latest.data?.[0]
+    if (!oldest || reachedStart || loadingOlder) return
+    setLoadingOlder(true)
+    try {
+      const page = await listThread(contactId, oldest.created_at)
+      if (page.length === 0) setReachedStart(true)
+      else setPages((held) => [...page, ...held])
+    } finally {
+      setLoadingOlder(false)
+    }
+  }, [contactId, pages, latest.data, reachedStart, loadingOlder])
+
+  const messages = [...pages, ...(latest.data ?? [])]
+
+  const markRead = useCallback(() => {
+    if (!live || !contactId) return
+    void markThreadRead(contactId).then(() => {
+      qc.invalidateQueries({ queryKey: ['unread-messages', live] })
+      qc.invalidateQueries({ queryKey: [...conversationsKey, live] })
+    })
+  }, [contactId, live, qc])
+
+  return { ...latest, messages, older, reachedStart, loadingOlder, markRead }
+}
+
+export function useSendMessage(contactId: string) {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  return useMutation({
+    mutationFn: (body: string) => sendMessage(contactId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...threadKey(contactId), live] })
+      qc.invalidateQueries({ queryKey: [...conversationsKey, live] })
+    },
+  })
+}
+
+/** New messages while the thread is open. */
+export function useThreadRealtime(contactId: string) {
+  const qc = useQueryClient()
+  const live = useIsLive()
+
+  useEffect(() => {
+    if (!live || !supabase || !contactId) return
+    const channel = supabase
+      .channel(`thread:${contactId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        qc.invalidateQueries({ queryKey: [...threadKey(contactId), true] })
+        qc.invalidateQueries({ queryKey: [...conversationsKey, true] })
+        qc.invalidateQueries({ queryKey: ['unread-messages', true] })
+      })
+      .subscribe()
+
+    return () => {
+      supabase?.removeChannel(channel)
+    }
+  }, [live, contactId, qc])
+}
+
 export function useSpaceRealtime(contactId: string) {
   const qc = useQueryClient()
   const live = useIsLive()

@@ -67,6 +67,11 @@ const NotificationsScreen = screen(
   'NotificationsScreen',
   () => import('@/screens/NotificationsScreen'),
 )
+const ConversationsScreen = screen(
+  'ConversationsScreen',
+  () => import('@/screens/ConversationsScreen'),
+)
+const ChatScreen = screen('ChatScreen', () => import('@/screens/ChatScreen'))
 
 function Splash() {
   // A screen that is still arriving looks identical to one that cannot arrive.
@@ -195,6 +200,8 @@ function Gate() {
         {/* Full-screen detail views (no bottom nav), like a chat thread. */}
         <Route path="/contacts/:id" element={<ContactSpaceScreen />} />
         <Route path="/contacts/:id/t/:taskId" element={<TaskCommentsScreen />} />
+        <Route path="/contacts/:id/chat" element={<ChatScreen />} />
+        <Route path="/messages" element={<ConversationsScreen />} />
         <Route path="/legal/:doc" element={<LegalScreen />} />
         <Route path="/notifications" element={<NotificationsScreen />} />
         <Route path="/personal/:key" element={<ChecklistDetailScreen />} />
