@@ -12,7 +12,14 @@ vi.mock('@/lib/supabase', () => ({
   isSupabaseConfigured: true,
 }))
 
-const { findProfileByPhone, addContact, setContactFlags } = await import('./contacts')
+const {
+  findProfileByPhone,
+  requestContact,
+  respondToContactRequest,
+  sendSmsInvitation,
+  setContactFlags,
+  withdrawContactRequest,
+} = await import('./contacts')
 
 beforeEach(() => {
   client = makeSupabaseMock({})
@@ -68,23 +75,79 @@ describe('findProfileByPhone', () => {
   })
 })
 
-describe('addContact', () => {
-  it('records me as the owner', async () => {
-    client = makeSupabaseMock({ results: { contacts: { error: null } } })
-    await addContact(THEM)
-    expect(client.argFor('contacts', 'upsert')).toEqual({ owner_id: ME, contact_id: THEM })
+describe('requestContact', () => {
+  it('asks on my own behalf — the policy refuses anything else', async () => {
+    client = makeSupabaseMock({ results: { contact_requests: { error: null } } })
+    await requestContact(THEM)
+    expect(client.argFor('contact_requests', 'insert')).toEqual({
+      from_user: ME,
+      to_user: THEM,
+    })
   })
 
-  it('upserts on the owner/contact pair, so adding twice is not an error', async () => {
-    client = makeSupabaseMock({ results: { contacts: { error: null } } })
-    await addContact(THEM)
-    const call = client.calls.contacts.find((c) => c.method === 'upsert')
-    expect(call?.args[1]).toEqual({ onConflict: 'owner_id,contact_id' })
+  it('does not add a contact directly, because connecting is theirs to accept', async () => {
+    client = makeSupabaseMock({ results: { contact_requests: { error: null } } })
+    await requestContact(THEM)
+    expect(client.calls.contacts).toBeUndefined()
   })
 
-  it('throws when the insert is refused', async () => {
-    client = makeSupabaseMock({ results: { contacts: { error: { message: 'denied' } } } })
-    await expect(addContact(THEM)).rejects.toMatchObject({ message: 'denied' })
+  it('throws when the request is refused — blocked, or already asked', async () => {
+    client = makeSupabaseMock({
+      results: { contact_requests: { error: { message: 'duplicate key' } } },
+    })
+    await expect(requestContact(THEM)).rejects.toMatchObject({ message: 'duplicate key' })
+  })
+})
+
+describe('respondToContactRequest', () => {
+  it('accepts by setting the status, and nothing else', async () => {
+    client = makeSupabaseMock({ results: { contact_requests: { error: null } } })
+    await respondToContactRequest('req-1', true)
+    expect(client.argFor('contact_requests', 'update')).toEqual({ status: 'accepted' })
+    expect(client.calls.contact_requests.find((c) => c.method === 'eq')?.args).toEqual([
+      'id',
+      'req-1',
+    ])
+  })
+
+  it('declines the same way', async () => {
+    client = makeSupabaseMock({ results: { contact_requests: { error: null } } })
+    await respondToContactRequest('req-1', false)
+    expect(client.argFor('contact_requests', 'update')).toEqual({ status: 'declined' })
+  })
+
+  it('never writes the contact rows itself — the database does that', async () => {
+    client = makeSupabaseMock({ results: { contact_requests: { error: null } } })
+    await respondToContactRequest('req-1', true)
+    expect(client.calls.contacts).toBeUndefined()
+  })
+})
+
+describe('withdrawContactRequest', () => {
+  it('deletes the one request', async () => {
+    client = makeSupabaseMock({ results: { contact_requests: { error: null } } })
+    await withdrawContactRequest('req-1')
+    expect(client.calls.contact_requests.find((c) => c.method === 'delete')).toBeDefined()
+    expect(client.calls.contact_requests.find((c) => c.method === 'eq')?.args).toEqual([
+      'id',
+      'req-1',
+    ])
+  })
+})
+
+describe('sendSmsInvitation', () => {
+  it('goes through the edge function, never straight to the provider', async () => {
+    client = makeSupabaseMock({})
+    await sendSmsInvitation('+233244123456')
+    expect(client.invocations[0].name).toBe('send-invite')
+    expect(JSON.stringify(client.invocations[0].opts)).toContain('+233244123456')
+  })
+
+  it('surfaces the reason the server gave, since that is the useful one', async () => {
+    // "You already invited this number today" helps; "Edge Function returned a
+    // non-2xx status code" does not.
+    client = makeSupabaseMock({ invokeError: { message: 'non-2xx' } })
+    await expect(sendSmsInvitation('+233244123456')).rejects.toThrow(/could not send/i)
   })
 })
 
@@ -120,8 +183,8 @@ describe('setContactFlags', () => {
 })
 
 describe('when nobody is signed in', () => {
-  it('refuses to add a contact', async () => {
+  it('refuses to ask anyone to connect', async () => {
     client = makeSupabaseMock({ userId: null })
-    await expect(addContact(THEM)).rejects.toThrow(/not signed in/i)
+    await expect(requestContact(THEM)).rejects.toThrow(/not signed in/i)
   })
 })

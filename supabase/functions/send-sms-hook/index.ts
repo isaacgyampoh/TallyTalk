@@ -1,88 +1,34 @@
-// TallyTalk — Send SMS Hook (Supabase Auth Hook)
+// TaskTally — Send SMS Hook (Supabase Auth Hook)
 //
 // Supabase Auth generates and verifies the OTP itself. This hook only handles
-// *delivery*: Supabase POSTs the phone number + generated code here, and we
-// forward it to Arkesel's SMS API. Because Supabase still owns verification and
-// session issuance, the client keeps using the standard
-// supabase.auth.signInWithOtp({ phone }) / verifyOtp(...) calls.
+// *delivery*: Supabase POSTs the phone number plus the generated code here, and
+// we hand it to Arkesel. Because Supabase still owns verification and session
+// issuance, the client keeps using the standard
+// supabase.auth.signInWithOtp({ phone }) / verifyOtp(...) calls, and there is
+// no second authentication system to secure.
 //
 // Deploy:
 //   supabase functions deploy send-sms-hook --no-verify-jwt
 // Secrets (server-side only — never in the frontend .env):
 //   supabase secrets set ARKESEL_API_KEY=xxxxx
-//   supabase secrets set ARKESEL_SENDER_ID=TallyTalk
-//   supabase secrets set SEND_SMS_HOOK_SECRET=v1,whsec_...   (from the hook config)
+//   supabase secrets set ARKESEL_SENDER_ID=Cambridge     (must be approved)
+//   supabase secrets set SEND_SMS_HOOK_SECRET=v1,whsec_...  (from the hook config)
 // Then in Dashboard → Authentication → Hooks, enable "Send SMS" and point it at
 // this Edge Function; copy the generated secret into SEND_SMS_HOOK_SECRET.
 
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
+import {
+  configProblem,
+  confirmSent,
+  inBackground,
+  readArkeselConfig,
+  sendSms,
+} from '../_shared/arkesel.ts'
 
-const ARKESEL_API_KEY = Deno.env.get('ARKESEL_API_KEY') ?? ''
-const ARKESEL_SENDER_ID = Deno.env.get('ARKESEL_SENDER_ID') ?? ''
 const HOOK_SECRET = (Deno.env.get('SEND_SMS_HOOK_SECRET') ?? '').replace('v1,whsec_', '')
-const ARKESEL_SMS_URL = 'https://sms.arkesel.com/api/v2/sms/send'
-const APP_NAME = 'TaskTally'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-
-/**
- * Record why a code could not be sent, where it can actually be read.
- *
- * Edge function logs need dashboard access, and on the free plan they are not
- * reachable through the Management API at all — so a failed sign-in was
- * invisible unless someone was watching the screen. This puts the provider's
- * own words in `client_errors`, which is one SQL query away:
- *
- *   select created_at, message from public.client_errors
- *   where build_id = 'send-sms-hook' order by created_at desc;
- *
- * Deliberately no phone number and no code: the recipient is a personal
- * identifier and the OTP is a credential. Only the provider's verdict.
- *
- * Never awaited on the request path. GoTrue gives a hook a few seconds before
- * it gives up with `hook_timeout`, and this function has already spent some of
- * that talking to Arkesel — awaiting one more round trip turned an honest 502
- * into a timeout, which tells the user and the owner nothing.
- */
-function recordFailure(detail: string): void {
-  if (!SUPABASE_URL || !SERVICE_ROLE) return
-  const write = fetch(`${SUPABASE_URL}/rest/v1/client_errors`, {
-    method: 'POST',
-    headers: {
-      apikey: SERVICE_ROLE,
-      Authorization: `Bearer ${SERVICE_ROLE}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      build_id: 'send-sms-hook',
-      kind: 'edge',
-      platform: 'web',
-      message: detail.slice(0, 500),
-    }),
-  }).catch(() => {
-    /* a failure to record a failure must not become a third failure */
-  })
-
-  // Keep the write alive after the response has gone back.
-  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
-    .EdgeRuntime
-  runtime?.waitUntil?.(write)
-}
-
-/**
- * Arkesel rejects a sender ID longer than 11 characters, and refuses one that
- * has not been approved for the account. Both fail the same way — a 200 with
- * a failure in the body — so catching it here turns a silent undelivered code
- * into a clear log line.
- */
-function senderIdProblem(): string | null {
-  if (!ARKESEL_API_KEY) return 'ARKESEL_API_KEY is not set'
-  if (!ARKESEL_SENDER_ID) return 'ARKESEL_SENDER_ID is not set'
-  if (ARKESEL_SENDER_ID.length > 11) {
-    return `ARKESEL_SENDER_ID is ${ARKESEL_SENDER_ID.length} characters; Arkesel allows at most 11`
-  }
-  return null
-}
+const APP_NAME = 'TaskTally'
 
 interface HookPayload {
   user: { phone?: string }
@@ -91,7 +37,8 @@ interface HookPayload {
 
 Deno.serve(async (req) => {
   try {
-    const problem = senderIdProblem()
+    const config = readArkeselConfig()
+    const problem = configProblem(config)
     if (problem) {
       console.error('send-sms-hook is not configured:', problem)
       recordFailure(`not configured: ${problem}`)
@@ -110,49 +57,29 @@ Deno.serve(async (req) => {
       return json({ error: { message: 'No phone number on user' } }, 400)
     }
 
-    // The app's name, not the sender ID: a sender ID may be a short code or
-    // something Arkesel approved that reads nothing like the product.
-    const message = `Your ${APP_NAME} code is ${sms.otp}. It expires in 10 minutes. Do not share it.`
+    // The app's name, not the sender ID: a sender ID may be a short code, or
+    // another brand entirely while TaskTally's own awaits approval.
+    const message =
+      `Your ${APP_NAME} code is ${sms.otp}. It expires in 10 minutes. Do not share it.`
 
-    const res = await fetch(ARKESEL_SMS_URL, {
-      method: 'POST',
-      headers: {
-        'api-key': ARKESEL_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: ARKESEL_SENDER_ID,
-        message,
-        // Arkesel expects recipients without a leading "+".
-        recipients: [phone.replace(/^\+/, '')],
-      }),
-    })
-
-    // Arkesel answers 200 even when it refuses the message (bad sender ID, no
-    // credit, invalid recipient) and puts the real outcome in the body, so a
-    // status check alone would report undelivered codes as sent.
-    const detail = await res.text()
-    let accepted = res.ok
-    if (accepted) {
-      try {
-        accepted = (JSON.parse(detail) as { status?: string }).status === 'success'
-      } catch {
-        accepted = false
-      }
-    }
-
-    if (!accepted) {
-      console.error('Arkesel send failed', res.status, detail)
-      recordFailure(`arkesel ${res.status}: ${detail}`)
+    const result = await sendSms(config, phone, message)
+    if (!result.accepted) {
+      console.error('Arkesel send failed', result.status)
+      recordFailure(`arkesel ${result.status}: ${result.detail}`)
       // Returning a non-2xx tells Supabase the OTP could not be delivered.
       return json({ error: { message: 'SMS provider rejected the request' } }, 502)
     }
 
-    // Accepted is not the same as sent. An unapproved sender ID is taken with
-    // a cheerful 200 and then held at "PENDING APPROVAL" forever — which is
-    // exactly how a real sign-in failed silently while every check we had
-    // said success. Follow it up in the background.
-    confirmItActuallyWent(detail)
+    // Accepted is not the same as sent: an unapproved sender ID is taken with
+    // a 200 and then held forever. Follow it up after answering — this is how
+    // a real sign-in failed silently while every check we had said success.
+    if (result.id) {
+      inBackground(
+        confirmSent(config, result.id).then((problem) =>
+          problem ? recordFailure(problem) : undefined,
+        ),
+      )
+    }
 
     return json({}, 200)
   } catch (err) {
@@ -163,45 +90,41 @@ Deno.serve(async (req) => {
   }
 })
 
-/** Statuses that mean the message is on its way, or has arrived. */
-const IN_FLIGHT = new Set(['DELIVERED', 'SENT', 'PENDING', 'QUEUED', 'SUBMITTED'])
-
 /**
- * Ask Arkesel what became of the message it just accepted.
+ * Record why a code could not be sent, where it can actually be read.
  *
- * Runs after the response has gone back, so it costs the sign-in nothing. The
- * case worth catching is "PENDING APPROVAL": the sender ID has not been
- * approved on the account, so messages are accepted and never delivered. From
- * the outside that is indistinguishable from success.
+ * Edge function logs need dashboard access, and on the free plan they are not
+ * reachable through the Management API at all — so a failed sign-in was
+ * invisible unless someone was watching the screen:
+ *
+ *   select created_at, message from public.client_errors
+ *   where build_id = 'send-sms-hook' order by created_at desc;
+ *
+ * No phone number and no code: the recipient is a personal identifier and the
+ * OTP is a credential. Only the provider's verdict. Never awaited on the
+ * request path — GoTrue gives a hook a few seconds before `hook_timeout`, and
+ * awaiting one more round trip turned an honest 502 into a timeout.
  */
-function confirmItActuallyWent(sendResponse: string): void {
-  const check = (async () => {
-    try {
-      const id = (JSON.parse(sendResponse) as { data?: { id?: string }[] }).data?.[0]?.id
-      if (!id) return
-      // Give the provider a moment to move it out of its initial state.
-      await new Promise((resolve) => setTimeout(resolve, 5000))
-      const res = await fetch(`https://sms.arkesel.com/api/v2/sms/${id}`, {
-        headers: { 'api-key': ARKESEL_API_KEY },
-      })
-      if (!res.ok) return
-      const status = (await res.json())?.data?.status as string | undefined
-      if (status && !IN_FLIGHT.has(status.toUpperCase())) {
-        console.error('Arkesel accepted but did not send:', status)
-        recordFailure(
-          `arkesel accepted the message but its status is "${status}" — ` +
-            `with sender "${ARKESEL_SENDER_ID}". PENDING APPROVAL means that ` +
-            `sender ID is not approved on the account, so nothing is delivered.`,
-        )
-      }
-    } catch {
-      /* a follow-up check must never affect sign-in */
-    }
-  })()
-
-  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
-    .EdgeRuntime
-  runtime?.waitUntil?.(check)
+function recordFailure(detail: string): void {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return
+  inBackground(
+    fetch(`${SUPABASE_URL}/rest/v1/client_errors`, {
+      method: 'POST',
+      headers: {
+        apikey: SERVICE_ROLE,
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        build_id: 'send-sms-hook',
+        kind: 'edge',
+        platform: 'web',
+        message: detail.slice(0, 500),
+      }),
+    }).catch(() => {
+      /* a failure to record a failure must not become a third failure */
+    }),
+  )
 }
 
 function json(body: unknown, status: number) {

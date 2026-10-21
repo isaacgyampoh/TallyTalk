@@ -259,3 +259,28 @@ select test.ok(
   public.notify(:'mensah', 'pokes', 'Unconfigured', 'still recorded') is not null,
   'a notification is recorded on a database with no push secrets');
 select test.sees('select 1 from net.captured', 0, 'and nothing is sent');
+
+-- ===========================================================================
+-- An account can still be deleted (0010).
+--
+-- The guard above rejected the foreign key's own `on delete set null` on
+-- actor_id, so deleting anyone who had ever appeared in someone's inbox
+-- failed — taking the right-to-erasure path with it.
+-- ===========================================================================
+select test.signup('+233260000009', 'Departing') as dep \gset dep_
+\set departing :dep_dep
+
+insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
+values (:'departing', 'https://push.example.test/sub/departing', 'k', 'a');
+select public.notify(:'mensah', 'pokes', 'Departing poked you', '',
+                     jsonb_build_object('actorId', :'departing'), 'leaving-poke');
+
+select test.ok(
+  (select count(*) from public.notifications where actor_id = :'departing') = 1,
+  'a notification mentions the person about to leave');
+
+select test.allows(format('delete from public.profiles where id = %L', :'departing'),
+  'their account can be deleted');
+select test.ok(
+  (select count(*) from public.notifications where title = 'Departing poked you' and actor_id is null) = 1,
+  'and the notification survives with nobody attached, rather than blocking the delete');

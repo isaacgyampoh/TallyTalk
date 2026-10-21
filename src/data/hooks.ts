@@ -16,7 +16,18 @@ import {
 } from './notifications'
 import { useEffect } from 'react'
 import { createTask, listContacts, listSpaceTasks, setTaskStatus } from './tasks'
-import { addContact, findProfileByPhone, setContactFlags, type ContactFlags } from './contacts'
+import {
+  contactRequestState,
+  findProfileByPhone,
+  listIncomingRequests,
+  listOutgoingRequests,
+  requestContact,
+  respondToContactRequest,
+  sendSmsInvitation,
+  setContactFlags,
+  withdrawContactRequest,
+  type ContactFlags,
+} from './contacts'
 import {
   addChecklistItem,
   createChecklist,
@@ -195,24 +206,77 @@ export function useTaskSpaceMutations(contactId: string) {
   return { setStatus, create }
 }
 
+export const contactRequestsKey = ['contact-requests'] as const
+
 /**
- * Finding someone by number and adding them. Kept separate from the contacts
- * query so a failed lookup never disturbs the list already on screen.
+ * Finding someone by number, asking to connect, and inviting someone who is
+ * not here yet. Kept separate from the contacts query so a failed lookup never
+ * disturbs the list already on screen.
  */
 export function useAddContact() {
   const qc = useQueryClient()
   const live = useIsLive()
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['contacts', live] })
+    qc.invalidateQueries({ queryKey: [...contactRequestsKey, live] })
+  }
 
   const find = useMutation({
     mutationFn: (phone: string) => findProfileByPhone(phone),
   })
 
-  const add = useMutation({
-    mutationFn: (profileId: string) => addContact(profileId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['contacts', live] }),
+  /** Where things stand with someone the search found. */
+  const state = useMutation({
+    mutationFn: (profileId: string) => contactRequestState(profileId),
   })
 
-  return { find, add }
+  const request = useMutation({
+    mutationFn: (profileId: string) => requestContact(profileId),
+    onSuccess: refresh,
+  })
+
+  const invite = useMutation({
+    mutationFn: (phone: string) => sendSmsInvitation(phone),
+  })
+
+  return { find, state, request, invite }
+}
+
+/** Requests waiting for me, and the ones I am waiting on. */
+export function useContactRequests() {
+  const live = useIsLive()
+  const incoming = useQuery({
+    queryKey: [...contactRequestsKey, 'incoming', live],
+    enabled: live,
+    queryFn: () => listIncomingRequests(),
+  })
+  const outgoing = useQuery({
+    queryKey: [...contactRequestsKey, 'outgoing', live],
+    enabled: live,
+    queryFn: () => listOutgoingRequests(),
+  })
+  return { incoming, outgoing }
+}
+
+export function useRespondToContactRequest() {
+  const qc = useQueryClient()
+  const live = useIsLive()
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: [...contactRequestsKey, 'incoming', live] })
+    qc.invalidateQueries({ queryKey: [...contactRequestsKey, 'outgoing', live] })
+    qc.invalidateQueries({ queryKey: ['contacts', live] })
+    qc.invalidateQueries({ queryKey: [...notificationsKey, live] })
+  }
+  return {
+    respond: useMutation({
+      mutationFn: (v: { id: string; accept: boolean }) => respondToContactRequest(v.id, v.accept),
+      onSettled: refresh,
+    }),
+    withdraw: useMutation({
+      mutationFn: (id: string) => withdrawContactRequest(id),
+      onSettled: refresh,
+    }),
+  }
 }
 
 /** Work / favourite / archive / block, applied to my own side of the pair. */

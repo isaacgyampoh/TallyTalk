@@ -4,7 +4,13 @@ import { ScreenHeader } from '@/components/Shell'
 import { Avatar } from '@/components/Avatar'
 import { SearchIcon, PlusIcon, BellIcon } from '@/components/icons'
 import { type Contact } from '@/data/viewTypes'
-import { useContacts, useNotifications } from '@/data/hooks'
+import {
+  useContacts,
+  useContactRequests,
+  useNotifications,
+  useRespondToContactRequest,
+} from '@/data/hooks'
+import { initialsFrom, colorFor } from '@/data/mappers'
 import { AddContactSheet } from '@/components/AddContactSheet'
 
 const FILTERS = ['All', 'Unread', 'Work', 'Favorites', 'Urgent', 'Overdue', 'Newest'] as const
@@ -48,6 +54,9 @@ export function ContactsScreen() {
   const { data: contacts, isPending, isError, refetch } = useContacts()
   const { data: notifications } = useNotifications()
   const unread = (notifications ?? []).filter((n) => !n.read_at).length
+  const { incoming } = useContactRequests()
+  const { respond } = useRespondToContactRequest()
+  const waiting = incoming.data ?? []
   const all = useMemo(() => contacts ?? [], [contacts])
   const rows = useMemo(() => applyFilter(all, filter, q), [all, filter, q])
 
@@ -106,6 +115,41 @@ export function ContactsScreen() {
           </button>
         ))}
       </div>
+
+      {waiting.length > 0 && (
+        <section className="px-3 pb-3">
+          <h2 className="eyebrow mb-2 px-1">Wants to connect</h2>
+          <ul className="overflow-hidden rounded-card border border-line">
+            {waiting.map((r, i) => {
+              const name = r.profile?.display_name ?? 'Someone'
+              return (
+                <li key={r.id} className={i > 0 ? 'border-t border-line' : ''}>
+                  <div className="flex items-center gap-3 px-3 py-3">
+                    <Avatar initials={initialsFrom(name)} color={colorFor(r.from_user)} size={36} />
+                    <p className="min-w-0 flex-1 truncate text-[15px] text-ink">
+                      <span className="font-semibold">{name}</span>
+                    </p>
+                    <button
+                      onClick={() => respond.mutate({ id: r.id, accept: false })}
+                      disabled={respond.isPending}
+                      className="press rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-soft"
+                    >
+                      Decline
+                    </button>
+                    <button
+                      onClick={() => respond.mutate({ id: r.id, accept: true })}
+                      disabled={respond.isPending}
+                      className="press rounded-full bg-violet px-3.5 py-1.5 text-[13px] font-semibold text-white"
+                    >
+                      Accept
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
 
       {isPending && (
         <div className="flex-1 px-5 pt-10 text-center">
